@@ -1,0 +1,37 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(*)",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Agent",
+      "TodoWrite",
+      "mcp__claude_ai_Gmail__authenticate",
+      "mcp__claude_ai_Gmail__complete_authentication",
+      "mcp__claude_ai_Gmail__list_emails",
+      "mcp__claude_ai_Gmail__send_email",
+      "mcp__claude_ai_Gmail__search_emails",
+      "mcp__claude_ai_Gmail__get_email",
+      "mcp__claude_ai_Gmail__create_draft",
+      "mcp__claude_ai_Google_Drive__authenticate",
+      "mcp__claude_ai_Google_Drive__complete_authentication",
+      "mcp__claude_ai_Google_Drive__list_files",
+      "mcp__claude_ai_Google_Drive__read_file",
+      "mcp__claude_ai_Google_Drive__create_file",
+      "mcp__claude_ai_Microsoft_365__authenticate",
+      "mcp__claude_ai_Microsoft_365__complete_authentication",
+      "mcp__claude_ai_Microsoft_365__list_emails",
+      "mcp__claude_ai_Microsoft_365__send_email",
+      "mcp__claude_ai_Microsoft_365__search_emails"
+    ],
+    "defaultMode": "bypassPermissions",
+    "additionalDirectories": [
+      "/Users/ramifakhuri/Projects/Lead gen. website "
+    ]
+  }
+}

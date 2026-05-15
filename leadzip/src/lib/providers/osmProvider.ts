@@ -173,7 +173,7 @@ function osmElementToPartialLead(
     city: tags['addr:city'] ?? fallbackCity,
     state: tags['addr:state'] ?? fallbackState,
     zipCode: tags['addr:postcode'] ?? searchZip,
-    phone: phone.replace(/\s+/g, '').replace(/^(\+1)?/, '').trim(),
+    phone: phone.replace(/\s+/g, '').replace(/^\+?1?[-.]?/, '').trim(),
     website,
     rating: null,
     reviewCount: null,
@@ -208,7 +208,6 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
         'User-Agent': USER_AGENT,
       },
       body: `data=${encodeURIComponent(query)}`,
-      next: { revalidate: 3600 }, // cache Overpass results for 1h per area
     })
 
     if (!overpassRes.ok) {

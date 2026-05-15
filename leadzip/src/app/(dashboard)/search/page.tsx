@@ -14,7 +14,7 @@ import {
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead, SearchParams, SearchHistory } from '@/types/lead'
-import { exportToCSV } from '@/lib/export'
+import { exportToCSV, exportToHubSpot, exportToSalesforce } from '@/lib/export'
 import { SearchFilters } from '@/components/leads/SearchFilters'
 import { LeadCard } from '@/components/leads/LeadCard'
 import { LeadTable } from '@/components/leads/LeadTable'
@@ -235,6 +235,20 @@ function SearchPageInner() {
     const selected = leads.filter((l) => selectedIds.has(l.id))
     if (selected.length === 0) return
     exportToCSV(selected, `leadzip-export-${Date.now()}`)
+    setSelectedIds(new Set())
+  }, [leads, selectedIds])
+
+  const handleExportHubSpot = useCallback(() => {
+    const selected = leads.filter((l) => selectedIds.has(l.id))
+    if (selected.length === 0) return
+    exportToHubSpot(selected)
+    setSelectedIds(new Set())
+  }, [leads, selectedIds])
+
+  const handleExportSalesforce = useCallback(() => {
+    const selected = leads.filter((l) => selectedIds.has(l.id))
+    if (selected.length === 0) return
+    exportToSalesforce(selected)
     setSelectedIds(new Set())
   }, [leads, selectedIds])
 
@@ -466,7 +480,21 @@ function SearchPageInner() {
               onClick={handleExportSelected}
             >
               <Download className="h-3.5 w-3.5 shrink-0" />
-              Export Selected
+              Export CSV
+            </button>
+            <button
+              className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+              onClick={handleExportHubSpot}
+            >
+              <Download className="h-3.5 w-3.5 shrink-0" />
+              HubSpot
+            </button>
+            <button
+              className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-700"
+              onClick={handleExportSalesforce}
+            >
+              <Download className="h-3.5 w-3.5 shrink-0" />
+              Salesforce
             </button>
             <button
               onClick={() => setSelectedIds(new Set())}

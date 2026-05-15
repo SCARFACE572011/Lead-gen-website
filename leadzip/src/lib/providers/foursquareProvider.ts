@@ -1,6 +1,7 @@
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
 import { geocodeZip } from '@/lib/geocode'
+import { formatPhone } from '@/lib/phoneFormatter'
 
 const FSQ_SEARCH_URL = 'https://api.foursquare.com/v3/places/search'
 
@@ -74,16 +75,6 @@ function haversineDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: 
       Math.cos((lat2 * Math.PI) / 180) *
       Math.sin(dLon / 2) ** 2
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-function formatPhone(raw: string): string {
-  // Input: "+12125551234" → "(212) 555-1234"
-  const digits = raw.replace(/\D/g, '')
-  const local = digits.startsWith('1') ? digits.slice(1) : digits
-  if (local.length === 10) {
-    return `(${local.slice(0, 3)}) ${local.slice(3, 6)}-${local.slice(6)}`
-  }
-  return raw
 }
 
 // --- Main export ---

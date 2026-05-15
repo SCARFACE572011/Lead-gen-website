@@ -2,6 +2,7 @@ import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
 import { searchLeadsDynamic } from './dynamicProvider'
 import { geocodeZip } from '@/lib/geocode'
+import { formatPhone } from '@/lib/phoneFormatter'
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 const USER_AGENT = 'LeadZip/1.0 (+https://leadzip.vercel.app)'
@@ -142,7 +143,7 @@ function osmElementToPartialLead(
     city: tags['addr:city'] ?? fallbackCity,
     state: tags['addr:state'] ?? fallbackState,
     zipCode: tags['addr:postcode'] ?? searchZip,
-    phone: phone.replace(/\s+/g, '').replace(/^\+?1?[-.]?/, '').trim(),
+    phone: formatPhone(phone),
     website,
     rating: null,
     reviewCount: null,
@@ -232,6 +233,8 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
           l.category.toLowerCase().includes(kw)
       )
     }
+
+    leads = leads.filter((l) => (l.distanceMiles ?? 0) <= params.radiusMiles)
 
     leads.sort((a, b) => b.leadScore - a.leadScore)
 

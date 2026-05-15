@@ -85,6 +85,26 @@ export async function POST(request: NextRequest) {
     // ── Live fetch ────────────────────────────────────────────────────────────
     const results = await searchLeads(body)
 
+    // Mark leads already saved by this user
+    try {
+      if (isSupabaseConfigured) {
+        const { createClient } = await import('@/lib/supabase/server')
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: savedLeads } = await supabase
+            .from('leads')
+            .select('business_name, zip_code')
+            .eq('user_id', user.id)
+          if (savedLeads?.length) {
+            const { markDuplicates } = await import('@/lib/deduplicateLeads')
+            const savedForMark = savedLeads.map(l => ({ businessName: l.business_name, zipCode: l.zip_code })) as import('@/types/lead').Lead[]
+            results.leads = markDuplicates(results.leads, savedForMark)
+          }
+        }
+      }
+    } catch { /* non-fatal */ }
+
     // ── Cache write + analytics (non-fatal) ───────────────────────────────────
     if (isSupabaseConfigured) {
       try {

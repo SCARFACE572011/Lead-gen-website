@@ -470,9 +470,9 @@ function generateReviewCount(rand: () => number): number {
   return Math.floor(rand() * 150) + 255                     // 255-404
 }
 
-function generateDistance(rand: () => number): number {
-  // Fixed 50-mile pool so different radii return genuinely different subsets
-  const raw = 0.1 + rand() * 50
+function generateDistance(radiusMiles: number, rand: () => number): number {
+  // Uniform distribution within radius (sqrt gives uniform area distribution)
+  const raw = 0.1 + Math.sqrt(rand()) * radiusMiles
   return Math.round(raw * 10) / 10
 }
 
@@ -505,6 +505,7 @@ function generateBusinessesForCategory(
   zipEntry: ZipEntry,
   resolvedZip: string,
   searchZip: string,
+  radiusMiles: number,
   rand: () => number,
   count: number
 ): GeneratedBusiness[] {
@@ -534,9 +535,13 @@ function generateBusinessesForCategory(
       ? `https://www.${generateSlug(name)}.com`
       : ''
 
-    // Jitter lat/lon slightly so each business has a unique location
-    const latJitter = (rand() - 0.5) * 0.1
-    const lonJitter = (rand() - 0.5) * 0.1
+    // Place business at a random point uniformly distributed within the search radius
+    const angle = rand() * 2 * Math.PI
+    const distMiles = generateDistance(radiusMiles, rand)
+    const latDeg = distMiles / 69.0
+    const lonDeg = distMiles / (69.0 * Math.cos((zipEntry.lat * Math.PI) / 180))
+    const latJitter = latDeg * Math.cos(angle)
+    const lonJitter = lonDeg * Math.sin(angle)
 
     businesses.push({
       businessName: name,
@@ -544,12 +549,12 @@ function generateBusinessesForCategory(
       address: generateAddress(rand),
       city: zipEntry.city,
       state: zipEntry.state,
-      zipCode: searchZip, // always show the searched ZIP
+      zipCode: searchZip,
       phone: generatePhone(zipEntry.areaCode, rand),
       website,
       rating: generateRating(rand),
       reviewCount: generateReviewCount(rand),
-      distanceMiles: generateDistance(rand),
+      distanceMiles: distMiles,
       latitude: zipEntry.lat + latJitter,
       longitude: zipEntry.lon + lonJitter,
     })
@@ -591,6 +596,7 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
           zipEntry,
           zipEntry.resolvedZip,
           zipCode,
+          radiusMiles,
           catRand,
           catCount
         )
@@ -607,6 +613,7 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
       zipEntry,
       zipEntry.resolvedZip,
       zipCode,
+      radiusMiles,
       catRand,
       baseCount
     ).map(b => ({
@@ -620,6 +627,7 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
       zipEntry,
       zipEntry.resolvedZip,
       zipCode,
+      radiusMiles,
       rand,
       baseCount
     )

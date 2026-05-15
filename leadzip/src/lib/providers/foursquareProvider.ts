@@ -79,46 +79,74 @@ function haversineDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: 
 
 // --- Main export ---
 
+// Fetch one page of FSQ results for a given center point
+async function fetchFsqPage(
+  apiKey: string,
+  centerLat: number,
+  centerLon: number,
+  radiusMeters: number,
+  categoryIds: string | undefined,
+  query: string
+): Promise<FsqPlace[]> {
+  const urlParams = new URLSearchParams({
+    ll: `${centerLat},${centerLon}`,
+    radius: String(radiusMeters),
+    limit: '50',
+    fields: 'fsq_id,name,location,geocodes,rating,stats,tel,website',
+  })
+  if (categoryIds) urlParams.set('categories', categoryIds)
+  if (query) urlParams.set('query', query)
+
+  const res = await fetch(`${FSQ_SEARCH_URL}?${urlParams.toString()}`, {
+    headers: { Authorization: apiKey, Accept: 'application/json' },
+  })
+  if (!res.ok) return []
+  const data = (await res.json()) as FsqSearchResponse
+  return data.results ?? []
+}
+
 export async function searchLeadsFoursquare(params: SearchParams): Promise<SearchResult> {
   const apiKey = process.env.FOURSQUARE_API_KEY
   if (!apiKey) throw new Error('FOURSQUARE_API_KEY not configured')
 
   const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
-  const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 100000)
 
-  const urlParams = new URLSearchParams({
-    ll: `${lat},${lon}`,
-    radius: String(radiusMeters),
-    limit: '50',
-    fields: 'fsq_id,name,location,geocodes,rating,stats,tel,website',
-  })
-
-  // Use category IDs for known categories, text query for custom/unknown
+  // Foursquare caps radius at 100,000m (~62mi). For larger radii, tile the area
+  // with multiple sub-searches at offset centers so we cover the full radius.
+  const FSQ_MAX_RADIUS = 100000
+  const radiusMeters = Math.round(params.radiusMiles * 1609.34)
   const categoryIds = FSQ_CATEGORY_IDS[params.category]
-  if (params.category === 'Custom Keyword' && params.keyword) {
-    urlParams.set('query', params.keyword)
-  } else if (categoryIds) {
-    urlParams.set('categories', categoryIds)
-    urlParams.set('query', params.category) // helps rank relevance
+  const query = params.category === 'Custom Keyword' && params.keyword
+    ? params.keyword
+    : params.category === 'Custom Keyword' ? '' : params.category
+
+  let allPlaces: FsqPlace[] = []
+
+  if (radiusMeters <= FSQ_MAX_RADIUS) {
+    // Single call covers the whole radius
+    allPlaces = await fetchFsqPage(apiKey, lat, lon, radiusMeters, categoryIds, query)
   } else {
-    urlParams.set('query', params.category)
+    // Tile with center + 4 offset sub-centers at ~60% of max radius distance
+    // so each sub-circle overlaps and together they cover the full area
+    const offsetDeg = (FSQ_MAX_RADIUS * 0.6) / 111320 // meters → degrees
+    const centers = [
+      [lat, lon],
+      [lat + offsetDeg, lon],
+      [lat - offsetDeg, lon],
+      [lat, lon + offsetDeg / Math.cos((lat * Math.PI) / 180)],
+      [lat, lon - offsetDeg / Math.cos((lat * Math.PI) / 180)],
+    ]
+    const pages = await Promise.allSettled(
+      centers.map(([cLat, cLon]) =>
+        fetchFsqPage(apiKey, cLat, cLon, FSQ_MAX_RADIUS, categoryIds, query)
+      )
+    )
+    for (const p of pages) {
+      if (p.status === 'fulfilled') allPlaces.push(...p.value)
+    }
   }
 
-  const response = await fetch(`${FSQ_SEARCH_URL}?${urlParams.toString()}`, {
-    headers: {
-      Authorization: apiKey,
-      Accept: 'application/json',
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error(`Foursquare API HTTP ${response.status}`)
-  }
-
-  const data = (await response.json()) as FsqSearchResponse
-  const places = data.results ?? []
-
-  if (places.length === 0) throw new Error('Foursquare returned zero results')
+  const places = allPlaces
 
   // Deduplicate by name + address
   const seen = new Set<string>()

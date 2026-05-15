@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import {
   LayoutGrid,
   List,
+  Map as MapIcon,
   Download,
   CheckSquare,
   X,
@@ -17,8 +18,9 @@ import { exportToCSV } from '@/lib/export'
 import { SearchFilters } from '@/components/leads/SearchFilters'
 import { LeadCard } from '@/components/leads/LeadCard'
 import { LeadTable } from '@/components/leads/LeadTable'
+import { LeadsMapWrapper } from '@/components/leads/LeadsMapWrapper'
 
-type ViewMode = 'card' | 'table'
+type ViewMode = 'card' | 'table' | 'map'
 type SortOption = 'score_desc' | 'score_asc' | 'rating_desc' | 'name_asc'
 
 const SORT_LABELS: Record<SortOption, string> = {
@@ -137,8 +139,11 @@ function SearchPageInner() {
       }
 
       const result = await res.json() as { leads: Lead[]; total: number }
-      setLeads(result.leads)
-      setTotalFound(result.total)
+      const filteredLeads = params.excludeSaved
+        ? result.leads.filter((l) => !savedLeadIds.has(l.id))
+        : result.leads
+      setLeads(filteredLeads)
+      setTotalFound(filteredLeads.length)
 
       // Save to search history in localStorage
       try {
@@ -363,6 +368,19 @@ function SearchPageInner() {
                   >
                     <List className="h-3.5 w-3.5 shrink-0" />
                   </button>
+                  <button
+                    onClick={() => setViewMode('map')}
+                    aria-label="Map view"
+                    aria-pressed={viewMode === 'map'}
+                    className={cn(
+                      'flex h-7 w-7 items-center justify-center rounded-md transition-all',
+                      viewMode === 'map'
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-slate-400 hover:text-slate-600'
+                    )}
+                  >
+                    <MapIcon className="h-3.5 w-3.5 shrink-0" />
+                  </button>
                 </div>
               </div>
             </div>
@@ -412,6 +430,14 @@ function SearchPageInner() {
               leads={sortedLeads}
               onSave={handleSave}
               savedIds={[...savedLeadIds]}
+            />
+          )}
+
+          {!isLoading && leads.length > 0 && viewMode === 'map' && (
+            <LeadsMapWrapper
+              leads={leads}
+              centerLat={leads.find((l) => l.latitude)?.latitude ?? 40.7484}
+              centerLon={leads.find((l) => l.longitude)?.longitude ?? -73.9967}
             />
           )}
 

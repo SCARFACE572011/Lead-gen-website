@@ -19,6 +19,11 @@ export interface Lead {
   savedAt?: string
   createdAt?: string
   userId?: string
+  employeeCount?: number | null
+  revenueEstimate?: string | null
+  facebookUrl?: string | null
+  instagramUrl?: string | null
+  linkedinUrl?: string | null
 }
 
 export type LeadStatus = 'new' | 'contacted' | 'interested' | 'not_interested' | 'follow_up' | 'converted'
@@ -40,6 +45,7 @@ export interface SearchResult {
   leads: Lead[]
   total: number
   searchId?: string
+  center?: { lat: number; lon: number }
 }
 
 export interface SearchHistory {

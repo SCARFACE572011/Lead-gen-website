@@ -244,7 +244,7 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
       return searchLeadsDynamic(params)
     }
 
-    return { leads, total: leads.length }
+    return { leads, total: leads.length, center: { lat, lon } }
   } catch (err) {
     console.error('[osmProvider] Error, falling back to dynamic provider:', err)
     return searchLeadsDynamic(params)

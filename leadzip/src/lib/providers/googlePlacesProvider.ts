@@ -230,5 +230,5 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   }
 
   leads.sort((a, b) => b.leadScore - a.leadScore)
-  return { leads, total: leads.length }
+  return { leads, total: leads.length, center: { lat, lon } }
 }

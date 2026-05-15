@@ -1,24 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server'
+import type { Lead } from '@/types/lead'
+
+const isSupabaseConfigured =
+  process.env.NEXT_PUBLIC_SUPABASE_URL &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
+    const body = await request.json() as { lead: Lead }
+    const lead = body.lead
 
-    if (!body.id) {
+    if (!lead?.id) {
       return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 })
     }
 
-    // TODO: Save to Supabase leads table
-    // const supabase = createClient()
-    // const { data, error } = await supabase.from('leads').upsert({
-    //   id: body.id,
-    //   user_id: session.user.id,
-    //   business_name: body.businessName,
-    //   ...
-    // })
+    // Dual-write: save to Supabase if configured and user is authenticated
+    if (isSupabaseConfigured) {
+      try {
+        const { createClient } = await import('@/lib/supabase/server')
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
 
-    // For now, return success (client handles localStorage)
-    return NextResponse.json({ success: true, id: body.id })
+        if (user) {
+          await supabase.from('leads').upsert({
+            id: lead.id,
+            user_id: user.id,
+            business_name: lead.businessName,
+            category: lead.category,
+            address: lead.address,
+            city: lead.city,
+            state: lead.state,
+            zip_code: lead.zipCode,
+            phone: lead.phone,
+            website: lead.website,
+            rating: lead.rating,
+            review_count: lead.reviewCount,
+            latitude: lead.latitude,
+            longitude: lead.longitude,
+            distance_miles: lead.distanceMiles,
+            lead_score: lead.leadScore,
+            status: lead.status ?? 'new',
+            notes: lead.notes ?? '',
+            saved_at: new Date().toISOString(),
+            employee_count: lead.employeeCount ?? null,
+            revenue_estimate: lead.revenueEstimate ?? null,
+            facebook_url: lead.facebookUrl ?? null,
+            instagram_url: lead.instagramUrl ?? null,
+            linkedin_url: lead.linkedinUrl ?? null,
+          })
+        }
+      } catch {
+        // Non-fatal — fall back to localStorage-only on client
+      }
+    }
+
+    // Always return success; client handles localStorage as well
+    return NextResponse.json({ success: true, id: lead.id })
   } catch (error) {
     console.error('Lead save error:', error)
     return NextResponse.json({ error: 'Failed to save lead' }, { status: 500 })
@@ -27,18 +64,33 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const id = searchParams.get('id')
+    const body = await request.json() as { leadId: string }
+    const leadId = body.leadId
 
-    if (!id) {
+    if (!leadId) {
       return NextResponse.json({ error: 'Lead ID is required' }, { status: 400 })
     }
 
-    // TODO: Delete from Supabase
-    // const supabase = createClient()
-    // await supabase.from('leads').delete().eq('id', id).eq('user_id', session.user.id)
+    // Remove from Supabase if configured and user is authenticated
+    if (isSupabaseConfigured) {
+      try {
+        const { createClient } = await import('@/lib/supabase/server')
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
 
-    return NextResponse.json({ success: true, id })
+        if (user) {
+          await supabase
+            .from('leads')
+            .delete()
+            .eq('id', leadId)
+            .eq('user_id', user.id)
+        }
+      } catch {
+        // Non-fatal — fall back to localStorage-only on client
+      }
+    }
+
+    return NextResponse.json({ success: true, id: leadId })
   } catch (error) {
     console.error('Lead delete error:', error)
     return NextResponse.json({ error: 'Failed to delete lead' }, { status: 500 })

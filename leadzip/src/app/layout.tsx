@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Script from "next/script";
+import { ThemeProvider } from "next-themes";
 import { CookieConsent } from "@/components/CookieConsent"
 import { OnboardingModal } from "@/components/OnboardingModal";
 
@@ -50,6 +51,7 @@ export default function RootLayout({
       className={`${plusJakartaSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         {/* GTM noscript fallback */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <noscript>
@@ -91,6 +93,7 @@ gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA4_ID}');`}
             </Script>
           </>
         )}
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Users,
   Search,
@@ -24,9 +24,11 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { cn } from '@/lib/utils'
+import { MOCK_PROFILE } from '@/lib/mock-auth'
+import { createClient } from '@/lib/supabase/client'
 
-// Simulated admin guard — in production, check role from session
-const IS_ADMIN = true
+const isSupabaseConfigured =
+  process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
 // Mock data
 const ZIP_CHART_DATA = [
@@ -111,8 +113,34 @@ function formatDate(d: string) {
 
 export default function AdminPage() {
   const [activeChart, setActiveChart] = useState<'zip' | 'category'>('zip')
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
 
-  if (!IS_ADMIN) {
+  useEffect(() => {
+    async function checkAdmin() {
+      if (!isSupabaseConfigured) {
+        setIsAdmin(MOCK_PROFILE.role === 'admin')
+        return
+      }
+      try {
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) { setIsAdmin(false); return }
+        const { data } = await supabase
+          .from('users_profile')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle()
+        setIsAdmin(data?.role === 'admin')
+      } catch {
+        setIsAdmin(false)
+      }
+    }
+    checkAdmin()
+  }, [])
+
+  if (isAdmin === null) return null
+
+  if (!isAdmin) {
     return (
       <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
         <div className="bg-white border border-red-200 rounded-2xl p-10 max-w-sm text-center shadow-sm">

@@ -14,10 +14,20 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
   const mapInstanceRef = useRef<unknown>(null)
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return
+    if (!mapRef.current) return
 
-    // Dynamic import — leaflet only works client-side
+    let cancelled = false
+
+    // Destroy previous map instance before creating a new one
+    if (mapInstanceRef.current) {
+      // @ts-expect-error leaflet map
+      mapInstanceRef.current.remove()
+      mapInstanceRef.current = null
+    }
+
     import('leaflet').then((L) => {
+      if (cancelled || !mapRef.current) return
+
       // Fix default marker icons (broken in webpack builds)
       // @ts-expect-error leaflet internal
       delete L.Icon.Default.prototype._getIconUrl
@@ -27,20 +37,20 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
       })
 
-      const map = L.map(mapRef.current!).setView([centerLat, centerLon], 13)
+      const map = L.map(mapRef.current).setView([centerLat, centerLon], 11)
       mapInstanceRef.current = map
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© OpenStreetMap contributors',
       }).addTo(map)
 
-      // Center marker
-      L.circle([centerLat, centerLon], { radius: 400, color: '#0369A1', fillOpacity: 0.1 }).addTo(map)
+      // Search area ring
+      L.circle([centerLat, centerLon], { radius: 800, color: '#0369A1', fillOpacity: 0.08, weight: 1.5 }).addTo(map)
+
+      const leadsWithCoords = leads.filter((l) => l.latitude != null && l.longitude != null)
 
       // Lead markers
-      leads.forEach((lead) => {
-        if (!lead.latitude || !lead.longitude) return
-
+      leadsWithCoords.forEach((lead) => {
         const scoreColor = lead.leadScore >= 80 ? '#ef4444' : lead.leadScore >= 50 ? '#f97316' : '#64748b'
 
         const icon = L.divIcon({
@@ -50,14 +60,17 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
           iconAnchor: [6, 6],
         })
 
-        const marker = L.marker([lead.latitude, lead.longitude], { icon })
+        const addressLine = [lead.address, lead.city, lead.state].filter(Boolean).join(', ')
+
+        const marker = L.marker([lead.latitude!, lead.longitude!], { icon })
           .addTo(map)
           .bindPopup(`
-            <div style="min-width:160px">
-              <strong style="font-size:13px">${lead.businessName}</strong><br/>
-              <span style="color:#64748b;font-size:11px">${lead.category}</span><br/>
-              ${lead.phone ? `<span style="font-size:12px">📞 ${lead.phone}</span><br/>` : ''}
-              ${lead.rating ? `<span style="font-size:12px">⭐ ${lead.rating} (${lead.reviewCount ?? 0})</span><br/>` : ''}
+            <div style="min-width:180px;font-family:system-ui,sans-serif">
+              <strong style="font-size:13px;display:block;margin-bottom:2px">${lead.businessName}</strong>
+              <span style="color:#64748b;font-size:11px;display:block;margin-bottom:4px">${lead.category}</span>
+              ${addressLine ? `<span style="font-size:11px;display:block;margin-bottom:2px">📍 ${addressLine}</span>` : ''}
+              ${lead.phone ? `<span style="font-size:12px;display:block;margin-bottom:2px">📞 ${lead.phone}</span>` : ''}
+              ${lead.rating ? `<span style="font-size:12px;display:block;margin-bottom:2px">⭐ ${lead.rating} (${lead.reviewCount ?? 0} reviews)</span>` : ''}
               <span style="font-size:11px;color:#64748b">${lead.distanceMiles?.toFixed(1) ?? '?'} mi away</span>
             </div>
           `)
@@ -66,17 +79,28 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
           marker.on('click', () => onLeadClick(lead))
         }
       })
+
+      // If no coordinates available, show an info message on the map
+      if (leadsWithCoords.length === 0 && leads.length > 0) {
+        const noCoordMsg = L.popup({ closeButton: false, autoClose: false, closeOnClick: false })
+          .setLatLng([centerLat, centerLon])
+          .setContent('<div style="font-size:12px;text-align:center;padding:4px">Map view shows businesses with verified locations.<br/>Switch to card or table view to see all results.</div>')
+          .openOn(map)
+        void noCoordMsg
+      }
     })
 
     return () => {
+      cancelled = true
       if (mapInstanceRef.current) {
         // @ts-expect-error leaflet map
         mapInstanceRef.current.remove()
         mapInstanceRef.current = null
       }
     }
+  // centerLat/centerLon are stable per search; leads identity changes on new search
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [leads, centerLat, centerLon])
 
   return (
     <>

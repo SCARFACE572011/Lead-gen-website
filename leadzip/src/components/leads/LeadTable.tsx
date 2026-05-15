@@ -10,6 +10,7 @@ import {
   Globe,
   Phone,
   Star,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead } from '@/types/lead'
@@ -116,6 +117,9 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
               Website
             </th>
             {headerCell('Rating', 'rating')}
+            <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Employees
+            </th>
             {headerCell('Score', 'leadScore')}
             <th className="whitespace-nowrap px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-slate-500">
               Actions
@@ -190,6 +194,16 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
                     <span className="ml-1 text-xs text-slate-400 tabular-nums">
                       ({lead.reviewCount})
                     </span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {lead.employeeCount != null ? (
+                    <span className="inline-flex items-center gap-1 text-xs text-slate-600">
+                      <Users className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                      {lead.employeeCount}
+                    </span>
+                  ) : (
+                    <span className="text-slate-400 text-xs">—</span>
                   )}
                 </td>
                 <td className="px-4 py-3">

@@ -51,6 +51,11 @@ export async function GET() {
       savedAt: row.saved_at,
       createdAt: row.created_at,
       userId: row.user_id,
+      employeeCount: row.employee_count ?? null,
+      revenueEstimate: row.revenue_estimate ?? null,
+      facebookUrl: row.facebook_url ?? null,
+      instagramUrl: row.instagram_url ?? null,
+      linkedinUrl: row.linkedin_url ?? null,
     }))
 
     return NextResponse.json({ leads })

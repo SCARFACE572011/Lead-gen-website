@@ -73,7 +73,7 @@ const MOCK_SEARCHES: SearchHistory[] = [
   },
 ]
 
-const CHART_DATA = [
+const CHART_FALLBACK = [
   { name: 'Restaurants', value: 45 },
   { name: 'Contractors', value: 38 },
   { name: 'Salons', value: 22 },
@@ -160,6 +160,17 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       // Non-fatal — fall back to mock data
     }
   }
+
+  const categoryCount: Record<string, number> = {}
+  for (const s of searches) {
+    if (s.category) categoryCount[s.category] = (categoryCount[s.category] ?? 0) + (s.resultCount || 1)
+  }
+  const CHART_DATA = Object.entries(categoryCount).length > 0
+    ? Object.entries(categoryCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([name, value]) => ({ name, value }))
+    : CHART_FALLBACK
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">

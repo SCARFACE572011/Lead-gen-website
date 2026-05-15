@@ -10,6 +10,7 @@ import {
   Star,
   MessageSquare,
   AlertCircle,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead } from '@/types/lead'
@@ -156,6 +157,58 @@ export function LeadCard({
           <AlertCircle className="h-3 w-3 shrink-0" />
           No Website — High Opportunity
         </span>
+      )}
+
+      {/* Employee count + revenue */}
+      {lead.employeeCount != null && (
+        <div className="flex items-center gap-3">
+          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+            <Users className="h-3 w-3 shrink-0" />
+            {lead.employeeCount} emp.
+          </span>
+          {lead.revenueEstimate && (
+            <span className="text-xs text-slate-500">{lead.revenueEstimate}</span>
+          )}
+        </div>
+      )}
+
+      {/* Social links */}
+      {(lead.facebookUrl || lead.instagramUrl || lead.linkedinUrl) && (
+        <div className="flex items-center gap-1.5">
+          {lead.facebookUrl && (
+            <a
+              href={lead.facebookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Facebook"
+              className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white bg-[#1877F2] hover:opacity-80 transition-opacity"
+            >
+              FB
+            </a>
+          )}
+          {lead.instagramUrl && (
+            <a
+              href={lead.instagramUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white bg-[#E1306C] hover:opacity-80 transition-opacity"
+            >
+              IG
+            </a>
+          )}
+          {lead.linkedinUrl && (
+            <a
+              href={lead.linkedinUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="LinkedIn"
+              className="rounded px-1.5 py-0.5 text-[10px] font-bold text-white bg-[#0077B5] hover:opacity-80 transition-opacity"
+            >
+              LI
+            </a>
+          )}
+        </div>
       )}
 
       {/* Actions */}

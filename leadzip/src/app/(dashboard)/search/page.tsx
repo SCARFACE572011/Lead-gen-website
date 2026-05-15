@@ -92,6 +92,7 @@ function SearchPageInner() {
   const searchParams = useSearchParams()
 
   const [leads, setLeads] = useState<Lead[]>([])
+  const [mapCenter, setMapCenter] = useState<{ lat: number; lon: number } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
@@ -138,12 +139,13 @@ function SearchPageInner() {
         throw new Error(`Search API returned ${res.status}`)
       }
 
-      const result = await res.json() as { leads: Lead[]; total: number }
+      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number } }
       const filteredLeads = params.excludeSaved
         ? result.leads.filter((l) => !savedLeadIds.has(l.id))
         : result.leads
       setLeads(filteredLeads)
       setTotalFound(filteredLeads.length)
+      if (result.center) setMapCenter(result.center)
 
       // Save to search history in localStorage
       try {
@@ -190,21 +192,17 @@ function SearchPageInner() {
   const handleSave = useCallback((lead: Lead) => {
     setSavedLeadIds((prev) => {
       const next = new Set(prev)
-      if (next.has(lead.id)) {
-        next.delete(lead.id)
-      } else {
-        next.add(lead.id)
-      }
+      const removing = next.has(lead.id)
+      removing ? next.delete(lead.id) : next.add(lead.id)
+
       try {
-        // Track IDs for badge display in search results
         localStorage.setItem(SAVED_IDS_KEY, JSON.stringify([...next]))
 
-        // Also maintain the full lead objects list used by /saved and /exports
         const rawLeads = localStorage.getItem(SAVED_LEADS_KEY)
         let savedLeads: Lead[] = []
         try { savedLeads = JSON.parse(rawLeads ?? '[]') } catch { /* ignore */ }
 
-        if (next.has(lead.id)) {
+        if (!removing) {
           if (!savedLeads.some((l) => l.id === lead.id)) {
             savedLeads.push({ ...lead, savedAt: new Date().toISOString() })
           }
@@ -212,9 +210,23 @@ function SearchPageInner() {
           savedLeads = savedLeads.filter((l) => l.id !== lead.id)
         }
         localStorage.setItem(SAVED_LEADS_KEY, JSON.stringify(savedLeads))
-      } catch {
-        // ignore
+      } catch { /* ignore */ }
+
+      // Persist to Supabase via API (non-blocking, fire-and-forget)
+      if (removing) {
+        fetch('/api/leads/save', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ leadId: lead.id }),
+        }).catch(() => {})
+      } else {
+        fetch('/api/leads/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lead: { ...lead, savedAt: new Date().toISOString() } }),
+        }).catch(() => {})
       }
+
       return next
     })
   }, [])
@@ -450,8 +462,8 @@ function SearchPageInner() {
           {!isLoading && leads.length > 0 && viewMode === 'map' && (
             <LeadsMapWrapper
               leads={leads}
-              centerLat={leads.find((l) => l.latitude)?.latitude ?? 40.7484}
-              centerLon={leads.find((l) => l.longitude)?.longitude ?? -73.9967}
+              centerLat={mapCenter?.lat ?? leads.find((l) => l.latitude != null)?.latitude ?? 39.5}
+              centerLon={mapCenter?.lon ?? leads.find((l) => l.longitude != null)?.longitude ?? -98.35}
             />
           )}
 

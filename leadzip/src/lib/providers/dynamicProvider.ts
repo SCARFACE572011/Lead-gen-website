@@ -476,6 +476,31 @@ function generateDistance(radiusMiles: number, rand: () => number): number {
   return Math.round(raw * 10) / 10
 }
 
+function generateEmployeeCount(rand: () => number): number {
+  const roll = rand()
+  if (roll < 0.50) return Math.floor(rand() * 5) + 1    // 1-5
+  if (roll < 0.80) return Math.floor(rand() * 20) + 6   // 6-25
+  if (roll < 0.95) return Math.floor(rand() * 50) + 26  // 26-75
+  return Math.floor(rand() * 125) + 76                   // 76-200
+}
+
+function generateRevenueEstimate(employees: number): string {
+  if (employees <= 5) return '<$500K'
+  if (employees <= 15) return '$500K–$2M'
+  if (employees <= 40) return '$2M–$10M'
+  if (employees <= 100) return '$10M–$50M'
+  return '$50M+'
+}
+
+function generateSocialUrls(name: string, rand: () => number) {
+  const slug = generateSlug(name)
+  return {
+    facebookUrl: rand() < 0.60 ? `https://www.facebook.com/${slug}` : null,
+    instagramUrl: rand() < 0.40 ? `https://www.instagram.com/${slug}` : null,
+    linkedinUrl: rand() < 0.30 ? `https://www.linkedin.com/company/${slug}` : null,
+  }
+}
+
 function generateAddress(rand: () => number): string {
   const num = Math.floor(rand() * 9900) + 100
   const street = STREET_NAMES[Math.floor(rand() * STREET_NAMES.length)]
@@ -498,6 +523,11 @@ interface GeneratedBusiness {
   distanceMiles: number
   latitude: number
   longitude: number
+  employeeCount: number
+  revenueEstimate: string
+  facebookUrl: string | null
+  instagramUrl: string | null
+  linkedinUrl: string | null
 }
 
 function generateBusinessesForCategory(
@@ -543,6 +573,9 @@ function generateBusinessesForCategory(
     const latJitter = latDeg * Math.cos(angle)
     const lonJitter = lonDeg * Math.sin(angle)
 
+    const employeeCount = generateEmployeeCount(rand)
+    const socials = generateSocialUrls(name, rand)
+
     businesses.push({
       businessName: name,
       category,
@@ -557,6 +590,11 @@ function generateBusinessesForCategory(
       distanceMiles: distMiles,
       latitude: zipEntry.lat + latJitter,
       longitude: zipEntry.lon + lonJitter,
+      employeeCount,
+      revenueEstimate: generateRevenueEstimate(employeeCount),
+      facebookUrl: socials.facebookUrl,
+      instagramUrl: socials.instagramUrl,
+      linkedinUrl: socials.linkedinUrl,
     })
   }
 
@@ -633,11 +671,15 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
     )
   }
 
-  // Convert to Lead objects and score
+  // Convert to Lead objects and score.
+  // Latitude/longitude are nulled out: these are synthetic businesses and their
+  // randomly-generated coordinates frequently land in the ocean for coastal ZIPs.
   let leads: Lead[] = rawBusinesses.map((b, idx) => {
     const partial = {
       id: `dyn_${hashString(zipCode + category + idx)}_${idx}`,
       ...b,
+      latitude: null as null,
+      longitude: null as null,
       savedAt: undefined,
       createdAt: new Date().toISOString(),
     }
@@ -648,6 +690,7 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
       notes: '',
     }
   })
+
 
   // ── Apply filters ──────────────────────────────────────────────────────────
 
@@ -679,5 +722,5 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
   // Sort by leadScore descending
   leads.sort((a, b) => b.leadScore - a.leadScore)
 
-  return { leads, total: leads.length }
+  return { leads, total: leads.length, center: { lat: zipEntry.lat, lon: zipEntry.lon } }
 }

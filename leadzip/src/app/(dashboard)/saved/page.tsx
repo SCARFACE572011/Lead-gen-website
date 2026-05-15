@@ -302,6 +302,11 @@ export default function SavedLeadsPage() {
                   status: (l.status as LeadStatus) ?? 'new',
                   notes: l.notes ?? '',
                   savedAt: l.created_at,
+                  employeeCount: l.employee_count ?? null,
+                  revenueEstimate: l.revenue_estimate ?? null,
+                  facebookUrl: l.facebook_url ?? null,
+                  instagramUrl: l.instagram_url ?? null,
+                  linkedinUrl: l.linkedin_url ?? null,
                 }))
               )
               return

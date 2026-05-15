@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
 import {
   MapPin,
   LayoutDashboard,
@@ -16,6 +17,8 @@ import {
   Menu,
   X,
   ChevronRight,
+  Sun,
+  Moon,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { MOCK_PROFILE } from '@/lib/mock-auth'
@@ -30,6 +33,20 @@ const NAV_ITEMS = [
 ]
 
 const ADMIN_ITEM = { label: 'Admin', href: '/admin', icon: Wrench }
+
+function DarkModeToggle() {
+  const { theme, setTheme } = useTheme()
+  return (
+    <button
+      onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+      aria-label="Toggle dark mode"
+      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-700 dark:hover:text-slate-200"
+    >
+      <Sun className="h-4 w-4 shrink-0 hidden dark:block" />
+      <Moon className="h-4 w-4 shrink-0 dark:hidden" />
+    </button>
+  )
+}
 
 const PLAN_COLORS: Record<string, string> = {
   Pro: 'bg-blue-100 text-blue-700',
@@ -115,6 +132,7 @@ function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
               {MOCK_PROFILE.plan}
             </span>
           </div>
+          <DarkModeToggle />
           <button
             aria-label="Sign out"
             className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
@@ -183,12 +201,13 @@ export default function DashboardLayout({
           >
             <Menu className="h-5 w-5 shrink-0" />
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600 shrink-0">
               <MapPin className="h-3.5 w-3.5 text-white" aria-hidden="true" />
             </div>
             <span className="text-base font-bold text-slate-900">LeadZip</span>
           </div>
+          <DarkModeToggle />
         </header>
 
         {/* Page content */}

@@ -386,17 +386,38 @@ function PlanTab() {
   )
 }
 
+const NOTIF_KEY = 'leadzip_notifications'
+
+const DEFAULT_PREFS = {
+  emailLeadsFound: true,
+  weeklyDigest: false,
+  systemUpdates: true,
+  newFeatures: true,
+  usageAlerts: true,
+}
+
 function NotificationsTab() {
-  const [prefs, setPrefs] = useState({
-    emailLeadsFound: true,
-    weeklyDigest: false,
-    systemUpdates: true,
-    newFeatures: true,
-    usageAlerts: true,
-  })
+  const [prefs, setPrefs] = useState(DEFAULT_PREFS)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(NOTIF_KEY)
+      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) })
+    } catch { /* ignore */ }
+  }, [])
 
   const toggle = (key: keyof typeof prefs) => {
     setPrefs((p) => ({ ...p, [key]: !p[key] }))
+    setSaved(false)
+  }
+
+  const handleSave = () => {
+    try {
+      localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs))
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+    } catch { /* ignore */ }
   }
 
   const items = [
@@ -454,9 +475,15 @@ function NotificationsTab() {
         ))}
       </div>
 
-      <button className="inline-flex items-center gap-2 bg-[#0F172A] text-white text-sm font-semibold px-5 py-2.5 rounded-xl hover:bg-[#0369A1] transition-colors">
+      <button
+        onClick={handleSave}
+        className={cn(
+          'inline-flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors',
+          saved ? 'bg-green-600' : 'bg-[#0F172A] hover:bg-[#0369A1]'
+        )}
+      >
         <Check className="w-4 h-4" />
-        Save Preferences
+        {saved ? 'Saved!' : 'Save Preferences'}
       </button>
     </div>
   )

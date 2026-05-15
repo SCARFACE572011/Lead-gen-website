@@ -55,6 +55,33 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── Usage limit check ─────────────────────────────────────────────────────
+    if (isSupabaseConfigured) {
+      try {
+        const { createClient } = await import('@/lib/supabase/server')
+        const supabase = await createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          const { data: usage } = await supabase
+            .from('usage_limits')
+            .select('searches_this_month, plan')
+            .eq('user_id', user.id)
+            .maybeSingle()
+          const plan = usage?.plan ?? 'free'
+          const searchCount = usage?.searches_this_month ?? 0
+          const FREE_LIMIT = 25
+          if (plan === 'free' && searchCount >= FREE_LIMIT) {
+            return NextResponse.json(
+              { error: 'Monthly search limit reached. Upgrade to Pro for unlimited searches.', limitReached: true },
+              { status: 429 }
+            )
+          }
+        }
+      } catch {
+        // Non-fatal — don't block search if limit check fails
+      }
+    }
+
     // ── Live fetch ────────────────────────────────────────────────────────────
     const results = await searchLeads(body)
 

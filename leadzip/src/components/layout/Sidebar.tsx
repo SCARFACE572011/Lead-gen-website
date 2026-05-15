@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect } from 'react'
 import {
   LayoutDashboard,
   Search,
@@ -84,6 +85,20 @@ function SidebarContent({
   user: SidebarProps['user']
   onLinkClick?: () => void
 }) {
+  const [searchCount, setSearchCount] = useState(0)
+
+  useEffect(() => {
+    try {
+      const history = JSON.parse(localStorage.getItem('leadzip_search_history') ?? '[]')
+      const now = new Date()
+      const thisMonth = history.filter((h: { createdAt: string }) => {
+        const d = new Date(h.createdAt)
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
+      })
+      setSearchCount(thisMonth.length)
+    } catch {}
+  }, [])
+
   const initials = user.name
     .split(' ')
     .map(n => n[0])
@@ -141,6 +156,18 @@ function SidebarContent({
           </div>
         )}
       </nav>
+
+      {/* Usage Counter */}
+      <div className="px-3 py-3 mx-2 mb-2 rounded-lg bg-white/5 border border-slate-200">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-xs text-slate-400">Searches this month</span>
+          <span className="text-xs font-medium text-slate-700">{searchCount}/25</span>
+        </div>
+        <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden">
+          <div className="h-full bg-[#0369A1] rounded-full transition-all" style={{ width: `${Math.min((searchCount / 25) * 100, 100)}%` }} />
+        </div>
+        <p className="text-xs text-slate-400 mt-1">Free plan · 25 searches/mo</p>
+      </div>
 
       {/* User Profile Footer */}
       <div className="px-3 py-4 border-t border-[#E2E8F0]">

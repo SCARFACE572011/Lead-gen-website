@@ -1,6 +1,6 @@
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
-import { searchLeadsMock } from './mockProvider'
+import { searchLeadsDynamic } from './dynamicProvider'
 import { geocodeZip } from '@/lib/geocode'
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
@@ -77,9 +77,10 @@ function buildOverpassQuery(
     return [
       `node["${key}"="${val}"](around:${radiusM},${lat},${lon});`,
       `way["${key}"="${val}"](around:${radiusM},${lat},${lon});`,
+      `relation["${key}"="${val}"](around:${radiusM},${lat},${lon});`,
     ]
   })
-  return `[out:json][timeout:25];\n(\n  ${parts.join('\n  ')}\n);\nout center tags;`
+  return `[out:json][timeout:25][maxsize:1048576];\n(\n  ${parts.join('\n  ')}\n);\nout center tags qt;`
 }
 
 function buildKeywordQuery(
@@ -91,7 +92,7 @@ function buildKeywordQuery(
   // Sanitize keyword for Overpass regex
   const safe = keyword.replace(/[^a-zA-Z0-9 &'-]/g, '').trim()
   if (!safe) return buildOverpassQuery(['amenity=restaurant'], lat, lon, radiusM)
-  return `[out:json][timeout:25];\n(\n  node["name"~"${safe}",i](around:${radiusM},${lat},${lon});\n  way["name"~"${safe}",i](around:${radiusM},${lat},${lon});\n);\nout center tags;`
+  return `[out:json][timeout:25][maxsize:1048576];\n(\n  node["name"~"${safe}",i](around:${radiusM},${lat},${lon});\n  way["name"~"${safe}",i](around:${radiusM},${lat},${lon});\n  relation["name"~"${safe}",i](around:${radiusM},${lat},${lon});\n);\nout center tags qt;`
 }
 
 function haversineDistanceMiles(
@@ -164,19 +165,27 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
       const tags = OSM_CATEGORY_TAGS[params.category]
       if (!tags || tags.length === 0) {
         console.warn(`[osmProvider] No OSM tags for category "${params.category}", falling back to mock`)
-        return searchLeadsMock(params)
+        return searchLeadsDynamic(params)
       }
       query = buildOverpassQuery(tags, lat, lon, radiusM)
     }
 
-    const overpassRes = await fetch(OVERPASS_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'User-Agent': USER_AGENT,
-      },
-      body: `data=${encodeURIComponent(query)}`,
-    })
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 20000)
+    let overpassRes: Response
+    try {
+      overpassRes = await fetch(OVERPASS_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': USER_AGENT,
+        },
+        body: `data=${encodeURIComponent(query)}`,
+        signal: controller.signal,
+      })
+    } finally {
+      clearTimeout(timer)
+    }
 
     if (!overpassRes.ok) {
       throw new Error(`Overpass API returned ${overpassRes.status}`)
@@ -226,9 +235,15 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
 
     leads.sort((a, b) => b.leadScore - a.leadScore)
 
+    // Sparse area: fall back to dynamic provider for region-appropriate results
+    if (leads.length === 0) {
+      console.warn('[osmProvider] 0 real results from Overpass, falling back to dynamic provider')
+      return searchLeadsDynamic(params)
+    }
+
     return { leads, total: leads.length }
   } catch (err) {
-    console.error('[osmProvider] Error, falling back to mock data:', err)
-    return searchLeadsMock(params)
+    console.error('[osmProvider] Error, falling back to dynamic provider:', err)
+    return searchLeadsDynamic(params)
   }
 }

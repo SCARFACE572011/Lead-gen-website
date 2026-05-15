@@ -11,7 +11,7 @@ import { searchLeadsDynamic } from './dynamicProvider'
 
 export type ProviderName = 'mock' | 'google_places' | 'yelp' | 'openstreetmap' | 'dynamic'
 
-const ACTIVE_PROVIDER: ProviderName = 'dynamic'
+const ACTIVE_PROVIDER: ProviderName = 'openstreetmap'
 
 export async function searchLeads(params: SearchParams): Promise<SearchResult> {
   switch (ACTIVE_PROVIDER) {

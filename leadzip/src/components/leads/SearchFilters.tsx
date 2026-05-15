@@ -8,6 +8,7 @@ import { SearchParams, LEAD_CATEGORIES } from '@/types/lead'
 interface SearchFiltersProps {
   onSearch: (params: SearchParams) => void
   isLoading: boolean
+  initialValues?: Partial<SearchParams>
 }
 
 const RADIUS_OPTIONS = [
@@ -65,13 +66,13 @@ function Toggle({ checked, onChange, label }: ToggleProps) {
   )
 }
 
-export function SearchFilters({ onSearch, isLoading }: SearchFiltersProps) {
-  const [zipCode, setZipCode] = useState('')
-  const [city, setCity] = useState('')
-  const [radiusMiles, setRadiusMiles] = useState(25)
-  const [category, setCategory] = useState('')
-  const [keyword, setKeyword] = useState('')
-  const [minRating, setMinRating] = useState(0)
+export function SearchFilters({ onSearch, isLoading, initialValues }: SearchFiltersProps) {
+  const [zipCode, setZipCode] = useState(initialValues?.zipCode ?? '')
+  const [city, setCity] = useState(initialValues?.city ?? '')
+  const [radiusMiles, setRadiusMiles] = useState(initialValues?.radiusMiles ?? 25)
+  const [category, setCategory] = useState(initialValues?.category ?? '')
+  const [keyword, setKeyword] = useState(initialValues?.keyword ?? '')
+  const [minRating, setMinRating] = useState(initialValues?.minRating ?? 0)
   const [hasWebsite, setHasWebsite] = useState(false)
   const [hasPhone, setHasPhone] = useState(false)
   const [excludeSaved, setExcludeSaved] = useState(false)

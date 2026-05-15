@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import {
   LayoutGrid,
   List,
@@ -11,8 +12,8 @@ import {
   SearchX,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Lead, SearchParams } from '@/types/lead'
-import { searchLeads } from '@/lib/providers/leadDataProvider'
+import { Lead, SearchParams, SearchHistory } from '@/types/lead'
+import { exportToCSV } from '@/lib/export'
 import { SearchFilters } from '@/components/leads/SearchFilters'
 import { LeadCard } from '@/components/leads/LeadCard'
 import { LeadTable } from '@/components/leads/LeadTable'
@@ -26,6 +27,10 @@ const SORT_LABELS: Record<SortOption, string> = {
   rating_desc: 'Rating: High to Low',
   name_asc: 'Name: A to Z',
 }
+
+const SAVED_IDS_KEY = 'leadzip_saved'
+const SAVED_LEADS_KEY = 'leadzip_saved_leads'
+const HISTORY_KEY = 'leadzip_search_history'
 
 function SkeletonCard() {
   return (
@@ -81,7 +86,9 @@ function EmptyState({ hasSearched }: { hasSearched: boolean }) {
   )
 }
 
-export default function SearchPage() {
+function SearchPageInner() {
+  const searchParams = useSearchParams()
+
   const [leads, setLeads] = useState<Lead[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
@@ -95,7 +102,7 @@ export default function SearchPage() {
   // Load saved lead IDs from localStorage
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('leadzip_saved')
+      const raw = localStorage.getItem(SAVED_IDS_KEY)
       if (raw) {
         const ids: string[] = JSON.parse(raw)
         setSavedLeadIds(new Set(ids))
@@ -105,15 +112,52 @@ export default function SearchPage() {
     }
   }, [])
 
+  // Pre-populate initial filter values from URL params (for Rerun from history)
+  const initialValues = useMemo<Partial<SearchParams>>(() => ({
+    zipCode: searchParams.get('zip') ?? '',
+    radiusMiles: searchParams.get('radius') ? Number(searchParams.get('radius')) : 25,
+    category: searchParams.get('category') ?? '',
+    keyword: searchParams.get('keyword') ?? undefined,
+  }), [searchParams])
+
   const handleSearch = useCallback(async (params: SearchParams) => {
     setIsLoading(true)
     setHasSearched(true)
     setSelectedIds(new Set())
 
     try {
-      const result = await searchLeads(params)
+      const res = await fetch('/api/leads/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(params),
+      })
+
+      if (!res.ok) {
+        throw new Error(`Search API returned ${res.status}`)
+      }
+
+      const result = await res.json() as { leads: Lead[]; total: number }
       setLeads(result.leads)
       setTotalFound(result.total)
+
+      // Save to search history in localStorage
+      try {
+        const entry: SearchHistory = {
+          id: `h_${Date.now()}`,
+          userId: 'local',
+          zipCode: params.zipCode,
+          radius: params.radiusMiles,
+          category: params.category,
+          keyword: params.keyword ?? '',
+          resultCount: result.total,
+          createdAt: new Date().toISOString(),
+        }
+        const raw = localStorage.getItem(HISTORY_KEY)
+        const existing: SearchHistory[] = raw ? JSON.parse(raw) : []
+        localStorage.setItem(HISTORY_KEY, JSON.stringify([entry, ...existing].slice(0, 50)))
+      } catch {
+        // non-fatal
+      }
     } catch (err) {
       console.error('Search failed:', err)
       setLeads([])
@@ -121,6 +165,21 @@ export default function SearchPage() {
     } finally {
       setIsLoading(false)
     }
+  }, [])
+
+  // Auto-run search if URL params are present (from history Rerun)
+  useEffect(() => {
+    const zip = searchParams.get('zip')
+    if (zip) {
+      handleSearch({
+        zipCode: zip,
+        radiusMiles: searchParams.get('radius') ? Number(searchParams.get('radius')) : 25,
+        category: searchParams.get('category') ?? '',
+        keyword: searchParams.get('keyword') ?? undefined,
+      })
+    }
+    // Only on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSave = useCallback((lead: Lead) => {
@@ -132,7 +191,22 @@ export default function SearchPage() {
         next.add(lead.id)
       }
       try {
-        localStorage.setItem('leadzip_saved', JSON.stringify([...next]))
+        // Track IDs for badge display in search results
+        localStorage.setItem(SAVED_IDS_KEY, JSON.stringify([...next]))
+
+        // Also maintain the full lead objects list used by /saved and /exports
+        const rawLeads = localStorage.getItem(SAVED_LEADS_KEY)
+        let savedLeads: Lead[] = []
+        try { savedLeads = JSON.parse(rawLeads ?? '[]') } catch { /* ignore */ }
+
+        if (next.has(lead.id)) {
+          if (!savedLeads.some((l) => l.id === lead.id)) {
+            savedLeads.push({ ...lead, savedAt: new Date().toISOString() })
+          }
+        } else {
+          savedLeads = savedLeads.filter((l) => l.id !== lead.id)
+        }
+        localStorage.setItem(SAVED_LEADS_KEY, JSON.stringify(savedLeads))
       } catch {
         // ignore
       }
@@ -151,6 +225,13 @@ export default function SearchPage() {
       return next
     })
   }, [])
+
+  const handleExportSelected = useCallback(() => {
+    const selected = leads.filter((l) => selectedIds.has(l.id))
+    if (selected.length === 0) return
+    exportToCSV(selected, `leadzip-export-${Date.now()}`)
+    setSelectedIds(new Set())
+  }, [leads, selectedIds])
 
   const sortedLeads = [...leads].sort((a, b) => {
     switch (sortOption) {
@@ -180,21 +261,16 @@ export default function SearchPage() {
 
       {/* Main layout: sidebar + results */}
       <div className="flex gap-6">
-        {/* Filters sidebar */}
+        {/* Filters sidebar — desktop */}
         <aside className="hidden w-72 shrink-0 lg:block">
-          <SearchFilters onSearch={handleSearch} isLoading={isLoading} />
+          <SearchFilters onSearch={handleSearch} isLoading={isLoading} initialValues={initialValues} />
         </aside>
-
-        {/* Mobile filters (shown inline at top on mobile) */}
-        <div className="w-full lg:hidden">
-          {/* We keep the filters inline on mobile */}
-        </div>
 
         {/* Results */}
         <div className="flex-1 min-w-0 space-y-4">
           {/* Mobile search filters */}
           <div className="lg:hidden">
-            <SearchFilters onSearch={handleSearch} isLoading={isLoading} />
+            <SearchFilters onSearch={handleSearch} isLoading={isLoading} initialValues={initialValues} />
           </div>
 
           {/* Results toolbar */}
@@ -361,10 +437,7 @@ export default function SearchPage() {
             <div className="h-4 w-px bg-slate-200" />
             <button
               className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
-              onClick={() => {
-                // Export selected leads — placeholder
-                alert(`Exporting ${selectedCount} leads...`)
-              }}
+              onClick={handleExportSelected}
             >
               <Download className="h-3.5 w-3.5 shrink-0" />
               Export Selected
@@ -380,5 +453,13 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  )
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense fallback={null}>
+      <SearchPageInner />
+    </Suspense>
   )
 }

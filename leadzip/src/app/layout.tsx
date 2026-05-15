@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Script from "next/script";
+import { CookieConsent } from "@/components/CookieConsent";
 
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-plus-jakarta",
@@ -62,6 +63,7 @@ export default function RootLayout({
 
         {children}
         <Toaster richColors position="top-center" />
+        <CookieConsent />
 
         {/* GTM script */}
         {process.env.NEXT_PUBLIC_GTM_ID && (

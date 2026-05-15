@@ -3,6 +3,7 @@ import { calculateLeadScore } from '@/lib/scoring'
 import { geocodeZip } from '@/lib/geocode'
 
 const PLACES_TEXT_SEARCH_URL = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
+const PLACES_DETAILS_URL = 'https://maps.googleapis.com/maps/api/place/details/json'
 
 // Maps LeadZip categories to Google Places types for precise filtering
 const GOOGLE_PLACES_TYPES: Record<string, string> = {
@@ -18,7 +19,7 @@ const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Plumbers': 'plumber',
   'Electricians': 'electrician',
   'Landscaping': 'landscaping',
-  'HVAC Services': 'plumber', // closest available type
+  'HVAC Services': 'plumber',
   'Pet Services': 'veterinary_care',
   'Roofing': 'roofing_contractor',
   'Insurance Agents': 'insurance_agency',
@@ -28,24 +29,19 @@ const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Cleaning Services': 'cleaning_service',
   'Catering': 'meal_delivery',
   'Moving Companies': 'moving_company',
+  'Manufacturers': 'store',
+  'Distributors': 'store',
 }
 
 // --- Google Places API response types ---
-
-interface GooglePlacesGeometry {
-  location: { lat: number; lng: number }
-}
 
 interface GooglePlacesResult {
   place_id: string
   name: string
   formatted_address: string
-  geometry: GooglePlacesGeometry
+  geometry: { location: { lat: number; lng: number } }
   rating?: number
   user_ratings_total?: number
-  // NOTE: phone and website are NOT returned by Text Search.
-  // Use the Place Details API (GET /place/details/json?place_id=...&fields=formatted_phone_number,website)
-  // to retrieve them — this adds one request per place and is intentionally deferred.
 }
 
 interface GooglePlacesResponse {
@@ -55,12 +51,17 @@ interface GooglePlacesResponse {
   next_page_token?: string
 }
 
+interface PlaceDetailsResponse {
+  status: string
+  result?: {
+    formatted_phone_number?: string
+    website?: string
+  }
+}
+
 // --- Helpers ---
 
-function haversineDistanceMiles(
-  lat1: number, lon1: number,
-  lat2: number, lon2: number
-): number {
+function haversineDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8
   const dLat = ((lat2 - lat1) * Math.PI) / 180
   const dLon = ((lon2 - lon1) * Math.PI) / 180
@@ -72,25 +73,16 @@ function haversineDistanceMiles(
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
 
-/**
- * Parse a Google Places formatted_address string into components.
- *
- * Typical format: "123 Main St, Springfield, IL 62701, USA"
- * We split on commas and work backwards: last non-"USA" segment is "State ZIP",
- * second-to-last is city, everything before that is street address.
- */
 function parseFormattedAddress(
   formatted: string,
   fallbackCity: string,
   fallbackState: string,
   fallbackZip: string
 ): { address: string; city: string; state: string; zipCode: string } {
-  // Strip trailing ", USA" / ", United States"
   const cleaned = formatted.replace(/,?\s*(USA|United States)\s*$/i, '').trim()
   const parts = cleaned.split(',').map((p) => p.trim()).filter(Boolean)
 
   if (parts.length >= 3) {
-    // Last part: "IL 62701" or "IL" or "62701"
     const stateZip = parts[parts.length - 1]
     const stateZipMatch = stateZip.match(/^([A-Z]{2})\s+(\d{5}(?:-\d{4})?)$/)
     const state = stateZipMatch ? stateZipMatch[1] : fallbackState
@@ -101,53 +93,40 @@ function parseFormattedAddress(
   }
 
   if (parts.length === 2) {
-    return {
-      address: parts[0],
-      city: fallbackCity,
-      state: fallbackState,
-      zipCode: fallbackZip,
-    }
+    return { address: parts[0], city: fallbackCity, state: fallbackState, zipCode: fallbackZip }
   }
 
   return { address: cleaned, city: fallbackCity, state: fallbackState, zipCode: fallbackZip }
 }
 
-function googlePlaceToLead(
-  place: GooglePlacesResult,
-  category: string,
-  centerLat: number,
-  centerLon: number,
-  fallbackCity: string,
-  fallbackState: string,
-  searchZip: string
-): Omit<Lead, 'leadScore' | 'status' | 'notes'> {
-  const { lat, lng } = place.geometry.location
-  const { address, city, state, zipCode } = parseFormattedAddress(
-    place.formatted_address,
-    fallbackCity,
-    fallbackState,
-    searchZip
+// Fetch phone + website for up to 10 places concurrently via Place Details API
+async function enrichWithDetails(
+  placeIds: string[],
+  apiKey: string
+): Promise<Map<string, { phone: string; website: string }>> {
+  const results = new Map<string, { phone: string; website: string }>()
+  const batch = placeIds.slice(0, 10) // cap at 10 to avoid excessive API spend
+
+  await Promise.allSettled(
+    batch.map(async (placeId) => {
+      try {
+        const url = `${PLACES_DETAILS_URL}?place_id=${encodeURIComponent(placeId)}&fields=formatted_phone_number,website&key=${apiKey}`
+        const res = await fetch(url)
+        if (!res.ok) return
+        const data = (await res.json()) as PlaceDetailsResponse
+        if (data.status === 'OK' && data.result) {
+          results.set(placeId, {
+            phone: data.result.formatted_phone_number ?? '',
+            website: data.result.website ?? '',
+          })
+        }
+      } catch {
+        // Non-fatal — lead still appears without phone/website
+      }
+    })
   )
 
-  return {
-    id: `gp_${place.place_id}`,
-    businessName: place.name,
-    category,
-    address,
-    city,
-    state,
-    zipCode,
-    // phone and website require a separate Place Details API call per place.
-    // Set to empty strings for now; upgrade by fetching details when needed.
-    phone: '',
-    website: '',
-    rating: place.rating ?? null,
-    reviewCount: place.user_ratings_total ?? null,
-    latitude: lat,
-    longitude: lng,
-    distanceMiles: haversineDistanceMiles(centerLat, centerLon, lat, lng),
-    createdAt: new Date().toISOString(),
-  }
+  return results
 }
 
 // --- Main export ---
@@ -159,7 +138,6 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
   const radiusMeters = Math.round(params.radiusMiles * 1609.34)
 
-  // Build query text — use keyword for Custom Keyword searches, otherwise use category name
   const queryText =
     params.category === 'Custom Keyword' && params.keyword
       ? `${params.keyword} near ${geoCity}, ${geoState}`
@@ -172,62 +150,75 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
     key: apiKey,
   })
 
-  // Add type filter for precision when a known mapping exists
   const placeType = GOOGLE_PLACES_TYPES[params.category]
-  if (placeType) {
-    urlParams.set('type', placeType)
-  }
+  if (placeType) urlParams.set('type', placeType)
 
   const response = await fetch(`${PLACES_TEXT_SEARCH_URL}?${urlParams.toString()}`)
-  if (!response.ok) {
-    throw new Error(`Google Places API HTTP error ${response.status}`)
-  }
+  if (!response.ok) throw new Error(`Google Places HTTP ${response.status}`)
 
   const data = (await response.json()) as GooglePlacesResponse
 
   if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
     throw new Error(
-      `Google Places API error: ${data.status}${data.error_message ? ` — ${data.error_message}` : ''}`
+      `Google Places error: ${data.status}${data.error_message ? ` — ${data.error_message}` : ''}`
     )
   }
 
   const results = data.results ?? []
+  if (results.length === 0) throw new Error('Google Places returned zero results')
 
-  const partialLeads = results.map((place) =>
-    googlePlaceToLead(place, params.category, lat, lon, geoCity, geoState, params.zipCode)
-  )
+  // Enrich with phone + website via Place Details API
+  const placeIds = results.map((r) => r.place_id)
+  const details = await enrichWithDetails(placeIds, apiKey)
 
-  // Deduplicate by business name + address
+  // Deduplicate by name + address
   const seen = new Set<string>()
-  const dedupedLeads = partialLeads.filter((l) => {
-    const key = `${l.businessName.toLowerCase()}|${l.address.toLowerCase()}`
-    if (seen.has(key)) return false
-    seen.add(key)
-    return true
-  })
+  const partialLeads = results
+    .map((place) => {
+      const { lat: pLat, lng: pLng } = place.geometry.location
+      const { address, city, state, zipCode } = parseFormattedAddress(
+        place.formatted_address,
+        geoCity,
+        geoState,
+        params.zipCode
+      )
+      const d = details.get(place.place_id)
+      const key = `${place.name.toLowerCase()}|${address.toLowerCase()}`
+      if (seen.has(key)) return null
+      seen.add(key)
 
-  let leads: Lead[] = dedupedLeads.map((l) => ({
+      return {
+        id: `gp_${place.place_id}`,
+        businessName: place.name,
+        category: params.category,
+        address,
+        city,
+        state,
+        zipCode,
+        phone: d?.phone ?? '',
+        website: d?.website ?? '',
+        rating: place.rating ?? null,
+        reviewCount: place.user_ratings_total ?? null,
+        latitude: pLat,
+        longitude: pLng,
+        distanceMiles: haversineDistanceMiles(lat, lon, pLat, pLng),
+        createdAt: new Date().toISOString(),
+      } satisfies Omit<Lead, 'leadScore' | 'status' | 'notes'>
+    })
+    .filter((l): l is NonNullable<typeof l> => l !== null)
+
+  let leads: Lead[] = partialLeads.map((l) => ({
     ...l,
     leadScore: calculateLeadScore(l, params),
     status: 'new' as const,
     notes: '',
   }))
 
-  // Apply rating filter (Google Places returns ratings)
   if (params.minRating != null) {
     leads = leads.filter((l) => l.rating != null && l.rating >= params.minRating!)
   }
-
-  // hasWebsite / hasPhone will produce empty results since basic Text Search
-  // does not return phone/website — callers should be aware of this limitation.
-  if (params.hasWebsite === true) {
-    leads = leads.filter((l) => !!l.website)
-  }
-  if (params.hasPhone === true) {
-    leads = leads.filter((l) => !!l.phone)
-  }
-
-  // Keyword filter for non-Custom searches
+  if (params.hasWebsite === true) leads = leads.filter((l) => !!l.website)
+  if (params.hasPhone === true) leads = leads.filter((l) => !!l.phone)
   if (params.keyword && params.category !== 'Custom Keyword') {
     const kw = params.keyword.toLowerCase()
     leads = leads.filter(
@@ -239,6 +230,5 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   }
 
   leads.sort((a, b) => b.leadScore - a.leadScore)
-
   return { leads, total: leads.length }
 }

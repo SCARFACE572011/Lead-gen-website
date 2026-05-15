@@ -2,26 +2,79 @@ import { NextRequest, NextResponse } from 'next/server'
 import { searchLeads } from '@/lib/providers/leadDataProvider'
 import type { SearchParams } from '@/types/lead'
 
+// Cache TTL: 24h when Google Places is active, 6h for OSM-only results
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000
+
+function buildCacheKey(params: SearchParams): string {
+  // Cache by the raw search pool — keyword/filters are applied after retrieval
+  const zip = params.zipCode.trim()
+  const cat = (params.category || '').trim()
+  const radius = params.radiusMiles ?? 25
+  return `${zip}|${cat}|${radius}`
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SearchParams
 
-    // Validate required fields
     if (!body.zipCode) {
       return NextResponse.json({ error: 'ZIP code is required' }, { status: 400 })
     }
-
     if (body.zipCode.length < 5) {
       return NextResponse.json({ error: 'Invalid ZIP code' }, { status: 400 })
     }
 
-    const results = await searchLeads(body)
+    const isSupabaseConfigured =
+      process.env.NEXT_PUBLIC_SUPABASE_URL &&
+      process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
-    // Log search to Supabase if configured — non-fatal, search always succeeds
-    try {
-      if (process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co') {
+    // ── Cache check ───────────────────────────────────────────────────────────
+    if (isSupabaseConfigured) {
+      try {
         const { createClient } = await import('@/lib/supabase/server')
         const supabase = await createClient()
+        const cacheKey = buildCacheKey(body)
+
+        const { data: cached } = await supabase
+          .from('leads_cache')
+          .select('leads, total, source')
+          .eq('cache_key', cacheKey)
+          .gt('expires_at', new Date().toISOString())
+          .maybeSingle()
+
+        if (cached) {
+          return NextResponse.json({
+            leads: cached.leads,
+            total: cached.total,
+            fromCache: true,
+            source: cached.source,
+          })
+        }
+      } catch {
+        // Cache read failed — proceed to live fetch
+      }
+    }
+
+    // ── Live fetch ────────────────────────────────────────────────────────────
+    const results = await searchLeads(body)
+
+    // ── Cache write + analytics (non-fatal) ───────────────────────────────────
+    if (isSupabaseConfigured) {
+      try {
+        const { createClient } = await import('@/lib/supabase/server')
+        const supabase = await createClient()
+        const cacheKey = buildCacheKey(body)
+
+        // Write to cache
+        await supabase.from('leads_cache').upsert({
+          cache_key: cacheKey,
+          leads: results.leads,
+          total: results.total,
+          source: process.env.GOOGLE_PLACES_API_KEY ? 'google_places' : 'osm',
+          expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        })
+
+        // Log search history + usage
         const {
           data: { user },
         } = await supabase.auth.getUser()
@@ -36,7 +89,6 @@ export async function POST(request: NextRequest) {
             result_count: results.total,
           })
 
-          // Increment searches_this_month — try RPC first, fall back to read-then-write
           const { error: rpcError } = await supabase.rpc('increment_searches', { uid: user.id })
           if (rpcError) {
             const { data } = await supabase
@@ -55,9 +107,9 @@ export async function POST(request: NextRequest) {
             }
           }
         }
+      } catch {
+        // Non-fatal — search result still returned
       }
-    } catch {
-      // Non-fatal — search result is still returned
     }
 
     return NextResponse.json(results)

@@ -470,8 +470,9 @@ function generateReviewCount(rand: () => number): number {
   return Math.floor(rand() * 150) + 255                     // 255-404
 }
 
-function generateDistance(radiusMiles: number, rand: () => number): number {
-  const raw = 0.1 + rand() * radiusMiles
+function generateDistance(rand: () => number): number {
+  // Fixed 50-mile pool so different radii return genuinely different subsets
+  const raw = 0.1 + rand() * 50
   return Math.round(raw * 10) / 10
 }
 
@@ -504,7 +505,6 @@ function generateBusinessesForCategory(
   zipEntry: ZipEntry,
   resolvedZip: string,
   searchZip: string,
-  radiusMiles: number,
   rand: () => number,
   count: number
 ): GeneratedBusiness[] {
@@ -549,7 +549,7 @@ function generateBusinessesForCategory(
       website,
       rating: generateRating(rand),
       reviewCount: generateReviewCount(rand),
-      distanceMiles: generateDistance(radiusMiles, rand),
+      distanceMiles: generateDistance(rand),
       latitude: zipEntry.lat + latJitter,
       longitude: zipEntry.lon + lonJitter,
     })
@@ -571,7 +571,7 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
   const rand = mulberry32(seed)
 
   // Determine how many businesses to generate
-  const baseCount = 25 + Math.floor(rand() * 36) // 25-60
+  const baseCount = 100 + Math.floor(rand() * 51) // 100-150
 
   let rawBusinesses: GeneratedBusiness[] = []
 
@@ -591,7 +591,6 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
           zipEntry,
           zipEntry.resolvedZip,
           zipCode,
-          radiusMiles,
           catRand,
           catCount
         )
@@ -608,7 +607,6 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
       zipEntry,
       zipEntry.resolvedZip,
       zipCode,
-      radiusMiles,
       catRand,
       baseCount
     ).map(b => ({
@@ -622,7 +620,6 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
       zipEntry,
       zipEntry.resolvedZip,
       zipCode,
-      radiusMiles,
       rand,
       baseCount
     )

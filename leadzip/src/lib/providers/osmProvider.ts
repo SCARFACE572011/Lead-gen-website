@@ -1,8 +1,8 @@
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
 import { searchLeadsMock } from './mockProvider'
+import { geocodeZip } from '@/lib/geocode'
 
-const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
 const USER_AGENT = 'LeadZip/1.0 (+https://leadzip.vercel.app)'
 
@@ -34,20 +34,6 @@ const OSM_CATEGORY_TAGS: Record<string, string[]> = {
   'Chiropractors': ['healthcare=alternative', 'amenity=chiropractor'],
 }
 
-interface NominatimResult {
-  lat: string
-  lon: string
-  display_name: string
-  address?: {
-    city?: string
-    town?: string
-    village?: string
-    county?: string
-    state?: string
-    postcode?: string
-  }
-}
-
 interface OsmTags {
   name?: string
   'addr:housenumber'?: string
@@ -76,25 +62,7 @@ interface OverpassResponse {
   elements: OsmElement[]
 }
 
-async function geocodeZip(
-  zipCode: string
-): Promise<{ lat: number; lon: number; city: string; state: string }> {
-  const url = `${NOMINATIM_URL}?postalcode=${encodeURIComponent(zipCode)}&country=US&format=json&limit=1&addressdetails=1`
-  const res = await fetch(url, {
-    headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' },
-    next: { revalidate: 86400 }, // cache ZIP geocoding for 24h
-  })
-  if (!res.ok) throw new Error(`Nominatim returned ${res.status}`)
-  const data = (await res.json()) as NominatimResult[]
-  if (!data.length) throw new Error(`ZIP code ${zipCode} not found`)
-  const { lat, lon, address } = data[0]
-  return {
-    lat: parseFloat(lat),
-    lon: parseFloat(lon),
-    city: address?.city ?? address?.town ?? address?.village ?? address?.county ?? '',
-    state: address?.state ?? '',
-  }
-}
+
 
 function buildOverpassQuery(
   tags: string[],

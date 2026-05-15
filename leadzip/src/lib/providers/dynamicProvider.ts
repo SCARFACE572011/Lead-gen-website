@@ -10,6 +10,7 @@
 
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
+import { geocodeZip, GeocodedZip } from '@/lib/geocode'
 
 // ─── ZIP DATABASE ────────────────────────────────────────────────────────────
 
@@ -351,11 +352,69 @@ const STREET_NAMES = [
 
 // ─── HELPER FUNCTIONS ─────────────────────────────────────────────────────────
 
-function resolveZip(zipCode: string): ZipEntry & { resolvedZip: string } {
+// State abbreviation → area code (mirrors geocode.ts but scoped here for offline fallback)
+const STATE_AREA_CODES_LOCAL: Record<string, string> = {
+  AL: '205', AK: '907', AZ: '602', AR: '501', CA: '213', CO: '303', CT: '203',
+  DE: '302', FL: '305', GA: '404', HI: '808', ID: '208', IL: '312', IN: '317',
+  IA: '515', KS: '316', KY: '502', LA: '504', ME: '207', MD: '410', MA: '617',
+  MI: '313', MN: '612', MS: '601', MO: '314', MT: '406', NE: '402', NV: '702',
+  NH: '603', NJ: '201', NM: '505', NY: '212', NC: '704', ND: '701', OH: '216',
+  OK: '405', OR: '503', PA: '215', RI: '401', SC: '803', SD: '605', TN: '615',
+  TX: '214', UT: '801', VT: '802', VA: '804', WA: '206', WV: '304', WI: '414',
+  WY: '307', DC: '202',
+}
+
+async function getZipInfo(
+  zipCode: string,
+  paramsCity?: string,
+  paramsState?: string
+): Promise<ZipEntry & { resolvedZip: string }> {
+  // 1. Try Nominatim — authoritative source for any US ZIP
+  try {
+    const geo: GeocodedZip = await geocodeZip(zipCode)
+    if (geo.city) {
+      const stateAbbr = geo.stateAbbr || paramsState || ''
+      return {
+        city: geo.city,
+        state: stateAbbr,
+        lat: geo.lat,
+        lon: geo.lon,
+        areaCode: geo.areaCode || STATE_AREA_CODES_LOCAL[stateAbbr] || '555',
+        resolvedZip: zipCode,
+      }
+    }
+  } catch {
+    // Nominatim unavailable — fall through
+  }
+
+  // 2. Use city/state the user typed in the form
+  if (paramsCity) {
+    const cityPart = paramsCity.includes(',')
+      ? paramsCity.split(',')[0].trim()
+      : paramsCity.trim()
+    // Try to extract state abbreviation from "City, ST" format
+    const stateMatch = paramsCity.match(/,\s*([A-Z]{2})$/)
+    const stateAbbr = stateMatch?.[1] ?? paramsState ?? ''
+    // Best-effort lat/lon from ZIP table or hash
+    const fallback = hashTableFallback(zipCode)
+    return {
+      city: cityPart,
+      state: stateAbbr,
+      lat: fallback.lat,
+      lon: fallback.lon,
+      areaCode: STATE_AREA_CODES_LOCAL[stateAbbr] || fallback.areaCode,
+      resolvedZip: zipCode,
+    }
+  }
+
+  // 3. Last resort — hash into local table (geographic accuracy not guaranteed)
+  return hashTableFallback(zipCode)
+}
+
+function hashTableFallback(zipCode: string): ZipEntry & { resolvedZip: string } {
   if (ZIP_DATABASE[zipCode]) {
     return { ...ZIP_DATABASE[zipCode], resolvedZip: zipCode }
   }
-  // Hash the ZIP to find a nearby entry deterministically
   const zipNum = parseInt(zipCode, 10) || hashString(zipCode)
   const keys = Object.keys(ZIP_DATABASE)
   const idx = zipNum % keys.length
@@ -504,7 +563,7 @@ function generateBusinessesForCategory(
 export async function searchLeadsDynamic(params: SearchParams): Promise<SearchResult> {
   const { zipCode, category, radiusMiles, keyword, hasWebsite, hasPhone, minRating } = params
 
-  const zipEntry = resolveZip(zipCode)
+  const zipEntry = await getZipInfo(zipCode, params.city, params.state)
   const isAllCategories = !category || category === ''
 
   // Seed is unique per ZIP + category combination

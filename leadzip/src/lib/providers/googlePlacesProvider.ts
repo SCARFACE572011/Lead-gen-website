@@ -19,7 +19,7 @@ const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Plumbers': 'plumber',
   'Electricians': 'electrician',
   'Landscaping': 'landscaping',
-  'HVAC Services': 'plumber',
+  'HVAC Services': 'general_contractor',
   'Pet Services': 'veterinary_care',
   'Roofing': 'roofing_contractor',
   'Insurance Agents': 'insurance_agency',

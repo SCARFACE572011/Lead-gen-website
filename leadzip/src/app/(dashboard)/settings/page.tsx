@@ -403,6 +403,7 @@ function NotificationsTab() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(NOTIF_KEY)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) })
     } catch { /* ignore */ }
   }, [])

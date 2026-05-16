@@ -71,6 +71,7 @@ export default function ExportsPage() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
     const raw = localStorage.getItem(STORAGE_KEY)
     if (raw) {
@@ -85,7 +86,7 @@ export default function ExportsPage() {
   const toggleLeadSelect = (id: string) => {
     setSelectedLeadIds((prev) => {
       const s = new Set(prev)
-      s.has(id) ? s.delete(id) : s.add(id)
+      if (s.has(id)) { s.delete(id) } else { s.add(id) }
       return s
     })
   }
@@ -93,7 +94,7 @@ export default function ExportsPage() {
   const toggleField = (key: string) => {
     setSelectedFields((prev) => {
       const s = new Set(prev)
-      s.has(key) ? s.delete(key) : s.add(key)
+      if (s.has(key)) { s.delete(key) } else { s.add(key) }
       return s
     })
   }
@@ -111,6 +112,7 @@ export default function ExportsPage() {
 
   const handleExport = () => {
     if (selectedLeads.length === 0) return
+    // eslint-disable-next-line react-hooks/purity
     const filename = `leadzip-export-${Date.now()}`
     // Filter fields
     const filteredLeads = selectedLeads.map((lead) => {
@@ -124,6 +126,7 @@ export default function ExportsPage() {
 
     // Record export
     const record: ExportRecord = {
+      // eslint-disable-next-line react-hooks/purity
       id: `exp-${Date.now()}`,
       filename: `${filename}.csv`,
       leadCount: selectedLeads.length,

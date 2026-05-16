@@ -59,6 +59,15 @@ interface SidebarContentProps {
   onLinkClick?: () => void
 }
 
+async function handleSignOut() {
+  try {
+    const { createClient } = await import('@/lib/supabase/client')
+    const supabase = createClient()
+    await supabase.auth.signOut()
+  } catch { /* ignore */ }
+  window.location.href = '/login'
+}
+
 function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
   const isAdmin = MOCK_PROFILE.role === 'admin'
   const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS
@@ -135,6 +144,7 @@ function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
           <DarkModeToggle />
           <button
             aria-label="Sign out"
+            onClick={handleSignOut}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
           >
             <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />

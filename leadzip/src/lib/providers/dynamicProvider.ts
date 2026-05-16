@@ -672,14 +672,10 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
   }
 
   // Convert to Lead objects and score.
-  // Latitude/longitude are nulled out: these are synthetic businesses and their
-  // randomly-generated coordinates frequently land in the ocean for coastal ZIPs.
   let leads: Lead[] = rawBusinesses.map((b, idx) => {
     const partial = {
       id: `dyn_${hashString(zipCode + category + idx)}_${idx}`,
       ...b,
-      latitude: null as null,
-      longitude: null as null,
       savedAt: undefined,
       createdAt: new Date().toISOString(),
     }

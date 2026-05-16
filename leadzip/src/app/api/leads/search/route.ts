@@ -43,11 +43,16 @@ export async function POST(request: NextRequest) {
           .maybeSingle()
 
         if (cached) {
+          const firstWithCoords = (cached.leads as { latitude?: number; longitude?: number }[])
+            .find((l) => l.latitude != null && l.longitude != null)
           return NextResponse.json({
             leads: cached.leads,
             total: cached.total,
             fromCache: true,
             source: cached.source,
+            center: firstWithCoords
+              ? { lat: firstWithCoords.latitude, lon: firstWithCoords.longitude }
+              : undefined,
           })
         }
       } catch {

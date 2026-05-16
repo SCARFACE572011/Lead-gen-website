@@ -108,6 +108,7 @@ function SearchPageInner() {
       const raw = localStorage.getItem(SAVED_IDS_KEY)
       if (raw) {
         const ids: string[] = JSON.parse(raw)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setSavedLeadIds(new Set(ids))
       }
     } catch {
@@ -172,12 +173,13 @@ function SearchPageInner() {
     } finally {
       setIsLoading(false)
     }
-  }, [])
+  }, [savedLeadIds])
 
   // Auto-run search if URL params are present (from history Rerun)
   useEffect(() => {
     const zip = searchParams.get('zip')
     if (zip) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       handleSearch({
         zipCode: zip,
         radiusMiles: searchParams.get('radius') ? Number(searchParams.get('radius')) : 25,

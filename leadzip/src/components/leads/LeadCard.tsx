@@ -71,6 +71,7 @@ export function LeadCard({
   onSelect,
 }: LeadCardProps) {
   const [noteOpen, setNoteOpen] = useState(false)
+  const [noteDraft, setNoteDraft] = useState(lead.notes ?? '')
   const hasWebsite = Boolean(lead.website && lead.website.trim() !== '')
 
   return (
@@ -214,7 +215,7 @@ export function LeadCard({
       {/* Actions */}
       <div className="mt-1 flex items-center gap-2 border-t border-slate-100 pt-3">
         <button
-          onClick={() => onSave(lead)}
+          onClick={() => onSave({ ...lead, notes: noteDraft })}
           aria-label={isSaved ? 'Remove from saved' : 'Save lead'}
           className={cn(
             'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
@@ -244,6 +245,8 @@ export function LeadCard({
       {/* Note area */}
       {noteOpen && (
         <textarea
+          value={noteDraft}
+          onChange={(e) => setNoteDraft(e.target.value)}
           placeholder="Add a note about this lead..."
           rows={2}
           className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"

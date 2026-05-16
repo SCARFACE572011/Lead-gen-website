@@ -264,6 +264,7 @@ export default function SavedLeadsPage() {
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
 
     async function loadLeads() {
@@ -301,7 +302,7 @@ export default function SavedLeadsPage() {
                   leadScore: l.lead_score ?? 0,
                   status: (l.status as LeadStatus) ?? 'new',
                   notes: l.notes ?? '',
-                  savedAt: l.created_at,
+                  savedAt: l.saved_at,
                   employeeCount: l.employee_count ?? null,
                   revenueEstimate: l.revenue_estimate ?? null,
                   facebookUrl: l.facebook_url ?? null,
@@ -377,7 +378,7 @@ export default function SavedLeadsPage() {
   const handleSelect = (id: string, checked: boolean) => {
     setSelectedIds((prev) => {
       const s = new Set(prev)
-      checked ? s.add(id) : s.delete(id)
+      if (checked) { s.add(id) } else { s.delete(id) }
       return s
     })
   }

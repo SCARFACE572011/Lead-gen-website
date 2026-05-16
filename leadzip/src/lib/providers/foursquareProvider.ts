@@ -21,7 +21,7 @@ const FSQ_CATEGORY_IDS: Record<string, string> = {
   'Electricians':        '11052',                     // electrician
   'Landscaping':         '11077',                     // landscaping
   'HVAC Services':       '11064',                     // hvac
-  'Cleaning Services':   '11044',                     // cleaning service
+  'Cleaning Services':   '11135',                     // cleaning service / housekeeping
   'Photographers':       '11104',                     // photographer
   'Catering':            '13068',                     // catering
   'Pet Services':        '11097,15049',               // pet service, vet

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { DigitalHealthDetails } from '@/types/lead'
+import { enrichHealthLimiter, checkRateLimit } from '@/lib/ratelimit'
 
 const SIGNAL_POINTS: Record<keyof DigitalHealthDetails, number> = {
   hasWebsite: 10,
@@ -59,6 +60,14 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser()
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { success, retryAfter } = await checkRateLimit(enrichHealthLimiter, user.id)
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Too many requests', retryAfter },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
   }
 
   let body: { website?: string }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Lead } from '@/types/lead'
+import { saveLimiter, checkRateLimit } from '@/lib/ratelimit'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -22,6 +23,14 @@ export async function POST(request: NextRequest) {
         const { data: { user } } = await supabase.auth.getUser()
 
         if (user) {
+          const { success, retryAfter } = await checkRateLimit(saveLimiter, user.id)
+          if (!success) {
+            return NextResponse.json(
+              { error: 'Too many requests', retryAfter },
+              { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+            )
+          }
+
           await supabase.from('leads').upsert({
             id: lead.id,
             user_id: user.id,

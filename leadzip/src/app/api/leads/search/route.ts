@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchLeads } from '@/lib/providers/leadDataProvider'
 import type { SearchParams } from '@/types/lead'
+import { searchLimiterFree, searchLimiterPaid, checkRateLimit } from '@/lib/ratelimit'
 
 // Cache TTL: 24h when Google Places is active, 6h for OSM-only results
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000
@@ -83,6 +84,17 @@ export async function POST(request: NextRequest) {
           const role = profile?.role ?? 'user'
           const searchCount = usage?.searches_this_month ?? 0
           const FREE_LIMIT = 25
+
+          // Rate limit: 15 req/min (free) or 60 req/min (paid/admin)
+          const limiter = (role === 'admin' || plan !== 'free') ? searchLimiterPaid : searchLimiterFree
+          const { success: rlOk, retryAfter } = await checkRateLimit(limiter, user.id)
+          if (!rlOk) {
+            return NextResponse.json(
+              { error: 'Too many requests', retryAfter },
+              { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+            )
+          }
+
           // Admins and paid users have unlimited searches
           if (role !== 'admin' && plan === 'free' && searchCount >= FREE_LIMIT) {
             return NextResponse.json(

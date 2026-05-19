@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { SavedSearch } from '@/types/saved-search'
+import { savedSearchesLimiter, checkRateLimit } from '@/lib/ratelimit'
 
 function toSavedSearch(row: Record<string, unknown>): SavedSearch {
   return {
@@ -27,6 +28,14 @@ export async function PATCH(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { success, retryAfter } = await checkRateLimit(savedSearchesLimiter, user.id)
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Too many requests', retryAfter },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
   }
 
   const body = await request.json() as { alertEnabled: boolean }
@@ -67,6 +76,14 @@ export async function DELETE(
   const { data: { user }, error: authError } = await supabase.auth.getUser()
   if (authError || !user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const { success, retryAfter } = await checkRateLimit(savedSearchesLimiter, user.id)
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Too many requests', retryAfter },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
   }
 
   const { error } = await supabase

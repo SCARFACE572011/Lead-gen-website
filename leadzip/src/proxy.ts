@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
+import { authLimiter, checkRateLimit } from '@/lib/ratelimit'
 
 const PROTECTED_ROUTES = ['/dashboard', '/search', '/saved', '/history', '/exports', '/settings', '/admin']
 const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password']
@@ -8,6 +9,18 @@ const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
+
+  // Rate limit auth endpoints per IP
+  if (request.nextUrl.pathname === '/api/auth/send-reset-email') {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown'
+    const { success, retryAfter } = await checkRateLimit(authLimiter, ip)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests', retryAfter },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  }
 
   // Skip auth enforcement when Supabase isn't configured yet
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL

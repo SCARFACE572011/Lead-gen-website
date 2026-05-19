@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { enrichEmailLimiter, checkRateLimit } from '@/lib/ratelimit'
 
 function parseDomain(raw: string): string {
   return raw
@@ -20,7 +21,16 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // 2. Parse request body
+  // 2. Rate limit
+  const { success, retryAfter } = await checkRateLimit(enrichEmailLimiter, user.id)
+  if (!success) {
+    return NextResponse.json(
+      { error: 'Too many requests', retryAfter },
+      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+    )
+  }
+
+  // 3. Parse request body
   let raw: unknown
   try {
     raw = await request.json()

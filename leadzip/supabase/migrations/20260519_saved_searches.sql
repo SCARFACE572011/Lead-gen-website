@@ -1,4 +1,4 @@
-CREATE TABLE saved_searches (
+CREATE TABLE public.saved_searches (
   id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
   user_id       uuid        REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   name          text        NOT NULL,
@@ -12,8 +12,10 @@ CREATE TABLE saved_searches (
   created_at    timestamptz DEFAULT now() NOT NULL
 );
 
-ALTER TABLE saved_searches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.saved_searches ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users manage their own saved searches"
-  ON saved_searches FOR ALL
+  ON public.saved_searches FOR ALL
   USING (auth.uid() = user_id);
+
+CREATE INDEX saved_searches_user_id_idx ON public.saved_searches(user_id);

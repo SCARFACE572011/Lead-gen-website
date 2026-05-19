@@ -15,7 +15,7 @@ The score is framed as a **lead opportunity signal**: low score = high opportuni
 
 ## Approach
 
-On-demand per lead. User clicks "Check Health" on any LeadCard or LeadTable row that has a website. A server-side API route fetches the website HTML once, checks all 9 signals in a single pass, and returns the score and signal breakdown. No caching. No Supabase storage. State lives in local `useState` for the lifetime of the rendered result — same pattern as B2 Email Finder.
+On-demand per lead. User clicks "Check Health" on any LeadCard or LeadTable row that has a website. A server-side API route fetches the website HTML once, checks all 8 visible signals in a single pass, and returns the score and signal breakdown. No caching. No Supabase storage. State lives in local `useState` for the lifetime of the rendered result — same pattern as B2 Email Finder.
 
 ---
 
@@ -35,24 +35,24 @@ On-demand per lead. User clicks "Check Health" on any LeadCard or LeadTable row 
 
 | Signal | Key | Points | Detection Method |
 |--------|-----|--------|-----------------|
-| Has website | `hasWebsite` | 10 | Always true when this route is called |
+| Has website | `hasWebsite` | 10 | Always true when this route is called — baked into the score floor, not shown in the UI breakdown |
 | SSL / HTTPS | `hasHttps` | 5 | Website URL starts with `https://` |
 | Mobile-friendly | `mobileResponsive` | 10 | `<meta name="viewport"` present in HTML |
-| Google Analytics | `hasAnalytics` | 10 | `gtag.js`, `analytics.js`, or `GA_MEASUREMENT_ID` in HTML |
-| Google Ads | `hasGoogleAds` | 15 | `googleadservices.com` or `gtag('config', 'AW-` in HTML |
+| Google Analytics | `hasAnalytics` | 10 | Any of: `gtag.js`, `analytics.js`, `'G-'`, `"G-"`, `'UA-'`, `"UA-"`, `_ga` in HTML |
+| Google Ads | `hasGoogleAds` | 15 | `googleadservices.com`, `'AW-'`, or `"AW-"` in HTML |
 | Facebook / Meta Ads | `hasFacebookAds` | 15 | `connect.facebook.net/en_US/fbevents.js` in HTML |
 | Google Business Profile | `hasGBP` | 15 | `maps.google.com` or `google.com/maps` in HTML (best-effort — detects only if linked on the page) |
 | Contact form or email | `hasContactForm` | 10 | `<form` tag or email regex (`[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}`) in HTML |
-| Fast load (<3s) | `fastLoad` | 10 | Time from fetch start to response end < 3000ms |
+| Fast server response (<3s) | `fastLoad` | 10 | Time from fetch start to response end < 3000ms |
 
-**Score computation:** Sum of points for all passing signals. Max 100.
+**Score computation:** Sum of points for all passing signals. Max 100. `hasWebsite` is always awarded (floor of 10) and is not shown in the UI breakdown since it can never fail for leads with a website.
 
 **Response (success):**
 ```typescript
 {
   score: number,
   details: {
-    hasWebsite: boolean
+    hasWebsite: boolean      // always true — not shown in UI breakdown
     hasHttps: boolean
     mobileResponsive: boolean
     hasAnalytics: boolean
@@ -97,16 +97,28 @@ On-demand per lead. User clicks "Check Health" on any LeadCard or LeadTable row 
 
 **Breakdown panel (always collapsed by default, regardless of score):**
 
-Small `bg-slate-50` panel below the score row. One row per signal:
+Small `bg-slate-50` panel below the score row. Shows 8 rows — one per visible signal (`hasWebsite` is excluded). Each row:
 
 ```
 [Signal name]  [+pts]    [✓ or ✗]
 ```
 
+| Visible signal | Display name |
+|----------------|-------------|
+| `hasHttps` | SSL / HTTPS |
+| `mobileResponsive` | Mobile-friendly |
+| `hasAnalytics` | Google Analytics |
+| `hasGoogleAds` | Google Ads |
+| `hasFacebookAds` | Facebook Ads |
+| `hasGBP` | Google Business Profile |
+| `hasContactForm` | Contact form / email |
+| `fastLoad` | Fast server response |
+
 - Pass: green checkmark (`text-green-700`)
 - Fail: red cross (`text-red-500`)
 - Point values shown in muted text (`text-slate-400`)
 - GBP row includes a `(detected from site)` caveat in muted italic
+- `fastLoad` row label is "Fast server response" (not "website load speed")
 
 **State storage:** Local `useState` in LeadCard. Not persisted to Supabase or localStorage.
 
@@ -150,7 +162,7 @@ Add after `emailConfidence?`:
 ```typescript
 digitalHealthScore?: number
 digitalHealthDetails?: {
-  hasWebsite: boolean
+  hasWebsite: boolean      // always true — not rendered in UI breakdown
   hasHttps: boolean
   mobileResponsive: boolean
   hasAnalytics: boolean
@@ -158,7 +170,7 @@ digitalHealthDetails?: {
   hasFacebookAds: boolean
   hasGBP: boolean
   hasContactForm: boolean
-  fastLoad: boolean
+  fastLoad: boolean        // true = server responded in < 3s
 }
 ```
 
@@ -185,6 +197,8 @@ digitalHealthDetails?: {
 | `src/lib/export.ts` | Digital Health Score column |
 
 **No new Supabase tables. No schema migrations. No new env vars required.**
+
+**Note on signal count:** 9 signals are computed server-side; 8 are displayed in the UI breakdown (`hasWebsite` is always true and excluded from the breakdown to avoid noise).
 
 ---
 

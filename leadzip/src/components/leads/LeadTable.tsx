@@ -72,6 +72,8 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
     return 0
   })
 
+  const showZipColumn = leads.some((l) => Boolean(l.sourceZip))
+
   const headerCell = (label: string, key: SortKey) => (
     <th
       className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
@@ -110,6 +112,11 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
             <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Location
             </th>
+            {showZipColumn && (
+              <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+                ZIP
+              </th>
+            )}
             <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Phone
             </th>
@@ -156,6 +163,17 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
                     {lead.city}, {lead.state}
                   </span>
                 </td>
+                {showZipColumn && (
+                  <td className="px-4 py-3">
+                    {lead.sourceZip ? (
+                      <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                        {lead.sourceZip}
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-xs">—</span>
+                    )}
+                  </td>
+                )}
                 <td className="px-4 py-3">
                   {lead.phone ? (
                     <a

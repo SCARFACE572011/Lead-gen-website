@@ -86,6 +86,7 @@ function SidebarContent({
   onLinkClick?: () => void
 }) {
   const [searchCount, setSearchCount] = useState(0)
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null)
 
   useEffect(() => {
     try {
@@ -98,6 +99,13 @@ function SidebarContent({
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchCount(thisMonth.length)
     } catch {}
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/workspace')
+      .then(r => r.json())
+      .then(d => { if (d.workspace?.name) setWorkspaceName(d.workspace.name) })
+      .catch(() => {})
   }, [])
 
   const initials = user.name
@@ -186,8 +194,16 @@ function SidebarContent({
                   PRO
                 </span>
               )}
+              {user.plan === 'agency' && (
+                <span className="inline-flex items-center px-1.5 py-0.5 rounded-md bg-violet-100 text-violet-600 text-[10px] font-semibold tracking-wide flex-shrink-0">
+                  AGENCY
+                </span>
+              )}
             </div>
             <p className="text-xs text-slate-400 truncate">{user.email}</p>
+            {workspaceName && (
+              <p className="text-[10px] text-violet-500 font-medium truncate">Team: {workspaceName}</p>
+            )}
           </div>
         </div>
 

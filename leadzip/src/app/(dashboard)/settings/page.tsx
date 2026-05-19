@@ -29,6 +29,9 @@ import {
   Plug,
   CheckCircle2,
   Link2Off,
+  Users,
+  UserMinus,
+  Send,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -37,7 +40,7 @@ import { getWhiteLabel, saveWhiteLabel, type WhiteLabelSettings } from '@/lib/wh
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
-type TabId = 'profile' | 'plan' | 'notifications' | 'compliance' | 'whitelabel' | 'api' | 'integrations'
+type TabId = 'profile' | 'plan' | 'notifications' | 'compliance' | 'whitelabel' | 'api' | 'integrations' | 'team'
 
 interface Tab {
   id: TabId
@@ -53,6 +56,7 @@ const TABS: Tab[] = [
   { id: 'whitelabel', label: 'White Label', icon: <Palette className="w-4 h-4" /> },
   { id: 'api', label: 'API', icon: <Code2 className="w-4 h-4" /> },
   { id: 'integrations', label: 'Integrations', icon: <Plug className="w-4 h-4" /> },
+  { id: 'team', label: 'Team', icon: <Users className="w-4 h-4" /> },
 ]
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -726,6 +730,266 @@ function ApiTab() {
   )
 }
 
+interface WorkspaceMember {
+  user_id: string
+  role: string
+  joined_at: string
+  users_profile: { email: string; full_name: string } | null
+}
+
+interface PendingInvite {
+  id: string
+  email: string
+  created_at: string
+  expires_at: string
+}
+
+function TeamTab() {
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null)
+  const [role, setRole] = useState<string | null>(null)
+  const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([])
+  const [loading, setLoading] = useState(true)
+  const [creating, setCreating] = useState(false)
+  const [newWorkspaceName, setNewWorkspaceName] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviting, setInviting] = useState(false)
+  const [inviteError, setInviteError] = useState<string | null>(null)
+  const [inviteSuccess, setInviteSuccess] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
+  const [userPlan, setUserPlan] = useState<string>('free')
+
+  const load = async () => {
+    const [wsRes, profileRes] = await Promise.all([
+      fetch('/api/workspace').then(r => r.json()),
+      fetch('/api/leads/saved').then(() => null).catch(() => null), // just a way to get plan
+    ])
+    void profileRes
+    setWorkspaceName(wsRes.workspace?.name ?? null)
+    setRole(wsRes.role)
+    setMembers(wsRes.members ?? [])
+    setPendingInvites(wsRes.pendingInvites ?? [])
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    load()
+    // Get plan from supabase
+    import('@/lib/supabase/client').then(({ createClient }) => {
+      const supabase = createClient()
+      supabase.from('users_profile').select('plan').single().then(({ data }) => {
+        if (data?.plan) setUserPlan(data.plan)
+      })
+    })
+  }, [])
+
+  const handleCreateWorkspace = async () => {
+    if (!newWorkspaceName.trim()) return
+    setCreating(true)
+    const res = await fetch('/api/workspace', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newWorkspaceName.trim() }),
+    })
+    const data = await res.json()
+    setCreating(false)
+    if (res.ok) {
+      setWorkspaceName(data.workspace.name)
+      setRole('owner')
+      setNewWorkspaceName('')
+    }
+  }
+
+  const handleInvite = async () => {
+    if (!inviteEmail.trim()) return
+    setInviting(true)
+    setInviteError(null)
+    setInviteSuccess(null)
+    const res = await fetch('/api/workspace/invite', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: inviteEmail.trim() }),
+    })
+    const data = await res.json()
+    setInviting(false)
+    if (res.ok) {
+      setInviteSuccess(`Invite sent to ${inviteEmail.trim()}`)
+      setInviteEmail('')
+      load()
+    } else {
+      setInviteError(data.error ?? 'Failed to send invite')
+    }
+  }
+
+  const handleRemove = async (userId: string) => {
+    setRemovingId(userId)
+    await fetch(`/api/workspace/members/${userId}`, { method: 'DELETE' })
+    setMembers(prev => prev.filter(m => m.user_id !== userId))
+    setRemovingId(null)
+  }
+
+  const handleCancelInvite = async (inviteId: string) => {
+    await fetch('/api/workspace/invite', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: inviteId }),
+    })
+    setPendingInvites(prev => prev.filter(i => i.id !== inviteId))
+  }
+
+  if (loading) return <div className="text-sm text-slate-400 py-6 text-center">Loading…</div>
+
+  if (userPlan !== 'agency' && !workspaceName) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="text-base font-semibold text-[#0F172A]">Team Workspaces</h2>
+          <p className="text-sm text-slate-500 mt-0.5">Invite teammates and share your plan across your agency.</p>
+        </div>
+        <div className="border border-slate-200 rounded-xl p-6 text-center space-y-3">
+          <Users className="w-8 h-8 text-slate-300 mx-auto" />
+          <p className="text-sm font-medium text-slate-600">Agency plan required</p>
+          <p className="text-xs text-slate-400">Upgrade to Agency to create a workspace and invite team members.</p>
+          <a href="/pricing" className="inline-block text-sm font-medium text-[#0369A1] hover:underline">View Pricing →</a>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-base font-semibold text-[#0F172A]">Team Workspaces</h2>
+        <p className="text-sm text-slate-500 mt-0.5">
+          {role === 'member' ? `You're a member of ${workspaceName}.` : 'Manage your team and send invitations.'}
+        </p>
+      </div>
+
+      {/* Create workspace (agency owners without one yet) */}
+      {!workspaceName && userPlan === 'agency' && (
+        <div className="border border-dashed border-slate-300 rounded-xl p-5 space-y-3">
+          <p className="text-sm font-medium text-[#0F172A]">Create your workspace</p>
+          <p className="text-xs text-slate-500">Name your team — members will see this when they accept your invite.</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newWorkspaceName}
+              onChange={e => setNewWorkspaceName(e.target.value)}
+              placeholder="e.g. Apex Marketing Agency"
+              className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1]"
+            />
+            <button
+              onClick={handleCreateWorkspace}
+              disabled={creating || !newWorkspaceName.trim()}
+              className="text-sm font-medium bg-[#0369A1] text-white px-4 py-2 rounded-lg hover:bg-[#0284c7] transition-colors disabled:opacity-50"
+            >
+              {creating ? 'Creating…' : 'Create'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Workspace info + invite (owner) */}
+      {workspaceName && role === 'owner' && (
+        <>
+          <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 flex items-center gap-3">
+            <Users className="w-4 h-4 text-violet-500 flex-shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-[#0F172A]">{workspaceName}</p>
+              <p className="text-xs text-slate-500">{members.length} member{members.length !== 1 ? 's' : ''} · Agency plan</p>
+            </div>
+          </div>
+
+          {/* Invite form */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-[#0F172A]">Invite a teammate</p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={e => setInviteEmail(e.target.value)}
+                placeholder="teammate@company.com"
+                className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1]"
+                onKeyDown={e => e.key === 'Enter' && handleInvite()}
+              />
+              <button
+                onClick={handleInvite}
+                disabled={inviting || !inviteEmail.trim()}
+                className="inline-flex items-center gap-1.5 text-sm font-medium bg-[#0369A1] text-white px-4 py-2 rounded-lg hover:bg-[#0284c7] transition-colors disabled:opacity-50"
+              >
+                <Send className="w-3.5 h-3.5" />
+                {inviting ? 'Sending…' : 'Send Invite'}
+              </button>
+            </div>
+            {inviteError && <p className="text-xs text-red-600">{inviteError}</p>}
+            {inviteSuccess && <p className="text-xs text-emerald-600">{inviteSuccess}</p>}
+          </div>
+
+          {/* Members list */}
+          {members.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[#0F172A]">Members</p>
+              <div className="space-y-1">
+                {members.map(m => (
+                  <div key={m.user_id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50">
+                    <div>
+                      <p className="text-sm text-[#0F172A]">{m.users_profile?.full_name || m.users_profile?.email}</p>
+                      <p className="text-xs text-slate-400">{m.users_profile?.email} · {m.role}</p>
+                    </div>
+                    {m.role !== 'owner' && (
+                      <button
+                        onClick={() => handleRemove(m.user_id)}
+                        disabled={removingId === m.user_id}
+                        className="text-xs text-slate-400 hover:text-red-600 transition-colors p-1 rounded"
+                      >
+                        <UserMinus className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Pending invites */}
+          {pendingInvites.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[#0F172A]">Pending invitations</p>
+              <div className="space-y-1">
+                {pendingInvites.map(inv => (
+                  <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-amber-50 border border-amber-100">
+                    <div>
+                      <p className="text-sm text-[#0F172A]">{inv.email}</p>
+                      <p className="text-xs text-slate-400">Expires {new Date(inv.expires_at).toLocaleDateString()}</p>
+                    </div>
+                    <button
+                      onClick={() => handleCancelInvite(inv.id)}
+                      className="text-xs text-slate-400 hover:text-red-600 transition-colors p-1 rounded"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Member view */}
+      {workspaceName && role === 'member' && (
+        <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-4 space-y-1">
+          <div className="flex items-center gap-2">
+            <Users className="w-4 h-4 text-violet-500" />
+            <p className="text-sm font-semibold text-[#0F172A]">{workspaceName}</p>
+          </div>
+          <p className="text-xs text-slate-500 pl-6">You have access to all features under this team's plan.</p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 type CrmType = 'hubspot' | 'gohighlevel' | 'pipedrive'
 
 const CRM_META: Record<CrmType, { label: string; placeholder: string; helpUrl: string; help: string }> = {
@@ -1015,6 +1279,7 @@ export default function SettingsPage() {
       case 'whitelabel': return <WhiteLabelTab />
       case 'api': return <ApiTab />
       case 'integrations': return <IntegrationsTab />
+      case 'team': return <TeamTab />
     }
   }
 

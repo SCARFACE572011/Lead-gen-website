@@ -25,6 +25,8 @@ export interface Lead {
   instagramUrl?: string | null
   linkedinUrl?: string | null
   sourceZip?: string
+  email?: string
+  emailConfidence?: 'verified' | 'likely' | 'guessed'
 }
 
 export type LeadStatus = 'new' | 'contacted' | 'interested' | 'not_interested' | 'follow_up' | 'converted'

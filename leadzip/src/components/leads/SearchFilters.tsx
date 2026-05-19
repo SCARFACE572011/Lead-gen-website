@@ -1,14 +1,18 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, Loader2, SlidersHorizontal } from 'lucide-react'
+import { Search, Loader2, SlidersHorizontal, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { SearchParams, LEAD_CATEGORIES } from '@/types/lead'
 
 interface SearchFiltersProps {
   onSearch: (params: SearchParams) => void
+  onBulkSearch?: (baseParams: Omit<SearchParams, 'zipCode'>, zips: string[]) => void
   isLoading: boolean
   initialValues?: Partial<SearchParams>
+  searchMode: 'single' | 'bulk'
+  onSearchModeChange: (mode: 'single' | 'bulk') => void
+  maxBulkZips: number
 }
 
 const RADIUS_OPTIONS = [
@@ -66,8 +70,25 @@ function Toggle({ checked, onChange, label }: ToggleProps) {
   )
 }
 
-export function SearchFilters({ onSearch, isLoading, initialValues }: SearchFiltersProps) {
+export function SearchFilters({
+  onSearch,
+  onBulkSearch,
+  isLoading,
+  initialValues,
+  searchMode,
+  onSearchModeChange,
+  maxBulkZips,
+}: SearchFiltersProps) {
+  // Single mode state
   const [zipCode, setZipCode] = useState(initialValues?.zipCode ?? '')
+  const [zipError, setZipError] = useState('')
+
+  // Bulk mode state
+  const [bulkZips, setBulkZips] = useState<string[]>([])
+  const [bulkInput, setBulkInput] = useState('')
+  const [bulkZipError, setBulkZipError] = useState('')
+
+  // Shared filter state
   const [city, setCity] = useState(initialValues?.city ?? '')
   const [radiusMiles, setRadiusMiles] = useState(initialValues?.radiusMiles ?? 25)
   const [category, setCategory] = useState(initialValues?.category ?? '')
@@ -76,11 +97,63 @@ export function SearchFilters({ onSearch, isLoading, initialValues }: SearchFilt
   const [hasWebsite, setHasWebsite] = useState(false)
   const [hasPhone, setHasPhone] = useState(false)
   const [excludeSaved, setExcludeSaved] = useState(false)
-  const [zipError, setZipError] = useState('')
+
+  function addBulkZip() {
+    const zip = bulkInput.trim()
+    if (!zip) return
+    if (!/^\d{5}$/.test(zip)) {
+      setBulkZipError('Enter a valid 5-digit ZIP code')
+      return
+    }
+    if (bulkZips.includes(zip)) {
+      setBulkZipError('ZIP already added')
+      return
+    }
+    if (bulkZips.length >= maxBulkZips) {
+      setBulkZipError(`Your plan allows up to ${maxBulkZips} ZIPs`)
+      return
+    }
+    setBulkZips((prev) => [...prev, zip])
+    setBulkInput('')
+    setBulkZipError('')
+  }
+
+  function removeBulkZip(zip: string) {
+    setBulkZips((prev) => prev.filter((z) => z !== zip))
+  }
+
+  function handleBulkKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addBulkZip()
+    } else if (e.key === 'Backspace' && bulkInput === '' && bulkZips.length > 0) {
+      removeBulkZip(bulkZips[bulkZips.length - 1])
+    }
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
+    if (searchMode === 'bulk') {
+      if (bulkZips.length === 0) {
+        setBulkZipError('Add at least one ZIP code')
+        return
+      }
+      const baseParams: Omit<SearchParams, 'zipCode'> = {
+        city: city.trim() || undefined,
+        radiusMiles,
+        category,
+        keyword: keyword.trim() || undefined,
+        minRating: minRating > 0 ? minRating : undefined,
+        hasWebsite: hasWebsite || undefined,
+        hasPhone: hasPhone || undefined,
+        excludeSaved: excludeSaved || undefined,
+      }
+      onBulkSearch?.(baseParams, bulkZips)
+      return
+    }
+
+    // Single mode
     if (!zipCode.trim()) {
       setZipError('ZIP code is required')
       return
@@ -110,40 +183,125 @@ export function SearchFilters({ onSearch, isLoading, initialValues }: SearchFilt
   return (
     <form onSubmit={handleSubmit} noValidate>
       <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-        {/* Header */}
+        {/* Header with mode toggle */}
         <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
           <SlidersHorizontal className="h-4 w-4 text-blue-600 shrink-0" />
           <span className="text-sm font-semibold text-slate-800">Search Filters</span>
+          <div className="ml-auto flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+            <button
+              type="button"
+              onClick={() => onSearchModeChange('single')}
+              className={cn(
+                'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
+                searchMode === 'single'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              )}
+            >
+              Single ZIP
+            </button>
+            <button
+              type="button"
+              onClick={() => onSearchModeChange('bulk')}
+              className={cn(
+                'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
+                searchMode === 'bulk'
+                  ? 'bg-white text-slate-800 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-700'
+              )}
+            >
+              Bulk Search
+            </button>
+          </div>
         </div>
 
         <div className="p-4 space-y-5">
-          {/* ZIP Code */}
-          <div>
-            <label htmlFor="zipCode" className={labelClass}>
-              ZIP Code <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="zipCode"
-              type="text"
-              inputMode="numeric"
-              value={zipCode}
-              onChange={(e) => {
-                setZipCode(e.target.value)
-                if (zipError) setZipError('')
-              }}
-              placeholder="e.g. 90210"
-              maxLength={10}
-              aria-required="true"
-              aria-invalid={!!zipError}
-              aria-describedby={zipError ? 'zip-error' : undefined}
-              className={cn(inputClass, zipError && 'border-red-400 ring-2 ring-red-400/20')}
-            />
-            {zipError && (
-              <p id="zip-error" role="alert" className="mt-1 text-xs text-red-600">
-                {zipError}
+          {searchMode === 'single' ? (
+            /* Single ZIP input */
+            <div>
+              <label htmlFor="zipCode" className={labelClass}>
+                ZIP Code <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="zipCode"
+                type="text"
+                inputMode="numeric"
+                value={zipCode}
+                onChange={(e) => {
+                  setZipCode(e.target.value)
+                  if (zipError) setZipError('')
+                }}
+                placeholder="e.g. 90210"
+                maxLength={10}
+                aria-required="true"
+                aria-invalid={!!zipError}
+                aria-describedby={zipError ? 'zip-error' : undefined}
+                className={cn(inputClass, zipError && 'border-red-400 ring-2 ring-red-400/20')}
+              />
+              {zipError && (
+                <p id="zip-error" role="alert" className="mt-1 text-xs text-red-600">
+                  {zipError}
+                </p>
+              )}
+            </div>
+          ) : (
+            /* Bulk ZIP chip input */
+            <div>
+              <label className={labelClass}>
+                ZIP Codes <span className="text-red-500">*</span>
+              </label>
+              <div
+                className={cn(
+                  'flex min-h-[72px] flex-wrap gap-1.5 rounded-lg border bg-white p-2 cursor-text',
+                  'focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20',
+                  bulkZipError ? 'border-red-400 ring-2 ring-red-400/20' : 'border-slate-200'
+                )}
+                onClick={() => {
+                  const input = document.getElementById('bulkZipInput') as HTMLInputElement
+                  input?.focus()
+                }}
+              >
+                {bulkZips.map((zip) => (
+                  <span
+                    key={zip}
+                    className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800"
+                  >
+                    {zip}
+                    <button
+                      type="button"
+                      onClick={() => removeBulkZip(zip)}
+                      aria-label={`Remove ${zip}`}
+                      className="hover:text-blue-600 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </span>
+                ))}
+                <input
+                  id="bulkZipInput"
+                  type="text"
+                  inputMode="numeric"
+                  value={bulkInput}
+                  onChange={(e) => {
+                    setBulkInput(e.target.value.replace(/[^\d]/g, '').slice(0, 5))
+                    if (bulkZipError) setBulkZipError('')
+                  }}
+                  onKeyDown={handleBulkKeyDown}
+                  onBlur={() => { if (bulkInput.length === 5) addBulkZip() }}
+                  placeholder={bulkZips.length === 0 ? 'Type a ZIP, press Enter to add' : ''}
+                  className="flex-1 min-w-[140px] border-none bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400"
+                />
+              </div>
+              <p className="mt-1 text-xs text-slate-400">
+                {bulkZips.length} / {maxBulkZips} ZIPs — same filters apply to all
               </p>
-            )}
-          </div>
+              {bulkZipError && (
+                <p role="alert" className="mt-1 text-xs text-red-600">
+                  {bulkZipError}
+                </p>
+              )}
+            </div>
+          )}
 
           {/* City / State */}
           <div>
@@ -286,7 +444,9 @@ export function SearchFilters({ onSearch, isLoading, initialValues }: SearchFilt
             ) : (
               <>
                 <Search className="h-4 w-4 shrink-0" />
-                Search Leads
+                {searchMode === 'bulk'
+                  ? `Search ${bulkZips.length > 0 ? bulkZips.length + ' ' : ''}ZIP${bulkZips.length !== 1 ? 's' : ''}`
+                  : 'Search Leads'}
               </>
             )}
           </button>

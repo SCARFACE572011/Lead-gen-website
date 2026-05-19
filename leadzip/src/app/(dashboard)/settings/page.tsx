@@ -26,6 +26,9 @@ import {
   RefreshCw,
   Eye,
   EyeOff,
+  Plug,
+  CheckCircle2,
+  Link2Off,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -34,7 +37,7 @@ import { getWhiteLabel, saveWhiteLabel, type WhiteLabelSettings } from '@/lib/wh
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
-type TabId = 'profile' | 'plan' | 'notifications' | 'compliance' | 'whitelabel' | 'api'
+type TabId = 'profile' | 'plan' | 'notifications' | 'compliance' | 'whitelabel' | 'api' | 'integrations'
 
 interface Tab {
   id: TabId
@@ -49,6 +52,7 @@ const TABS: Tab[] = [
   { id: 'compliance', label: 'Compliance', icon: <ShieldCheck className="w-4 h-4" /> },
   { id: 'whitelabel', label: 'White Label', icon: <Palette className="w-4 h-4" /> },
   { id: 'api', label: 'API', icon: <Code2 className="w-4 h-4" /> },
+  { id: 'integrations', label: 'Integrations', icon: <Plug className="w-4 h-4" /> },
 ]
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -722,6 +726,160 @@ function ApiTab() {
   )
 }
 
+type CrmType = 'hubspot' | 'gohighlevel' | 'pipedrive'
+
+const CRM_META: Record<CrmType, { label: string; placeholder: string; helpUrl: string; help: string }> = {
+  hubspot: {
+    label: 'HubSpot',
+    placeholder: 'pat-na1-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+    helpUrl: 'https://developers.hubspot.com/docs/api/private-apps',
+    help: 'Create a Private App in HubSpot → Settings → Integrations → Private Apps. Grant CRM (contacts, companies) read/write scopes.',
+  },
+  gohighlevel: {
+    label: 'GoHighLevel',
+    placeholder: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...',
+    helpUrl: 'https://highlevel.stoplight.io/docs/integrations/0443d7d1a4bd0-overview',
+    help: 'Find your API key in GHL → Settings → Integrations → API Keys.',
+  },
+  pipedrive: {
+    label: 'Pipedrive',
+    placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx',
+    helpUrl: 'https://pipedrive.readme.io/docs/how-to-find-the-api-token',
+    help: 'Find your API token in Pipedrive → Settings → Personal Preferences → API.',
+  },
+}
+
+function IntegrationsTab() {
+  const [connected, setConnected] = useState<CrmType[]>([])
+  const [loading, setLoading] = useState(true)
+  const [adding, setAdding] = useState<CrmType | null>(null)
+  const [keyInput, setKeyInput] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [disconnecting, setDisconnecting] = useState<CrmType | null>(null)
+
+  useEffect(() => {
+    fetch('/api/integrations')
+      .then(r => r.json())
+      .then(d => setConnected((d.integrations ?? []).map((i: { crm_type: CrmType }) => i.crm_type)))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleConnect = async (crm: CrmType) => {
+    if (!keyInput.trim()) return
+    setSaving(true)
+    setError(null)
+    const res = await fetch('/api/integrations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ crm_type: crm, api_key: keyInput.trim() }),
+    })
+    const data = await res.json()
+    setSaving(false)
+    if (!res.ok) { setError(data.error ?? 'Failed to connect'); return }
+    setConnected(prev => [...prev.filter(c => c !== crm), crm])
+    setAdding(null)
+    setKeyInput('')
+  }
+
+  const handleDisconnect = async (crm: CrmType) => {
+    setDisconnecting(crm)
+    await fetch(`/api/integrations/${crm}`, { method: 'DELETE' })
+    setConnected(prev => prev.filter(c => c !== crm))
+    setDisconnecting(null)
+  }
+
+  const crms: CrmType[] = ['hubspot', 'gohighlevel', 'pipedrive']
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-base font-semibold text-[#0F172A]">CRM Integrations</h2>
+        <p className="text-sm text-slate-500 mt-0.5">Connect your CRM to push saved leads with one click.</p>
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-slate-400 py-6 text-center">Loading…</div>
+      ) : (
+        <div className="space-y-3">
+          {crms.map(crm => {
+            const meta = CRM_META[crm]
+            const isConnected = connected.includes(crm)
+            const isAdding = adding === crm
+
+            return (
+              <div key={crm} className="border border-slate-200 rounded-xl p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {isConnected ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-[#0F172A]">{meta.label}</p>
+                      <p className="text-xs text-slate-500">
+                        {isConnected ? 'Connected' : 'Not connected'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {isConnected ? (
+                      <button
+                        onClick={() => handleDisconnect(crm)}
+                        disabled={disconnecting === crm}
+                        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                      >
+                        <Link2Off className="w-3.5 h-3.5" />
+                        {disconnecting === crm ? 'Disconnecting…' : 'Disconnect'}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => { setAdding(isAdding ? null : crm); setKeyInput(''); setError(null) }}
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0369A1] border border-[#0369A1]/30 hover:bg-[#0369A1]/5 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        <Plug className="w-3.5 h-3.5" />
+                        Connect
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {isAdding && (
+                  <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+                    <p className="text-xs text-slate-500">{meta.help}{' '}
+                      <a href={meta.helpUrl} target="_blank" rel="noopener noreferrer" className="text-[#0369A1] hover:underline">
+                        Docs →
+                      </a>
+                    </p>
+                    <div className="flex gap-2">
+                      <input
+                        type="password"
+                        value={keyInput}
+                        onChange={e => setKeyInput(e.target.value)}
+                        placeholder={meta.placeholder}
+                        className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1] font-mono"
+                      />
+                      <button
+                        onClick={() => handleConnect(crm)}
+                        disabled={saving || !keyInput.trim()}
+                        className="text-sm font-medium bg-[#0369A1] text-white px-4 py-2 rounded-lg hover:bg-[#0284c7] transition-colors disabled:opacity-50"
+                      >
+                        {saving ? 'Validating…' : 'Save'}
+                      </button>
+                    </div>
+                    {error && <p className="text-xs text-red-600">{error}</p>}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function WhiteLabelTab() {
   const [settings, setSettings] = useState<WhiteLabelSettings>({ agencyName: '', logoDataUrl: '', accentColor: '#0369A1' })
   const [saved, setSaved] = useState(false)
@@ -856,6 +1014,7 @@ export default function SettingsPage() {
       case 'compliance': return <ComplianceTab />
       case 'whitelabel': return <WhiteLabelTab />
       case 'api': return <ApiTab />
+      case 'integrations': return <IntegrationsTab />
     }
   }
 

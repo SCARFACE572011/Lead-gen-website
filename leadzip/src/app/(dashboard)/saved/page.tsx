@@ -14,6 +14,9 @@ import {
   Globe,
   BookmarkX,
   SortAsc,
+  Plug,
+  CheckCircle2,
+  AlertCircle,
 } from 'lucide-react'
 import { Lead, LeadStatus, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
 import { exportToCSV } from '@/lib/export'
@@ -255,6 +258,9 @@ function LeadRow({
   )
 }
 
+type CrmType = 'hubspot' | 'gohighlevel' | 'pipedrive'
+const CRM_LABELS: Record<CrmType, string> = { hubspot: 'HubSpot', gohighlevel: 'GoHighLevel', pipedrive: 'Pipedrive' }
+
 export default function SavedLeadsPage() {
   const [leads, setLeads] = useState<Lead[]>([])
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
@@ -262,6 +268,19 @@ export default function SavedLeadsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('score')
   const [mounted, setMounted] = useState(false)
+  const [connectedCrms, setConnectedCrms] = useState<CrmType[]>([])
+  const [crmModal, setCrmModal] = useState(false)
+  const [pushingCrm, setPushingCrm] = useState<CrmType | null>(null)
+  const [pushResult, setPushResult] = useState<{ succeeded: number; failed: number; errors: string[] } | null>(null)
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      fetch('/api/integrations')
+        .then(r => r.json())
+        .then(d => setConnectedCrms((d.integrations ?? []).map((i: { crm_type: CrmType }) => i.crm_type)))
+        .catch(() => {})
+    }
+  }, [])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -375,6 +394,34 @@ export default function SavedLeadsPage() {
     setSelectedIds(new Set())
   }
 
+  const handlePushToCrm = async (crm: CrmType) => {
+    setPushingCrm(crm)
+    setPushResult(null)
+    const sel = leads.filter(l => selectedIds.has(l.id))
+    const payload = sel.map(l => ({
+      businessName: l.businessName,
+      phone: l.phone,
+      website: l.website,
+      address: l.address,
+      city: l.city,
+      state: l.state,
+      category: l.category,
+    }))
+    try {
+      const res = await fetch(`/api/integrations/${crm}/export`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leads: payload }),
+      })
+      const data = await res.json()
+      setPushResult({ succeeded: data.succeeded ?? 0, failed: data.failed ?? 0, errors: data.errors ?? [] })
+    } catch {
+      setPushResult({ succeeded: 0, failed: sel.length, errors: ['Network error — please try again'] })
+    } finally {
+      setPushingCrm(null)
+    }
+  }
+
   const handleSelect = (id: string, checked: boolean) => {
     setSelectedIds((prev) => {
       const s = new Set(prev)
@@ -460,6 +507,47 @@ export default function SavedLeadsPage() {
               <Download className="w-4 h-4" />
               Export Selected
             </button>
+            {connectedCrms.length > 0 && (
+              <div className="relative">
+                <button
+                  onClick={() => { setCrmModal(o => !o); setPushResult(null) }}
+                  className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <Plug className="w-4 h-4" />
+                  Push to CRM
+                </button>
+                {crmModal && (
+                  <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-200 p-3 z-20 min-w-[220px]">
+                    {pushResult ? (
+                      <div className="space-y-2">
+                        <div className={cn('flex items-center gap-2 text-sm font-medium', pushResult.failed === 0 ? 'text-emerald-600' : 'text-amber-600')}>
+                          {pushResult.failed === 0 ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                          {pushResult.succeeded} pushed{pushResult.failed > 0 ? `, ${pushResult.failed} failed` : ''}
+                        </div>
+                        {pushResult.errors.slice(0, 3).map((e, i) => (
+                          <p key={i} className="text-xs text-red-600 truncate">{e}</p>
+                        ))}
+                        <button onClick={() => { setCrmModal(false); setPushResult(null) }} className="text-xs text-slate-500 hover:text-slate-700 mt-1">Close</button>
+                      </div>
+                    ) : (
+                      <div className="space-y-1">
+                        <p className="text-xs text-slate-500 mb-2 font-medium">Choose CRM</p>
+                        {connectedCrms.map(crm => (
+                          <button
+                            key={crm}
+                            onClick={() => handlePushToCrm(crm)}
+                            disabled={pushingCrm !== null}
+                            className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-700 disabled:opacity-50 transition-colors"
+                          >
+                            {pushingCrm === crm ? 'Pushing…' : CRM_LABELS[crm]}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <button
               onClick={handleBulkDelete}
               className="inline-flex items-center gap-2 bg-red-500/80 hover:bg-red-500 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"

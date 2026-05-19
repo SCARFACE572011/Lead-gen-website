@@ -24,6 +24,7 @@ export interface Lead {
   facebookUrl?: string | null
   instagramUrl?: string | null
   linkedinUrl?: string | null
+  sourceZip?: string
 }
 
 export type LeadStatus = 'new' | 'contacted' | 'interested' | 'not_interested' | 'follow_up' | 'converted'

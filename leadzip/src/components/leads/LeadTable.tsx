@@ -11,11 +11,12 @@ import {
   Loader2,
   Mail,
   Phone,
+  Zap,
   Star,
   Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Lead } from '@/types/lead'
+import { Lead, DigitalHealthDetails } from '@/types/lead'
 import { LeadScore } from './LeadScore'
 
 type SortKey = 'leadScore' | 'rating' | 'reviewCount' | 'businessName'
@@ -101,6 +102,37 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
     }
   }
 
+  type HealthState = 'idle' | 'loading' | 'found' | 'unreachable'
+  const [healthStates, setHealthStates] = useState<Record<string, HealthState>>({})
+  const [healthData, setHealthData] = useState<Record<string, { score: number; details: DigitalHealthDetails }>>({})
+
+  async function handleCheckHealth(lead: Lead) {
+    if (!lead.website) return
+    setHealthStates((prev) => ({ ...prev, [lead.id]: 'loading' }))
+    try {
+      const res = await fetch('/api/leads/enrich/health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ website: lead.website }),
+      })
+      const data = await res.json()
+      if (res.ok && typeof data.score === 'number') {
+        setHealthData((prev) => ({ ...prev, [lead.id]: { score: data.score, details: data.details } }))
+        setHealthStates((prev) => ({ ...prev, [lead.id]: 'found' }))
+      } else {
+        setHealthStates((prev) => ({ ...prev, [lead.id]: 'unreachable' }))
+      }
+    } catch {
+      setHealthStates((prev) => ({ ...prev, [lead.id]: 'unreachable' }))
+    }
+  }
+
+  function healthScoreChipClass(score: number): string {
+    if (score <= 30) return 'bg-red-50 text-red-700'
+    if (score <= 60) return 'bg-amber-50 text-amber-700'
+    return 'bg-green-50 text-green-700'
+  }
+
   const headerCell = (label: string, key: SortKey) => (
     <th
       className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
@@ -152,6 +184,9 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
             </th>
             <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Email
+            </th>
+            <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Health
             </th>
             {headerCell('Rating', 'rating')}
             <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -271,6 +306,32 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
                       className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
                     >
                       <Mail className="h-4 w-4 shrink-0" />
+                    </button>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {!hasWebsite ? (
+                    <span className="text-slate-400 text-xs">—</span>
+                  ) : healthStates[lead.id] === 'loading' ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                  ) : healthStates[lead.id] === 'found' ? (
+                    <span
+                      className={cn(
+                        'inline-block rounded-full px-2 py-0.5 text-xs font-bold tabular-nums',
+                        healthScoreChipClass(healthData[lead.id]?.score ?? 0)
+                      )}
+                    >
+                      {healthData[lead.id]?.score}
+                    </span>
+                  ) : healthStates[lead.id] === 'unreachable' ? (
+                    <span className="text-slate-400 text-xs">—</span>
+                  ) : (
+                    <button
+                      onClick={() => handleCheckHealth(lead)}
+                      aria-label={`Check health for ${lead.businessName}`}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-green-600 transition-colors"
+                    >
+                      <Zap className="h-4 w-4 shrink-0" />
                     </button>
                   )}
                 </td>

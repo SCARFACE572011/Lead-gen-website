@@ -8,6 +8,8 @@ import {
   Bookmark,
   BookmarkCheck,
   Globe,
+  Loader2,
+  Mail,
   Phone,
   Star,
   Users,
@@ -74,6 +76,31 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
 
   const showZipColumn = leads.some((l) => Boolean(l.sourceZip))
 
+  type EmailState = 'idle' | 'loading' | 'found' | 'not_found'
+  const [emailStates, setEmailStates] = useState<Record<string, EmailState>>({})
+  const [emailData, setEmailData] = useState<Record<string, { email: string; confidence: 'verified' | 'likely' | 'guessed' }>>({})
+
+  async function handleFindEmail(lead: Lead) {
+    if (!lead.website) return
+    setEmailStates((prev) => ({ ...prev, [lead.id]: 'loading' }))
+    try {
+      const res = await fetch('/api/leads/enrich/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: lead.website }),
+      })
+      const data = await res.json()
+      if (res.ok && data.email) {
+        setEmailData((prev) => ({ ...prev, [lead.id]: { email: data.email, confidence: data.confidence } }))
+        setEmailStates((prev) => ({ ...prev, [lead.id]: 'found' }))
+      } else {
+        setEmailStates((prev) => ({ ...prev, [lead.id]: 'not_found' }))
+      }
+    } catch {
+      setEmailStates((prev) => ({ ...prev, [lead.id]: 'not_found' }))
+    }
+  }
+
   const headerCell = (label: string, key: SortKey) => (
     <th
       className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500"
@@ -122,6 +149,9 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
             </th>
             <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
               Website
+            </th>
+            <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Email
             </th>
             {headerCell('Rating', 'rating')}
             <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -204,6 +234,44 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
                     <span className="inline-block rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700">
                       No Website
                     </span>
+                  )}
+                </td>
+                <td className="px-4 py-3">
+                  {!lead.website ? (
+                    <span className="text-slate-400 text-xs">—</span>
+                  ) : emailStates[lead.id] === 'loading' ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                  ) : emailStates[lead.id] === 'found' ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <a
+                        href={`mailto:${emailData[lead.id]?.email}`}
+                        className="max-w-[140px] truncate text-blue-600 hover:text-blue-800 transition-colors text-xs"
+                      >
+                        {emailData[lead.id]?.email}
+                      </a>
+                      <span
+                        className={cn(
+                          'inline-block rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                          emailData[lead.id]?.confidence === 'verified'
+                            ? 'bg-green-50 text-green-700'
+                            : emailData[lead.id]?.confidence === 'likely'
+                            ? 'bg-amber-50 text-amber-700'
+                            : 'bg-slate-100 text-slate-500'
+                        )}
+                      >
+                        {emailData[lead.id]?.confidence}
+                      </span>
+                    </span>
+                  ) : emailStates[lead.id] === 'not_found' ? (
+                    <span className="text-slate-400 text-xs">—</span>
+                  ) : (
+                    <button
+                      onClick={() => handleFindEmail(lead)}
+                      aria-label={`Find email for ${lead.businessName}`}
+                      className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                    >
+                      <Mail className="h-4 w-4 shrink-0" />
+                    </button>
                   )}
                 </td>
                 <td className="px-4 py-3">

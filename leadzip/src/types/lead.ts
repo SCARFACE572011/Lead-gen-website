@@ -27,6 +27,20 @@ export interface Lead {
   sourceZip?: string
   email?: string
   emailConfidence?: 'verified' | 'likely' | 'guessed'
+  digitalHealthScore?: number
+  digitalHealthDetails?: DigitalHealthDetails
+}
+
+export interface DigitalHealthDetails {
+  hasWebsite: boolean
+  hasHttps: boolean
+  mobileResponsive: boolean
+  hasAnalytics: boolean
+  hasGoogleAds: boolean
+  hasFacebookAds: boolean
+  hasGBP: boolean
+  hasContactForm: boolean
+  fastLoad: boolean
 }
 
 export type LeadStatus = 'new' | 'contacted' | 'interested' | 'not_interested' | 'follow_up' | 'converted'

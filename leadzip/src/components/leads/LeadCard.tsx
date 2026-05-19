@@ -103,9 +103,16 @@ export function LeadCard({
           <h3 className="truncate text-sm font-semibold text-slate-900 leading-snug">
             {lead.businessName}
           </h3>
-          <span className="mt-0.5 inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-            {lead.category}
-          </span>
+          <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
+            <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+              {lead.category}
+            </span>
+            {lead.sourceZip && (
+              <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                {lead.sourceZip}
+              </span>
+            )}
+          </div>
         </div>
         <LeadScore score={lead.leadScore} size="sm" />
       </div>

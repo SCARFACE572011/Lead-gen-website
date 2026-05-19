@@ -11,6 +11,8 @@ import {
   MessageSquare,
   AlertCircle,
   Users,
+  Mail,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead } from '@/types/lead'
@@ -73,6 +75,39 @@ export function LeadCard({
   const [noteOpen, setNoteOpen] = useState(false)
   const [noteDraft, setNoteDraft] = useState(lead.notes ?? '')
   const hasWebsite = Boolean(lead.website && lead.website.trim() !== '')
+
+  type EmailState = 'idle' | 'loading' | 'found' | 'not_found'
+  const [emailState, setEmailState] = useState<EmailState>('idle')
+  const [foundEmail, setFoundEmail] = useState<string>('')
+  const [emailConfidence, setEmailConfidence] = useState<'verified' | 'likely' | 'guessed'>('guessed')
+
+  async function handleFindEmail() {
+    if (!lead.website) return
+    setEmailState('loading')
+    try {
+      const res = await fetch('/api/leads/enrich/email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain: lead.website }),
+      })
+      const data = await res.json()
+      if (res.ok && data.email) {
+        setFoundEmail(data.email)
+        setEmailConfidence(data.confidence)
+        setEmailState('found')
+      } else {
+        setEmailState('not_found')
+      }
+    } catch {
+      setEmailState('not_found')
+    }
+  }
+
+  const confidenceBadgeClass = {
+    verified: 'bg-green-50 text-green-700',
+    likely: 'bg-amber-50 text-amber-700',
+    guessed: 'bg-slate-100 text-slate-500',
+  }[emailConfidence]
 
   return (
     <div
@@ -220,7 +255,7 @@ export function LeadCard({
       )}
 
       {/* Actions */}
-      <div className="mt-1 flex items-center gap-2 border-t border-slate-100 pt-3">
+      <div className="mt-1 flex items-center gap-2 border-t border-slate-100 pt-3 flex-wrap">
         <button
           onClick={() => onSave({ ...lead, notes: noteDraft })}
           aria-label={isSaved ? 'Remove from saved' : 'Save lead'}
@@ -247,6 +282,46 @@ export function LeadCard({
           <MessageSquare className="h-3.5 w-3.5 shrink-0" />
           Note
         </button>
+
+        {hasWebsite && (
+          <>
+            {emailState === 'idle' && (
+              <button
+                onClick={handleFindEmail}
+                aria-label="Find email"
+                className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200"
+              >
+                <Mail className="h-3.5 w-3.5 shrink-0" />
+                Find Email
+              </button>
+            )}
+
+            {emailState === 'loading' && (
+              <span className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                Finding…
+              </span>
+            )}
+
+            {emailState === 'found' && (
+              <div className="flex items-center gap-1.5">
+                <a
+                  href={`mailto:${foundEmail}`}
+                  className="max-w-[160px] truncate text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                >
+                  {foundEmail}
+                </a>
+                <span className={cn('rounded-full px-1.5 py-0.5 text-[10px] font-semibold', confidenceBadgeClass)}>
+                  {emailConfidence}
+                </span>
+              </div>
+            )}
+
+            {emailState === 'not_found' && (
+              <span className="text-xs text-slate-400">Not found</span>
+            )}
+          </>
+        )}
       </div>
 
       {/* Note area */}

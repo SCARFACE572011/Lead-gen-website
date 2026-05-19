@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   Search,
   Bookmark,
+  Bell,
   Clock,
   Download,
   Settings,
@@ -26,6 +27,7 @@ import { MOCK_PROFILE } from '@/lib/mock-auth'
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Search Leads', href: '/search', icon: Search },
+  { label: 'Saved Searches', href: '/saved-searches', icon: Bell },
   { label: 'Saved Leads', href: '/saved', icon: Bookmark },
   { label: 'Search History', href: '/history', icon: Clock },
   { label: 'Exports', href: '/exports', icon: Download },
@@ -68,10 +70,38 @@ async function handleSignOut() {
   window.location.href = '/login'
 }
 
+const isSupabaseConfigured =
+  typeof process !== 'undefined' &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+
 function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
-  const isAdmin = MOCK_PROFILE.role === 'admin'
+  const [isAdmin, setIsAdmin] = useState<boolean>(MOCK_PROFILE.role === 'admin')
+  const [plan, setPlan] = useState<string>(MOCK_PROFILE.plan)
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    async function fetchRole() {
+      try {
+        const { createClient } = await import('@/lib/supabase/client')
+        const supabase = createClient()
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data } = await supabase
+          .from('users_profile')
+          .select('role, plan')
+          .eq('id', user.id)
+          .maybeSingle()
+        if (data) {
+          setIsAdmin(data.role === 'admin')
+          setPlan(data.plan ?? 'free')
+        }
+      } catch { /* non-fatal */ }
+    }
+    fetchRole()
+  }, [])
+
   const navItems = isAdmin ? [...NAV_ITEMS, ADMIN_ITEM] : NAV_ITEMS
-  const planColorClass = PLAN_COLORS[MOCK_PROFILE.plan] ?? 'bg-slate-100 text-slate-600'
+  const planColorClass = PLAN_COLORS[plan] ?? 'bg-slate-100 text-slate-600'
 
   return (
     <div className="flex h-full flex-col">
@@ -138,7 +168,7 @@ function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
                 planColorClass
               )}
             >
-              {MOCK_PROFILE.plan}
+              {plan}
             </span>
           </div>
           <DarkModeToggle />

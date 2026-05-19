@@ -12,6 +12,7 @@ import {
   ChevronDown,
   SearchX,
   Loader2,
+  Bell,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead, SearchParams, SearchHistory } from '@/types/lead'
@@ -21,6 +22,8 @@ import { LeadCard } from '@/components/leads/LeadCard'
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadsMapWrapper } from '@/components/leads/LeadsMapWrapper'
 import { createClient } from '@/lib/supabase/client'
+import { SaveSearchModal } from '@/components/SaveSearchModal'
+import type { SavedSearch } from '@/types/saved-search'
 
 type ViewMode = 'card' | 'table' | 'map'
 type SortOption = 'score_desc' | 'score_asc' | 'rating_desc' | 'name_asc'
@@ -137,6 +140,10 @@ function SearchPageInner() {
   const [noResultZips, setNoResultZips] = useState<string[]>([])
   const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'agency'>('free')
   const [searchedZipCount, setSearchedZipCount] = useState(0)
+  const [lastSearchParams, setLastSearchParams] = useState<SearchParams | null>(null)
+  const [saveModalOpen, setSaveModalOpen] = useState(false)
+  const [savedSearchCount, setSavedSearchCount] = useState(0)
+  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([])
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -165,6 +172,16 @@ function SearchPageInner() {
           if (data?.plan) setUserPlan(data.plan as 'free' | 'pro' | 'agency')
         })
     })
+  }, [])
+
+  useEffect(() => {
+    fetch('/api/saved-searches')
+      .then((r) => r.ok ? r.json() : { searches: [] })
+      .then((data: { searches: SavedSearch[] }) => {
+        setSavedSearches(data.searches)
+        setSavedSearchCount(data.searches.length)
+      })
+      .catch(() => {})
   }, [])
 
   // Pre-populate initial filter values from URL params (for Rerun from history)
@@ -209,6 +226,7 @@ function SearchPageInner() {
       const filteredLeads = params.excludeSaved
         ? result.leads.filter((l) => !savedLeadIds.has(l.id))
         : result.leads
+      setLastSearchParams(params)
       setLeads(filteredLeads)
       setTotalFound(filteredLeads.length)
       if (result.center) setMapCenter(result.center)
@@ -525,6 +543,17 @@ function SearchPageInner() {
               </p>
 
               <div className="flex items-center gap-2">
+                {/* Save this search */}
+                {leads.length > 0 && !isLoading && searchMode === 'single' && lastSearchParams && (
+                  <button
+                    onClick={() => setSaveModalOpen(true)}
+                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                    aria-label="Save this search"
+                  >
+                    <Bell className="h-3.5 w-3.5 shrink-0" />
+                    Save search
+                  </button>
+                )}
                 {/* Sort */}
                 <div className="relative">
                   <button
@@ -726,6 +755,24 @@ function SearchPageInner() {
             </button>
           </div>
         </div>
+      )}
+
+      {saveModalOpen && lastSearchParams && (
+        <SaveSearchModal
+          isOpen={saveModalOpen}
+          onClose={() => setSaveModalOpen(false)}
+          defaultName={`${lastSearchParams.category || 'Leads'} · ${lastSearchParams.zipCode}`}
+          zip={lastSearchParams.zipCode}
+          radius={lastSearchParams.radiusMiles ?? 25}
+          category={lastSearchParams.category ?? ''}
+          keyword={lastSearchParams.keyword}
+          savedCount={savedSearchCount}
+          isPaidUser={userPlan !== 'free'}
+          onSaved={(search) => {
+            setSavedSearches((prev) => [search, ...prev])
+            setSavedSearchCount((prev) => prev + 1)
+          }}
+        />
       )}
     </div>
   )

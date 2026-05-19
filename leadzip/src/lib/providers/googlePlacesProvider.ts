@@ -31,6 +31,24 @@ const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Moving Companies': 'moving_company',
   'Manufacturers': 'store',
   'Distributors': 'store',
+  'IT Services': 'electronics_store',
+  'Financial Advisors': 'finance',
+  'Mortgage Brokers': 'finance',
+  'Property Management': 'real_estate_agency',
+  'Tutoring Centers': 'school',
+  'Childcare & Daycares': 'child_care_agency',
+  'Yoga Studios': 'gym',
+  'Therapy & Counseling': 'health',
+  'Veterinarians': 'veterinary_care',
+  'Optometrists': 'doctor',
+  'Pharmacies': 'pharmacy',
+  'Event Planners': 'event_venue',
+  'Printing Services': 'store',
+  'Security Companies': 'store',
+  'Pest Control': 'general_contractor',
+  'Pool Services': 'general_contractor',
+  'Solar Installers': 'electrician',
+  'Marketing Agencies': 'store',
 }
 
 // --- Google Places API response types ---
@@ -56,6 +74,12 @@ interface PlaceDetailsResponse {
   result?: {
     formatted_phone_number?: string
     website?: string
+    business_status?: string
+    price_level?: number
+    opening_hours?: {
+      open_now?: boolean
+      weekday_text?: string[]
+    }
   }
 }
 
@@ -99,18 +123,27 @@ function parseFormattedAddress(
   return { address: cleaned, city: fallbackCity, state: fallbackState, zipCode: fallbackZip }
 }
 
-// Fetch phone + website for up to 10 places concurrently via Place Details API
+interface PlaceEnrichment {
+  phone: string
+  website: string
+  businessStatus: string
+  priceLevel: number | null
+  openNow?: boolean
+  businessHours?: string[]
+}
+
+// Fetch phone, website, hours, price level for up to 10 places concurrently
 async function enrichWithDetails(
   placeIds: string[],
   apiKey: string
-): Promise<Map<string, { phone: string; website: string }>> {
-  const results = new Map<string, { phone: string; website: string }>()
+): Promise<Map<string, PlaceEnrichment>> {
+  const results = new Map<string, PlaceEnrichment>()
   const batch = placeIds.slice(0, 10) // cap at 10 to avoid excessive API spend
 
   await Promise.allSettled(
     batch.map(async (placeId) => {
       try {
-        const url = `${PLACES_DETAILS_URL}?place_id=${encodeURIComponent(placeId)}&fields=formatted_phone_number,website&key=${apiKey}`
+        const url = `${PLACES_DETAILS_URL}?place_id=${encodeURIComponent(placeId)}&fields=formatted_phone_number,website,business_status,price_level,opening_hours&key=${apiKey}`
         const res = await fetch(url)
         if (!res.ok) return
         const data = (await res.json()) as PlaceDetailsResponse
@@ -118,10 +151,14 @@ async function enrichWithDetails(
           results.set(placeId, {
             phone: data.result.formatted_phone_number ?? '',
             website: data.result.website ?? '',
+            businessStatus: data.result.business_status ?? 'OPERATIONAL',
+            priceLevel: data.result.price_level ?? null,
+            openNow: data.result.opening_hours?.open_now,
+            businessHours: data.result.opening_hours?.weekday_text,
           })
         }
       } catch {
-        // Non-fatal — lead still appears without phone/website
+        // Non-fatal — lead still appears without enrichment
       }
     })
   )
@@ -187,6 +224,9 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
       if (seen.has(key)) return null
       seen.add(key)
 
+      // Skip permanently closed businesses
+      if (d?.businessStatus === 'CLOSED_PERMANENTLY') return null
+
       return {
         id: `gp_${place.place_id}`,
         businessName: place.name,
@@ -203,6 +243,9 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
         longitude: pLng,
         distanceMiles: haversineDistanceMiles(lat, lon, pLat, pLng),
         createdAt: new Date().toISOString(),
+        priceLevel: d?.priceLevel ?? null,
+        openNow: d?.openNow,
+        businessHours: d?.businessHours,
       } satisfies Omit<Lead, 'leadScore' | 'status' | 'notes'>
     })
     .filter((l): l is NonNullable<typeof l> => l !== null)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback, useEffect, useMemo, Suspense } from 'react'
+import { useState, useCallback, useEffect, useMemo, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import {
   LayoutGrid,
@@ -13,6 +13,7 @@ import {
   SearchX,
   Loader2,
   Bell,
+  Activity,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead, SearchParams, SearchHistory } from '@/types/lead'
@@ -40,6 +41,33 @@ const SAVED_LEADS_KEY = 'leadzip_saved_leads'
 const HISTORY_KEY = 'leadzip_search_history'
 
 const MAX_BULK_ZIPS: Record<string, number> = { free: 3, pro: 10, agency: 25 }
+
+function haversineDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 3958.8
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLon = ((lon2 - lon1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) ** 2
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+}
+
+function computeCompetitorDensity(leads: Lead[]): Lead[] {
+  return leads.map((lead) => {
+    if (lead.latitude == null || lead.longitude == null) return lead
+    const count = leads.filter(
+      (other) =>
+        other.id !== lead.id &&
+        other.category === lead.category &&
+        other.latitude != null &&
+        other.longitude != null &&
+        haversineDistanceMiles(lead.latitude!, lead.longitude!, other.latitude!, other.longitude!) <= 1
+    ).length
+    return { ...lead, nearbyCompetitorCount: count }
+  })
+}
 
 function SkeletonCard() {
   return (
@@ -144,6 +172,8 @@ function SearchPageInner() {
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [savedSearchCount, setSavedSearchCount] = useState(0)
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([])
+  const [healthCheckProgress, setHealthCheckProgress] = useState<{ done: number; total: number } | null>(null)
+  const healthCheckAbortRef = useRef(false)
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -226,9 +256,10 @@ function SearchPageInner() {
       const filteredLeads = params.excludeSaved
         ? result.leads.filter((l) => !savedLeadIds.has(l.id))
         : result.leads
+      const enrichedLeads = computeCompetitorDensity(filteredLeads)
       setLastSearchParams(params)
-      setLeads(filteredLeads)
-      setTotalFound(filteredLeads.length)
+      setLeads(enrichedLeads)
+      setTotalFound(enrichedLeads.length)
       if (result.center) setMapCenter(result.center)
 
       // Save to search history in localStorage
@@ -323,8 +354,9 @@ function SearchPageInner() {
         ? merged.filter((l) => !savedLeadIds.has(l.id))
         : merged
 
-      setLeads(filtered)
-      setTotalFound(filtered.length)
+      const enrichedBulk = computeCompetitorDensity(filtered)
+      setLeads(enrichedBulk)
+      setTotalFound(enrichedBulk.length)
 
       try {
         const raw = localStorage.getItem(HISTORY_KEY)
@@ -447,6 +479,38 @@ function SearchPageInner() {
     setSelectedIds(new Set())
   }, [leads, selectedIds])
 
+  const handleBatchHealthCheck = useCallback(async () => {
+    const leadsWithSite = leads.filter((l) => !!l.website && l.digitalHealthScore === undefined)
+    if (leadsWithSite.length === 0) return
+    healthCheckAbortRef.current = false
+    setHealthCheckProgress({ done: 0, total: leadsWithSite.length })
+
+    for (let i = 0; i < leadsWithSite.length; i++) {
+      if (healthCheckAbortRef.current) break
+      const lead = leadsWithSite[i]
+      try {
+        const res = await fetch('/api/leads/enrich/health', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ website: lead.website, leadId: lead.id }),
+        })
+        if (res.ok) {
+          const data = await res.json() as { score?: number; details?: import('@/types/lead').DigitalHealthDetails }
+          setLeads((prev) =>
+            prev.map((l) =>
+              l.id === lead.id
+                ? { ...l, digitalHealthScore: data.score ?? 0, digitalHealthDetails: data.details }
+                : l
+            )
+          )
+        }
+      } catch { /* non-fatal */ }
+      setHealthCheckProgress((prev) => prev ? { done: prev.done + 1, total: prev.total } : null)
+      if (i < leadsWithSite.length - 1) await new Promise((r) => setTimeout(r, 150))
+    }
+    setHealthCheckProgress(null)
+  }, [leads])
+
   const sortedLeads = [...leads].sort((a, b) => {
     switch (sortOption) {
       case 'score_asc':
@@ -553,6 +617,40 @@ function SearchPageInner() {
                     <Bell className="h-3.5 w-3.5 shrink-0" />
                     Save search
                   </button>
+                )}
+
+                {/* Batch health check */}
+                {leads.length > 0 && !isLoading && leads.some((l) => !!l.website && l.digitalHealthScore === undefined) && (
+                  <div className="flex items-center gap-2">
+                    {healthCheckProgress ? (
+                      <>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 text-blue-500" />
+                          Checking {healthCheckProgress.done} / {healthCheckProgress.total} websites…
+                        </div>
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                            style={{ width: `${Math.round((healthCheckProgress.done / healthCheckProgress.total) * 100)}%` }}
+                          />
+                        </div>
+                        <button
+                          onClick={() => { healthCheckAbortRef.current = true }}
+                          className="text-xs text-slate-400 hover:text-slate-600"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={handleBatchHealthCheck}
+                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                      >
+                        <Activity className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        Check all websites
+                      </button>
+                    )}
+                  </div>
                 )}
                 {/* Sort */}
                 <div className="relative">

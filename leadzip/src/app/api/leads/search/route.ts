@@ -111,6 +111,16 @@ export async function POST(request: NextRequest) {
     // ── Live fetch ────────────────────────────────────────────────────────────
     const results = await searchLeads(body)
 
+    // Apply new post-filters not handled by providers
+    if (body.noWebsite === true) {
+      results.leads = results.leads.filter((l) => !l.website)
+      results.total = results.leads.length
+    }
+    if (body.minReviews != null && body.minReviews > 0) {
+      results.leads = results.leads.filter((l) => (l.reviewCount ?? 0) >= body.minReviews!)
+      results.total = results.leads.length
+    }
+
     // Mark leads already saved by this user
     try {
       if (isSupabaseConfigured) {

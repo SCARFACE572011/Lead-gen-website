@@ -111,14 +111,22 @@ export function LeadCard({
   }[emailConfidence]
 
   type HealthState = 'idle' | 'loading' | 'found' | 'unreachable'
-  const [healthState, setHealthState] = useState<HealthState>('idle')
-  const [healthScore, setHealthScore] = useState<number>(0)
-  const [healthDetails, setHealthDetails] = useState<DigitalHealthDetails | null>(null)
+  const [localHealthState, setLocalHealthState] = useState<HealthState>('idle')
+  const [localHealthScore, setLocalHealthScore] = useState<number | null>(null)
+  const [localHealthDetails, setLocalHealthDetails] = useState<DigitalHealthDetails | null>(null)
   const [breakdownOpen, setBreakdownOpen] = useState(false)
+  const [hoursOpen, setHoursOpen] = useState(false)
+
+  // Merge local state with lead prop (batch health check updates lead prop)
+  const healthScore = localHealthScore ?? lead.digitalHealthScore ?? 0
+  const healthDetails = localHealthDetails ?? lead.digitalHealthDetails ?? null
+  const healthState: HealthState = localHealthState !== 'idle'
+    ? localHealthState
+    : lead.digitalHealthScore !== undefined ? 'found' : 'idle'
 
   async function handleCheckHealth() {
     if (!lead.website) return
-    setHealthState('loading')
+    setLocalHealthState('loading')
     try {
       const res = await fetch('/api/leads/enrich/health', {
         method: 'POST',
@@ -127,14 +135,14 @@ export function LeadCard({
       })
       const data = await res.json()
       if (res.ok && typeof data.score === 'number') {
-        setHealthScore(data.score)
-        setHealthDetails(data.details ?? null)
-        setHealthState('found')
+        setLocalHealthScore(data.score)
+        setLocalHealthDetails(data.details ?? null)
+        setLocalHealthState('found')
       } else {
-        setHealthState('unreachable')
+        setLocalHealthState('unreachable')
       }
     } catch {
-      setHealthState('unreachable')
+      setLocalHealthState('unreachable')
     }
   }
 
@@ -193,6 +201,21 @@ export function LeadCard({
                 {lead.sourceZip}
               </span>
             )}
+            {lead.openNow === true && (
+              <span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                Open Now
+              </span>
+            )}
+            {lead.openNow === false && (
+              <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+                Closed
+              </span>
+            )}
+            {lead.priceLevel != null && lead.priceLevel > 0 && (
+              <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                {'$'.repeat(lead.priceLevel)}
+              </span>
+            )}
           </div>
         </div>
         <LeadScore score={lead.leadScore} size="sm" />
@@ -211,8 +234,33 @@ export function LeadCard({
               · {lead.distanceMiles.toFixed(1)} mi
             </span>
           )}
+          {lead.nearbyCompetitorCount != null && lead.nearbyCompetitorCount > 0 && (
+            <span className="ml-1 text-slate-400">
+              · {lead.nearbyCompetitorCount} competitor{lead.nearbyCompetitorCount !== 1 ? 's' : ''} nearby
+            </span>
+          )}
         </span>
       </div>
+
+      {/* Business hours (collapsible) */}
+      {lead.businessHours && lead.businessHours.length > 0 && (
+        <div>
+          <button
+            type="button"
+            onClick={() => setHoursOpen(o => !o)}
+            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+          >
+            {hoursOpen ? '▴ hide hours' : '▾ show hours'}
+          </button>
+          {hoursOpen && (
+            <div className="mt-1.5 rounded-lg bg-slate-50 p-2 space-y-0.5">
+              {lead.businessHours.map((h, i) => (
+                <p key={i} className="text-xs text-slate-600">{h}</p>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Phone */}
       {lead.phone ? (
@@ -384,6 +432,11 @@ export function LeadCard({
                 Checking…
               </span>
             )}
+            {healthState === 'found' && (
+              <span className={cn('text-xs font-bold tabular-nums', healthColor(healthScore).label)}>
+                {healthScore}/100
+              </span>
+            )}
           </>
         )}
       </div>
@@ -415,24 +468,33 @@ export function LeadCard({
           </div>
 
           {breakdownOpen && healthDetails && (
-            <div className="mt-2 rounded-lg bg-slate-50 p-2 text-xs">
-              {VISIBLE_SIGNALS.map(({ key, label, pts, caveat }) => (
-                <div
-                  key={key}
-                  className="flex items-center justify-between border-b border-slate-100 py-1 last:border-0"
-                >
-                  <span className="text-slate-500">
-                    {label}
-                    {caveat && (
-                      <span className="ml-1 italic text-slate-400">({caveat})</span>
-                    )}
-                    <span className="ml-1 text-slate-300">+{pts}</span>
-                  </span>
-                  <span className={healthDetails[key] ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
-                    {healthDetails[key] ? '✓' : '✗'}
-                  </span>
+            <div className="mt-2 space-y-2">
+              {/* Website screenshot */}
+              {hasWebsite && (
+                <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-100 h-28 relative">
+                  <img
+                    src={`https://api.microlink.io/?url=${encodeURIComponent(lead.website)}&screenshot=true&embed=screenshot.url&type=jpeg&meta=false`}
+                    alt={`${lead.businessName} website`}
+                    className="w-full h-full object-cover object-top"
+                    loading="lazy"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
                 </div>
-              ))}
+              )}
+              <div className="rounded-lg bg-slate-50 p-2 text-xs">
+                {VISIBLE_SIGNALS.map(({ key, label, pts, caveat }) => (
+                  <div key={key} className="flex items-center justify-between border-b border-slate-100 py-1 last:border-0">
+                    <span className="text-slate-500">
+                      {label}
+                      {caveat && <span className="ml-1 italic text-slate-400">({caveat})</span>}
+                      <span className="ml-1 text-slate-300">+{pts}</span>
+                    </span>
+                    <span className={healthDetails[key] ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
+                      {healthDetails[key] ? '✓' : '✗'}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>

@@ -29,6 +29,11 @@ export interface Lead {
   emailConfidence?: 'verified' | 'likely' | 'guessed'
   digitalHealthScore?: number
   digitalHealthDetails?: DigitalHealthDetails
+  openNow?: boolean
+  businessHours?: string[]
+  priceLevel?: number | null
+  nearbyCompetitorCount?: number
+  screenshotUrl?: string
 }
 
 export interface DigitalHealthDetails {
@@ -53,7 +58,9 @@ export interface SearchParams {
   category: string
   keyword?: string
   minRating?: number
+  minReviews?: number
   hasWebsite?: boolean
+  noWebsite?: boolean
   hasPhone?: boolean
   excludeSaved?: boolean
 }
@@ -111,6 +118,24 @@ export const LEAD_CATEGORIES = [
   'Insurance Agents',
   'Accountants',
   'Chiropractors',
+  'IT Services',
+  'Financial Advisors',
+  'Mortgage Brokers',
+  'Property Management',
+  'Tutoring Centers',
+  'Childcare & Daycares',
+  'Yoga Studios',
+  'Therapy & Counseling',
+  'Veterinarians',
+  'Optometrists',
+  'Pharmacies',
+  'Event Planners',
+  'Printing Services',
+  'Security Companies',
+  'Pest Control',
+  'Pool Services',
+  'Solar Installers',
+  'Marketing Agencies',
   'Custom Keyword',
 ] as const
 

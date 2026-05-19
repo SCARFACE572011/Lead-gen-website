@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   User,
   CreditCard,
@@ -17,14 +17,18 @@ import {
   Mail,
   Building2,
   Lock,
+  Palette,
+  Upload,
+  X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import { getWhiteLabel, saveWhiteLabel, type WhiteLabelSettings } from '@/lib/white-label'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
-type TabId = 'profile' | 'plan' | 'notifications' | 'compliance'
+type TabId = 'profile' | 'plan' | 'notifications' | 'compliance' | 'whitelabel'
 
 interface Tab {
   id: TabId
@@ -37,6 +41,7 @@ const TABS: Tab[] = [
   { id: 'plan', label: 'Plan & Usage', icon: <CreditCard className="w-4 h-4" /> },
   { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
   { id: 'compliance', label: 'Compliance', icon: <ShieldCheck className="w-4 h-4" /> },
+  { id: 'whitelabel', label: 'White Label', icon: <Palette className="w-4 h-4" /> },
 ]
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -560,6 +565,129 @@ function ComplianceTab() {
   )
 }
 
+function WhiteLabelTab() {
+  const [settings, setSettings] = useState<WhiteLabelSettings>({ agencyName: '', logoDataUrl: '', accentColor: '#0369A1' })
+  const [saved, setSaved] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => { setSettings(getWhiteLabel()) }, [])
+
+  function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      setSettings((prev) => ({ ...prev, logoDataUrl: ev.target?.result as string }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  function handleSave() {
+    saveWhiteLabel(settings)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-[#0F172A] mb-1">White Label Exports</h2>
+        <p className="text-sm text-slate-500 mb-6">Add your agency branding to PDF exports. Your logo and colors replace LeadZip branding on all exported reports.</p>
+
+        {/* Agency Name */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Agency Name</label>
+          <input
+            type="text"
+            value={settings.agencyName}
+            onChange={(e) => setSettings((prev) => ({ ...prev, agencyName: e.target.value }))}
+            placeholder="Acme Lead Agency"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/30 focus:border-[#0369A1]"
+          />
+        </div>
+
+        {/* Logo Upload */}
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Agency Logo</label>
+          <div className="flex items-center gap-3">
+            {settings.logoDataUrl ? (
+              <div className="relative flex-shrink-0">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={settings.logoDataUrl} alt="Logo preview" className="h-12 w-12 rounded-lg object-contain border border-slate-200 bg-slate-50 p-1" />
+                <button
+                  onClick={() => setSettings((prev) => ({ ...prev, logoDataUrl: '' }))}
+                  className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-700"
+                >
+                  <X className="h-2.5 w-2.5" />
+                </button>
+              </div>
+            ) : null}
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm text-slate-600 hover:border-[#0369A1] hover:text-[#0369A1] transition-colors"
+            >
+              <Upload className="h-4 w-4" />
+              {settings.logoDataUrl ? 'Replace logo' : 'Upload logo'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
+            <span className="text-xs text-slate-400">PNG, SVG, or JPG — shown in PDF header</span>
+          </div>
+        </div>
+
+        {/* Accent Color */}
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-slate-700 mb-1.5">Accent Color</label>
+          <div className="flex items-center gap-3">
+            <input
+              type="color"
+              value={settings.accentColor}
+              onChange={(e) => setSettings((prev) => ({ ...prev, accentColor: e.target.value }))}
+              className="h-9 w-16 cursor-pointer rounded-lg border border-slate-200 p-0.5"
+            />
+            <span className="text-sm font-mono text-slate-600">{settings.accentColor}</span>
+            <span className="text-xs text-slate-400">Used for table headers and section titles in exports</span>
+          </div>
+        </div>
+
+        {/* Preview strip */}
+        {(settings.agencyName || settings.logoDataUrl) && (
+          <div className="mb-6 rounded-xl border border-slate-100 bg-slate-50 p-4">
+            <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">PDF Header Preview</p>
+            <div className="flex items-center gap-3 bg-white rounded-lg border border-slate-100 px-4 py-3">
+              {settings.logoDataUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={settings.logoDataUrl} alt="" className="h-8 w-8 object-contain flex-shrink-0" />
+              )}
+              <div>
+                <p className="text-sm font-bold" style={{ color: settings.accentColor }}>
+                  {settings.agencyName || 'Your Agency'}
+                </p>
+                <p className="text-xs text-slate-400">Lead Report — {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={handleSave}
+          className={cn(
+            'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+            saved
+              ? 'bg-emerald-50 text-emerald-700'
+              : 'bg-[#0369A1] text-white hover:bg-[#0284C7]'
+          )}
+        >
+          {saved ? <><Check className="h-4 w-4" /> Saved</> : 'Save branding'}
+        </button>
+      </div>
+
+      <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+        <strong>Pro tip:</strong> After saving, go to <strong>Exports</strong> and choose <em>Branded PDF</em> to generate a report with your agency's logo and colors.
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('profile')
 
@@ -569,6 +697,7 @@ export default function SettingsPage() {
       case 'plan': return <PlanTab />
       case 'notifications': return <NotificationsTab />
       case 'compliance': return <ComplianceTab />
+      case 'whitelabel': return <WhiteLabelTab />
     }
   }
 

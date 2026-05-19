@@ -12,9 +12,10 @@ import {
   Star,
   Phone,
   Globe,
+  FileImage,
 } from 'lucide-react'
 import { Lead } from '@/types/lead'
-import { exportToCSV } from '@/lib/export'
+import { exportToCSV, exportToBrandedPDF } from '@/lib/export'
 import { cn } from '@/lib/utils'
 
 const STORAGE_KEY = 'leadzip_saved_leads'
@@ -65,7 +66,7 @@ export default function ExportsPage() {
   const [selectedFields, setSelectedFields] = useState<Set<string>>(
     new Set(ALL_FIELDS.map((f) => f.key))
   )
-  const [format, setFormat] = useState<'csv' | 'excel_csv'>('csv')
+  const [format, setFormat] = useState<'csv' | 'excel_csv' | 'branded_pdf'>('csv')
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([])
   const [mounted, setMounted] = useState(false)
 
@@ -109,11 +110,28 @@ export default function ExportsPage() {
   const selectedLeads = leads.filter((l) => selectedLeadIds.has(l.id))
   const previewLeads = selectedLeads.slice(0, 5)
 
-  const handleExport = () => {
+  const handleExport = async () => {
     if (selectedLeads.length === 0) return
     // eslint-disable-next-line react-hooks/purity
     const filename = `leadzip-export-${Date.now()}`
-    // Filter fields
+
+    if (format === 'branded_pdf') {
+      await exportToBrandedPDF(selectedLeads)
+      const record: ExportRecord = {
+        id: `exp-${Date.now()}`,
+        filename: `${filename}.pdf`,
+        leadCount: selectedLeads.length,
+        format: 'Branded PDF',
+        fields: ['All fields'],
+        createdAt: new Date().toISOString(),
+      }
+      const updated = [record, ...exportHistory]
+      setExportHistory(updated)
+      localStorage.setItem(EXPORT_HISTORY_KEY, JSON.stringify(updated))
+      return
+    }
+
+    // Filter fields for CSV
     const filteredLeads = selectedLeads.map((lead) => {
       const filtered: Partial<Lead> = {}
       for (const key of selectedFields) {
@@ -288,6 +306,7 @@ export default function ExportsPage() {
                   {[
                     { value: 'csv', label: 'Standard CSV', desc: 'Compatible with all tools' },
                     { value: 'excel_csv', label: 'Excel-ready CSV', desc: 'UTF-8 BOM for Excel' },
+                    { value: 'branded_pdf', label: 'Branded PDF', desc: 'Agency logo, colors, and name — configure in Settings → White Label', icon: <FileImage className="w-3.5 h-3.5 text-[#0369A1]" /> },
                   ].map((f) => (
                     <label
                       key={f.value}
@@ -303,11 +322,14 @@ export default function ExportsPage() {
                         name="format"
                         value={f.value}
                         checked={format === f.value}
-                        onChange={() => setFormat(f.value as 'csv' | 'excel_csv')}
+                        onChange={() => setFormat(f.value as 'csv' | 'excel_csv' | 'branded_pdf')}
                         className="mt-0.5 accent-[#0369A1]"
                       />
                       <div>
-                        <div className="text-sm font-medium text-[#0F172A]">{f.label}</div>
+                        <div className="text-sm font-medium text-[#0F172A] flex items-center gap-1.5">
+                          {f.label}
+                          {'icon' in f && f.icon}
+                        </div>
                         <div className="text-xs text-slate-500">{f.desc}</div>
                       </div>
                     </label>

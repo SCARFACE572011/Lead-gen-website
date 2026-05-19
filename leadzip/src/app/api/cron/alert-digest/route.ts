@@ -1,4 +1,3 @@
-// src/app/api/cron/alert-digest/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
@@ -7,20 +6,25 @@ import type { SearchParams } from '@/types/lead'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-})
-
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
   if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    console.error('alert-digest: GMAIL credentials not configured')
+    return NextResponse.json({ error: 'Email not configured' }, { status: 503 })
+  }
+
+  const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  })
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -28,7 +32,6 @@ export async function POST(request: NextRequest) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   )
 
-  // Fetch all alert-enabled saved searches
   const { data: savedSearches, error: fetchError } = await supabase
     .from('saved_searches')
     .select('*')
@@ -43,12 +46,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ processed: 0, emailed: 0 })
   }
 
-  // Batch-fetch user profiles for all unique user IDs
   const userIds = [...new Set(savedSearches.map((s) => s.user_id as string))]
-  const { data: profiles } = await supabase
+  const { data: profiles, error: profilesError } = await supabase
     .from('users_profile')
     .select('id, email, full_name')
     .in('id', userIds)
+
+  if (profilesError) {
+    console.error('alert-digest: failed to fetch profiles', profilesError)
+  }
 
   const profileMap = new Map<string, { email: string; full_name?: string }>(
     (profiles ?? []).map((p) => [p.id as string, { email: p.email as string, full_name: p.full_name as string | undefined }])
@@ -73,46 +79,50 @@ export async function POST(request: NextRequest) {
 
       if (newLeads.length > 0) {
         const profile = profileMap.get(row.user_id as string)
-        if (profile) {
-          const firstName = profile.full_name?.split(' ')[0] ?? 'there'
-          const n = newLeads.length
-          const searchUrl = [
-            `${siteUrl}/search`,
-            `?zip=${encodeURIComponent(row.zip as string)}`,
-            `&radius=${row.radius}`,
-            `&category=${encodeURIComponent(row.category as string)}`,
-            row.keyword ? `&keyword=${encodeURIComponent(row.keyword as string)}` : '',
-          ].join('')
-
-          const subject = `${n} new lead${n === 1 ? '' : 's'} — "${row.name}"`
-          const businessList = newLeads.map((l) => l.businessName).join('\n')
-          const text = [
-            `Hey ${firstName},`,
-            '',
-            `Your saved search "${row.name}" found ${n} new business${n === 1 ? '' : 'es'} since yesterday.`,
-            '',
-            `→ View in LeadZip: ${searchUrl}`,
-            '',
-            '────',
-            businessList,
-            '',
-            `Manage your saved searches:\n${siteUrl}/saved-searches`,
-            '',
-            '— LeadZip',
-          ].join('\n')
-
-          await transporter.sendMail({
-            from: `"LeadZip" <${process.env.GMAIL_USER}>`,
-            to: profile.email,
-            subject,
-            text,
-          })
-
-          emailed++
+        if (!profile) {
+          // Skip snapshot update — retry next run when profile is available
+          console.error(`alert-digest: no profile found for user ${row.user_id}, skipping`)
+          continue
         }
+
+        const firstName = profile.full_name?.split(' ')[0] ?? 'there'
+        const n = newLeads.length
+        const searchUrl = [
+          `${siteUrl}/search`,
+          `?zip=${encodeURIComponent(row.zip as string)}`,
+          `&radius=${row.radius}`,
+          `&category=${encodeURIComponent(row.category as string)}`,
+          row.keyword ? `&keyword=${encodeURIComponent(row.keyword as string)}` : '',
+        ].join('')
+
+        const subject = `${n} new lead${n === 1 ? '' : 's'} — "${row.name}"`
+        const businessList = newLeads.map((l) => l.businessName).join('\n')
+        const text = [
+          `Hey ${firstName},`,
+          '',
+          `Your saved search "${row.name}" found ${n} new business${n === 1 ? '' : 'es'} since yesterday.`,
+          '',
+          `→ View in LeadZip: ${searchUrl}`,
+          '',
+          '────',
+          businessList,
+          '',
+          `Manage your saved searches:\n${siteUrl}/saved-searches`,
+          '',
+          '— LeadZip',
+        ].join('\n')
+
+        await transporter.sendMail({
+          from: `"LeadZip" <${process.env.GMAIL_USER}>`,
+          to: profile.email,
+          subject,
+          text,
+        })
+
+        emailed++
       }
 
-      // Update snapshot — only reached if email sent successfully (or no new leads)
+      // Update snapshot after successful email (or when no new leads)
       await supabase
         .from('saved_searches')
         .update({

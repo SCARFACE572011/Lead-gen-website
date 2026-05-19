@@ -71,7 +71,14 @@ export default function SavedSearchesPage() {
     setDeletingId(id)
     setSearches((prev) => prev.filter((s) => s.id !== id))
     try {
-      await fetch(`/api/saved-searches/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/saved-searches/${id}`, { method: 'DELETE' })
+      if (!res.ok) {
+        const listRes = await fetch('/api/saved-searches')
+        if (listRes.ok) {
+          const data = await listRes.json() as { searches: SavedSearch[] }
+          setSearches(data.searches)
+        }
+      }
     } catch {
       const res = await fetch('/api/saved-searches')
       if (res.ok) {

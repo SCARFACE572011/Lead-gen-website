@@ -79,9 +79,9 @@ export async function GET(request: NextRequest) {
 
       if (newLeads.length > 0) {
         const profile = profileMap.get(row.user_id as string)
-        if (!profile) {
+        if (!profile || !profile.email) {
           // Skip snapshot update — retry next run when profile is available
-          console.error(`alert-digest: no profile found for user ${row.user_id}, skipping`)
+          console.error(`alert-digest: no profile/email found for user ${row.user_id}, skipping`)
           continue
         }
 

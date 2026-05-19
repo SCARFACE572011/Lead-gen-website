@@ -64,7 +64,7 @@ const PLANS: Plan[] = [
   },
   {
     name: "Pro",
-    monthlyPrice: 49,
+    monthlyPrice: 25,
     annualPrice: 39,
     description: "For agencies and sales teams ready to grow their pipeline.",
     cta: "Start Pro Trial",
@@ -86,7 +86,7 @@ const PLANS: Plan[] = [
   },
   {
     name: "Agency",
-    monthlyPrice: 99,
+    monthlyPrice: 50,
     annualPrice: 79,
     description: "Built for scaling agencies with high-volume lead needs.",
     cta: "Contact Sales",

@@ -92,12 +92,17 @@ export async function POST(request: NextRequest) {
 
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription
+      const now = new Date().toISOString()
       await supabase.from('subscriptions')
-        .update({ status: 'cancelled', plan: 'free', updated_at: new Date().toISOString() })
+        .update({ status: 'cancelled', plan: 'free', updated_at: now })
         .eq('stripe_subscription_id', subscription.id)
-      await supabase.from('users_profile')
-        .update({ plan: 'free', updated_at: new Date().toISOString() })
-        .eq('id', subscription.metadata?.user_id)
+      const userId = subscription.metadata?.user_id
+      if (userId) {
+        await supabase.from('users_profile')
+          .update({ plan: 'free', status: 'deactivated', updated_at: now })
+          .eq('id', userId)
+        await supabase.auth.admin.signOut(userId, 'global')
+      }
       break
     }
   }

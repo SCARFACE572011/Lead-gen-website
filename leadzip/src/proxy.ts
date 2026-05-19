@@ -1,11 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 
 const PROTECTED_ROUTES = ['/dashboard', '/search', '/saved', '/history', '/exports', '/settings', '/admin']
 const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password']
 const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
 
   // Skip auth enforcement when Supabase isn't configured yet
@@ -37,6 +38,27 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
   const isAuthRoute = AUTH_ROUTES.some(r => pathname.startsWith(r))
+
+  // Deactivated user check — kick them out before they reach any protected page
+  if (isProtected && user && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const adminDb = createSupabaseClient(
+      supabaseUrl,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
+    )
+    const { data: userProfile } = await adminDb
+      .from('users_profile')
+      .select('status')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (userProfile?.status === 'deactivated') {
+      await adminDb.auth.admin.signOut(user.id, 'global')
+      const url = request.nextUrl.clone()
+      url.pathname = '/login'
+      url.searchParams.set('deactivated', 'true')
+      return NextResponse.redirect(url)
+    }
+  }
 
   // Unauthenticated user trying to access protected route
   if (isProtected && !user) {

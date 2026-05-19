@@ -41,12 +41,6 @@ export async function POST(request: NextRequest) {
             lead_score: lead.leadScore,
             status: lead.status ?? 'new',
             notes: lead.notes ?? '',
-            saved_at: new Date().toISOString(),
-            employee_count: lead.employeeCount ?? null,
-            revenue_estimate: lead.revenueEstimate ?? null,
-            facebook_url: lead.facebookUrl ?? null,
-            instagram_url: lead.instagramUrl ?? null,
-            linkedin_url: lead.linkedinUrl ?? null,
           })
         }
       } catch {

@@ -95,6 +95,7 @@ function SidebarContent({
         const d = new Date(h.createdAt)
         return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth()
       })
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSearchCount(thisMonth.length)
     } catch {}
   }, [])
@@ -193,9 +194,13 @@ function SidebarContent({
         {/* Sign Out */}
         <button
           className="w-full mt-1 flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-500 hover:bg-red-50 hover:text-red-600 transition-all duration-150"
-          onClick={() => {
-            // TODO: connect to Supabase signOut
-            console.log('Sign out')
+          onClick={async () => {
+            try {
+              const { createClient } = await import('@/lib/supabase/client')
+              const supabase = createClient()
+              await supabase.auth.signOut()
+            } catch { /* ignore */ }
+            window.location.href = '/login'
           }}
         >
           <LogOut className="w-4 h-4 flex-shrink-0" />

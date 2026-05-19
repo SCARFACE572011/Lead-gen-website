@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Zap } from "lucide-react";
+import { Zap } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 
 export const metadata = {

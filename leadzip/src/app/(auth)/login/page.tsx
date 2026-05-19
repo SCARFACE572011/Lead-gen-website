@@ -1,12 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+
+function DeactivatedNotice() {
+  const searchParams = useSearchParams()
+  if (searchParams.get('deactivated') !== 'true') return null
+  return (
+    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950">
+      <p className="text-sm font-semibold text-red-700 dark:text-red-400">Account Deactivated</p>
+      <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
+        Your account has been deactivated. Contact support if you believe this is an error.
+      </p>
+    </div>
+  )
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -63,6 +76,8 @@ export default function LoginPage() {
           Sign in to your LeadZip account to continue.
         </p>
       </div>
+
+      <Suspense fallback={null}><DeactivatedNotice /></Suspense>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Email */}

@@ -41,10 +41,18 @@ interface NominatimResult {
 
 export async function geocodeZip(zipCode: string): Promise<GeocodedZip> {
   const url = `${NOMINATIM_URL}?postalcode=${encodeURIComponent(zipCode)}&country=US&format=json&limit=1&addressdetails=1`
-  const res = await fetch(url, {
-    headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' },
-    next: { revalidate: 86400 }, // cache for 24h — GET is valid for next.revalidate
-  })
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 5000) // 5s max — never block the search pipeline
+  let res: Response
+  try {
+    res = await fetch(url, {
+      headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en' },
+      signal: controller.signal,
+      next: { revalidate: 86400 },
+    })
+  } finally {
+    clearTimeout(timer)
+  }
   if (!res.ok) throw new Error(`Nominatim ${res.status}`)
   const data = (await res.json()) as NominatimResult[]
   if (!data.length) throw new Error(`ZIP ${zipCode} not found`)

@@ -13,9 +13,10 @@ import {
   Users,
   Mail,
   Loader2,
+  Zap,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { Lead } from '@/types/lead'
+import { Lead, DigitalHealthDetails } from '@/types/lead'
 import { LeadScore } from './LeadScore'
 
 interface LeadCardProps {
@@ -108,6 +109,51 @@ export function LeadCard({
     likely: 'bg-amber-50 text-amber-700',
     guessed: 'bg-slate-100 text-slate-500',
   }[emailConfidence]
+
+  type HealthState = 'idle' | 'loading' | 'found' | 'unreachable'
+  const [healthState, setHealthState] = useState<HealthState>('idle')
+  const [healthScore, setHealthScore] = useState<number>(0)
+  const [healthDetails, setHealthDetails] = useState<DigitalHealthDetails | null>(null)
+  const [breakdownOpen, setBreakdownOpen] = useState(false)
+
+  async function handleCheckHealth() {
+    if (!lead.website) return
+    setHealthState('loading')
+    try {
+      const res = await fetch('/api/leads/enrich/health', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ website: lead.website }),
+      })
+      const data = await res.json()
+      if (res.ok && typeof data.score === 'number') {
+        setHealthScore(data.score)
+        setHealthDetails(data.details ?? null)
+        setHealthState('found')
+      } else {
+        setHealthState('unreachable')
+      }
+    } catch {
+      setHealthState('unreachable')
+    }
+  }
+
+  function healthColor(score: number) {
+    if (score <= 30) return { label: 'text-red-700', bar: 'bg-red-500' }
+    if (score <= 60) return { label: 'text-amber-700', bar: 'bg-amber-400' }
+    return { label: 'text-green-700', bar: 'bg-green-500' }
+  }
+
+  const VISIBLE_SIGNALS: { key: keyof DigitalHealthDetails; label: string; pts: number; caveat?: string }[] = [
+    { key: 'hasHttps', label: 'SSL / HTTPS', pts: 5 },
+    { key: 'mobileResponsive', label: 'Mobile-friendly', pts: 10 },
+    { key: 'hasAnalytics', label: 'Google Analytics', pts: 10 },
+    { key: 'hasGoogleAds', label: 'Google Ads', pts: 15 },
+    { key: 'hasFacebookAds', label: 'Facebook Ads', pts: 15 },
+    { key: 'hasGBP', label: 'Google Business Profile', pts: 15, caveat: 'detected from site' },
+    { key: 'hasContactForm', label: 'Contact form / email', pts: 10 },
+    { key: 'fastLoad', label: 'Fast server response', pts: 10 },
+  ]
 
   return (
     <div
@@ -320,9 +366,81 @@ export function LeadCard({
             {emailState === 'not_found' && (
               <span className="text-xs text-slate-400">Not found</span>
             )}
+
+            {healthState === 'idle' && (
+              <button
+                onClick={handleCheckHealth}
+                aria-label="Check digital health"
+                className="flex items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
+              >
+                <Zap className="h-3.5 w-3.5 shrink-0" />
+                Check Health
+              </button>
+            )}
+
+            {healthState === 'loading' && (
+              <span className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed">
+                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+                Checking…
+              </span>
+            )}
           </>
         )}
       </div>
+
+      {/* Health result */}
+      {hasWebsite && healthState === 'found' && (
+        <div className="mt-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={cn('text-sm font-bold tabular-nums', healthColor(healthScore).label)}>
+              {healthScore}/100
+            </span>
+            <div className="h-1.5 w-20 rounded-full bg-slate-200 overflow-hidden">
+              <div
+                className={cn('h-full rounded-full', healthColor(healthScore).bar)}
+                style={{ width: `${healthScore}%` }}
+              />
+            </div>
+            {healthScore <= 30 && (
+              <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+                High opportunity
+              </span>
+            )}
+            <button
+              onClick={() => setBreakdownOpen((o) => !o)}
+              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              {breakdownOpen ? '▴ hide' : '▾ breakdown'}
+            </button>
+          </div>
+
+          {breakdownOpen && healthDetails && (
+            <div className="mt-2 rounded-lg bg-slate-50 p-2 text-xs">
+              {VISIBLE_SIGNALS.map(({ key, label, pts, caveat }) => (
+                <div
+                  key={key}
+                  className="flex items-center justify-between border-b border-slate-100 py-1 last:border-0"
+                >
+                  <span className="text-slate-500">
+                    {label}
+                    {caveat && (
+                      <span className="ml-1 italic text-slate-400">({caveat})</span>
+                    )}
+                    <span className="ml-1 text-slate-300">+{pts}</span>
+                  </span>
+                  <span className={healthDetails[key] ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
+                    {healthDetails[key] ? '✓' : '✗'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {hasWebsite && healthState === 'unreachable' && (
+        <p className="mt-1 text-xs text-slate-400">⚠ Couldn't reach site</p>
+      )}
 
       {/* Note area */}
       {noteOpen && (

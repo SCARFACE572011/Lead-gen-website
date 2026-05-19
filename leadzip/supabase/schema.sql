@@ -140,14 +140,26 @@ create policy "Users can view own subscription"
 -- ============================================================
 
 -- Auto-create profile + usage record on signup
+-- Admin emails granted full access automatically
 create or replace function public.handle_new_user()
 returns trigger as $$
+declare
+  v_role text := 'user';
+  v_plan text := 'free';
 begin
-  insert into public.users_profile (id, email, full_name)
+  -- Grant admin + agency plan to owner account
+  if new.email = 'SCARFACE572011@live.com' or new.email = 'scarface572011@live.com' then
+    v_role := 'admin';
+    v_plan := 'agency';
+  end if;
+
+  insert into public.users_profile (id, email, full_name, role, plan)
   values (
     new.id,
     new.email,
-    new.raw_user_meta_data->>'full_name'
+    new.raw_user_meta_data->>'full_name',
+    v_role,
+    v_plan
   );
 
   insert into public.usage_limits (user_id)
@@ -197,6 +209,35 @@ begin
     last_reset_at = now(),
     updated_at = now()
   where date_trunc('month', last_reset_at) < date_trunc('month', now());
+end;
+$$ language plpgsql security definer;
+
+-- ── Leads Cache (search result caching) ────────────────────
+create table if not exists public.leads_cache (
+  id uuid default gen_random_uuid() primary key,
+  cache_key text not null unique,
+  leads jsonb not null default '[]',
+  total integer not null default 0,
+  source text not null default 'osm',
+  expires_at timestamptz not null,
+  created_at timestamptz not null default now()
+);
+
+alter table public.leads_cache enable row level security;
+
+create policy "Service role can manage cache"
+  on public.leads_cache for all
+  using (true);
+
+-- ── increment_searches RPC ───────────────────────────────────
+create or replace function public.increment_searches(uid uuid)
+returns void as $$
+begin
+  update public.usage_limits
+  set
+    searches_this_month = searches_this_month + 1,
+    updated_at = now()
+  where user_id = uid;
 end;
 $$ language plpgsql security definer;
 

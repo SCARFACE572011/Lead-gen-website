@@ -11,6 +11,7 @@ import {
   X,
   ChevronDown,
   SearchX,
+  Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead, SearchParams, SearchHistory } from '@/types/lead'
@@ -19,6 +20,7 @@ import { SearchFilters } from '@/components/leads/SearchFilters'
 import { LeadCard } from '@/components/leads/LeadCard'
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadsMapWrapper } from '@/components/leads/LeadsMapWrapper'
+import { createClient } from '@/lib/supabase/client'
 
 type ViewMode = 'card' | 'table' | 'map'
 type SortOption = 'score_desc' | 'score_asc' | 'rating_desc' | 'name_asc'
@@ -33,6 +35,8 @@ const SORT_LABELS: Record<SortOption, string> = {
 const SAVED_IDS_KEY = 'leadzip_saved'
 const SAVED_LEADS_KEY = 'leadzip_saved_leads'
 const HISTORY_KEY = 'leadzip_search_history'
+
+const MAX_BULK_ZIPS: Record<string, number> = { free: 3, pro: 10, agency: 25 }
 
 function SkeletonCard() {
   return (
@@ -56,7 +60,32 @@ function SkeletonCard() {
   )
 }
 
-function EmptyState({ hasSearched }: { hasSearched: boolean }) {
+function EmptyState({ hasSearched, errorMessage }: { hasSearched: boolean; errorMessage?: string }) {
+  if (errorMessage) {
+    const isLimit = errorMessage.includes('limit')
+    return (
+      <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
+        <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${isLimit ? 'bg-amber-50' : 'bg-red-50'}`}>
+          <SearchX className={`h-8 w-8 ${isLimit ? 'text-amber-400' : 'text-red-400'}`} aria-hidden="true" />
+        </div>
+        <div>
+          <p className="text-base font-semibold text-slate-700">
+            {isLimit ? 'Search limit reached' : 'Search failed'}
+          </p>
+          <p className="mt-1 text-sm text-slate-500 max-w-xs">{errorMessage}</p>
+          {isLimit && (
+            <a
+              href="/settings"
+              className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            >
+              Upgrade plan
+            </a>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   if (!hasSearched) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
@@ -95,12 +124,19 @@ function SearchPageInner() {
   const [mapCenter, setMapCenter] = useState<{ lat: number; lon: number } | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [hasSearched, setHasSearched] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | undefined>(undefined)
   const [viewMode, setViewMode] = useState<ViewMode>('card')
   const [sortOption, setSortOption] = useState<SortOption>('score_desc')
   const [sortMenuOpen, setSortMenuOpen] = useState(false)
   const [savedLeadIds, setSavedLeadIds] = useState<Set<string>>(new Set())
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [totalFound, setTotalFound] = useState(0)
+
+  const [searchMode, setSearchMode] = useState<'single' | 'bulk'>('single')
+  const [bulkProgress, setBulkProgress] = useState<{ done: number; total: number } | null>(null)
+  const [noResultZips, setNoResultZips] = useState<string[]>([])
+  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'agency'>('free')
+  const [searchedZipCount, setSearchedZipCount] = useState(0)
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -116,6 +152,21 @@ function SearchPageInner() {
     }
   }, [])
 
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase
+        .from('users_profile')
+        .select('plan')
+        .eq('id', user.id)
+        .single()
+        .then(({ data }) => {
+          if (data?.plan) setUserPlan(data.plan as 'free' | 'pro' | 'agency')
+        })
+    })
+  }, [])
+
   // Pre-populate initial filter values from URL params (for Rerun from history)
   const initialValues = useMemo<Partial<SearchParams>>(() => ({
     zipCode: searchParams.get('zip') ?? '',
@@ -128,6 +179,7 @@ function SearchPageInner() {
     setIsLoading(true)
     setHasSearched(true)
     setSelectedIds(new Set())
+    setErrorMessage(undefined)
 
     try {
       const res = await fetch('/api/leads/search', {
@@ -137,7 +189,19 @@ function SearchPageInner() {
       })
 
       if (!res.ok) {
-        throw new Error(`Search API returned ${res.status}`)
+        let msg = 'Something went wrong. Please try again.'
+        try {
+          const body = await res.json() as { error?: string }
+          if (body.error) msg = body.error
+        } catch { /* ignore */ }
+        if (res.status === 429) {
+          setErrorMessage(msg.includes('limit') ? msg : 'Monthly search limit reached. Upgrade your plan for more searches.')
+        } else {
+          setErrorMessage(msg)
+        }
+        setLeads([])
+        setTotalFound(0)
+        return
       }
 
       const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number } }
@@ -170,8 +234,106 @@ function SearchPageInner() {
       console.error('Search failed:', err)
       setLeads([])
       setTotalFound(0)
+      setErrorMessage('Search failed. Please check your connection and try again.')
     } finally {
       setIsLoading(false)
+    }
+  }, [savedLeadIds])
+
+  const handleBulkSearch = useCallback(async (
+    baseParams: Omit<SearchParams, 'zipCode'>,
+    zips: string[]
+  ) => {
+    setIsLoading(true)
+    setHasSearched(true)
+    setSelectedIds(new Set())
+    setErrorMessage(undefined)
+    setBulkProgress({ done: 0, total: zips.length })
+    setNoResultZips([])
+    setSearchedZipCount(zips.length)
+
+    try {
+      const results = await Promise.all(
+        zips.map(async (zip) => {
+          try {
+            const res = await fetch('/api/leads/search', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ ...baseParams, zipCode: zip }),
+            })
+            setBulkProgress((prev) =>
+              prev ? { done: prev.done + 1, total: prev.total } : null
+            )
+            if (!res.ok) return { zip, leads: [] as Lead[], center: undefined }
+            const data = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number } }
+            return { zip, leads: data.leads, center: data.center }
+          } catch {
+            setBulkProgress((prev) =>
+              prev ? { done: prev.done + 1, total: prev.total } : null
+            )
+            return { zip, leads: [] as Lead[], center: undefined }
+          }
+        })
+      )
+
+      const emptyZips = results.filter((r) => r.leads.length === 0).map((r) => r.zip)
+      setNoResultZips(emptyZips)
+
+      const firstCenter = results.find((r) => r.center)?.center
+      if (firstCenter) setMapCenter(firstCenter)
+
+      const allLeads = results.flatMap((r) =>
+        r.leads.map((l) => ({ ...l, sourceZip: r.zip }))
+      )
+
+      const seen = new Map<string, Lead>()
+      for (const lead of allLeads) {
+        const key = `${lead.businessName.toLowerCase().trim()}|${lead.address.toLowerCase().trim()}`
+        const existing = seen.get(key)
+        if (
+          !existing ||
+          (lead.distanceMiles ?? Infinity) < (existing.distanceMiles ?? Infinity)
+        ) {
+          seen.set(key, lead)
+        }
+      }
+
+      const merged = [...seen.values()].sort((a, b) => b.leadScore - a.leadScore)
+
+      const filtered = baseParams.excludeSaved
+        ? merged.filter((l) => !savedLeadIds.has(l.id))
+        : merged
+
+      setLeads(filtered)
+      setTotalFound(filtered.length)
+
+      try {
+        const raw = localStorage.getItem(HISTORY_KEY)
+        const existing: SearchHistory[] = raw ? JSON.parse(raw) : []
+        const entries: SearchHistory[] = zips.map((zip) => ({
+          id: `h_${Date.now()}_${zip}`,
+          userId: 'local',
+          zipCode: zip,
+          radius: baseParams.radiusMiles,
+          category: baseParams.category ?? '',
+          keyword: baseParams.keyword ?? '',
+          resultCount: results.find((r) => r.zip === zip)?.leads.length ?? 0,
+          createdAt: new Date().toISOString(),
+        }))
+        localStorage.setItem(
+          HISTORY_KEY,
+          JSON.stringify([...entries, ...existing].slice(0, 50))
+        )
+      } catch { /* non-fatal */ }
+
+    } catch (err) {
+      console.error('Bulk search failed:', err)
+      setLeads([])
+      setTotalFound(0)
+      setErrorMessage('Bulk search failed. Please try again.')
+    } finally {
+      setIsLoading(false)
+      setBulkProgress(null)
     }
   }, [savedLeadIds])
 
@@ -195,7 +357,7 @@ function SearchPageInner() {
     setSavedLeadIds((prev) => {
       const next = new Set(prev)
       const removing = next.has(lead.id)
-      removing ? next.delete(lead.id) : next.add(lead.id)
+      if (removing) { next.delete(lead.id) } else { next.add(lead.id) }
 
       try {
         localStorage.setItem(SAVED_IDS_KEY, JSON.stringify([...next]))
@@ -281,6 +443,7 @@ function SearchPageInner() {
   })
 
   const selectedCount = selectedIds.size
+  const maxBulkZips = MAX_BULK_ZIPS[userPlan] ?? 3
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -296,14 +459,30 @@ function SearchPageInner() {
       <div className="flex gap-6">
         {/* Filters sidebar — desktop */}
         <aside className="hidden w-72 shrink-0 lg:block">
-          <SearchFilters onSearch={handleSearch} isLoading={isLoading} initialValues={initialValues} />
+          <SearchFilters
+            onSearch={handleSearch}
+            onBulkSearch={handleBulkSearch}
+            isLoading={isLoading}
+            initialValues={initialValues}
+            searchMode={searchMode}
+            onSearchModeChange={setSearchMode}
+            maxBulkZips={maxBulkZips}
+          />
         </aside>
 
         {/* Results */}
         <div className="flex-1 min-w-0 space-y-4">
           {/* Mobile search filters */}
           <div className="lg:hidden">
-            <SearchFilters onSearch={handleSearch} isLoading={isLoading} initialValues={initialValues} />
+            <SearchFilters
+              onSearch={handleSearch}
+              onBulkSearch={handleBulkSearch}
+              isLoading={isLoading}
+              initialValues={initialValues}
+              searchMode={searchMode}
+              onSearchModeChange={setSearchMode}
+              maxBulkZips={maxBulkZips}
+            />
           </div>
 
           {/* Results toolbar */}
@@ -312,11 +491,34 @@ function SearchPageInner() {
               {/* Count */}
               <p className="text-sm text-slate-600">
                 {isLoading ? (
-                  <span className="inline-block h-4 w-32 animate-pulse rounded bg-slate-200" />
+                  searchMode === 'bulk' && bulkProgress ? (
+                    <span className="inline-flex items-center gap-2 text-sm text-slate-500">
+                      <Loader2 className="h-4 w-4 animate-spin shrink-0 text-blue-500" />
+                      Searching {bulkProgress.total} ZIP{bulkProgress.total !== 1 ? 's' : ''}…{' '}
+                      ({bulkProgress.done}/{bulkProgress.total} complete)
+                    </span>
+                  ) : (
+                    <span className="inline-block h-4 w-32 animate-pulse rounded bg-slate-200" />
+                  )
                 ) : (
                   <>
                     <span className="font-semibold text-slate-900 tabular-nums">{totalFound}</span>{' '}
-                    {totalFound === 1 ? 'lead' : 'leads'} found
+                    {searchMode === 'bulk' && searchedZipCount > 1 ? (
+                      <>
+                        results across{' '}
+                        <span className="font-semibold text-slate-900 tabular-nums">
+                          {searchedZipCount}
+                        </span>{' '}
+                        ZIP codes
+                      </>
+                    ) : (
+                      <>{totalFound === 1 ? 'lead' : 'leads'} found</>
+                    )}
+                    {noResultZips.length > 0 && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        No results for: {noResultZips.join(', ')}
+                      </span>
+                    )}
                   </>
                 )}
               </p>
@@ -437,6 +639,10 @@ function SearchPageInner() {
             </div>
           )}
 
+          {isLoading && viewMode === 'map' && (
+            <div className="h-96 animate-pulse rounded-xl bg-slate-200" />
+          )}
+
           {/* Results */}
           {!isLoading && leads.length > 0 && viewMode === 'card' && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -471,7 +677,7 @@ function SearchPageInner() {
 
           {/* Empty state */}
           {!isLoading && leads.length === 0 && (
-            <EmptyState hasSearched={hasSearched} />
+            <EmptyState hasSearched={hasSearched} errorMessage={errorMessage} />
           )}
         </div>
       </div>

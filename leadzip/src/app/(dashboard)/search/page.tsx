@@ -180,6 +180,7 @@ function SearchPageInner() {
     setHasSearched(true)
     setSelectedIds(new Set())
     setErrorMessage(undefined)
+    setSearchedZipCount(0)
 
     try {
       const res = await fetch('/api/leads/search', {

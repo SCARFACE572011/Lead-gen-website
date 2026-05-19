@@ -20,6 +20,12 @@ import {
   Palette,
   Upload,
   X,
+  Code2,
+  Copy,
+  Trash2,
+  RefreshCw,
+  Eye,
+  EyeOff,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -28,7 +34,7 @@ import { getWhiteLabel, saveWhiteLabel, type WhiteLabelSettings } from '@/lib/wh
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
-type TabId = 'profile' | 'plan' | 'notifications' | 'compliance' | 'whitelabel'
+type TabId = 'profile' | 'plan' | 'notifications' | 'compliance' | 'whitelabel' | 'api'
 
 interface Tab {
   id: TabId
@@ -42,6 +48,7 @@ const TABS: Tab[] = [
   { id: 'notifications', label: 'Notifications', icon: <Bell className="w-4 h-4" /> },
   { id: 'compliance', label: 'Compliance', icon: <ShieldCheck className="w-4 h-4" /> },
   { id: 'whitelabel', label: 'White Label', icon: <Palette className="w-4 h-4" /> },
+  { id: 'api', label: 'API', icon: <Code2 className="w-4 h-4" /> },
 ]
 
 function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () => void }) {
@@ -565,6 +572,156 @@ function ComplianceTab() {
   )
 }
 
+interface ApiKey {
+  id: string
+  name: string
+  key_prefix: string
+  created_at: string
+  last_used_at: string | null
+}
+
+function ApiTab() {
+  const [keys, setKeys] = useState<ApiKey[]>([])
+  const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [newKey, setNewKey] = useState<string | null>(null)
+  const [newKeyName, setNewKeyName] = useState('')
+  const [copied, setCopied] = useState(false)
+  const [showKey, setShowKey] = useState(false)
+  const [revoking, setRevoking] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch('/api/api-keys')
+      .then((r) => r.json())
+      .then((d) => { setKeys(d.keys ?? []); setLoading(false) })
+      .catch(() => setLoading(false))
+  }, [])
+
+  async function handleGenerate() {
+    setGenerating(true)
+    const res = await fetch('/api/api-keys', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newKeyName.trim() || 'Default' }),
+    })
+    const data = await res.json()
+    if (res.ok) {
+      setNewKey(data.key)
+      setShowKey(true)
+      setNewKeyName('')
+      const fresh = await fetch('/api/api-keys').then((r) => r.json())
+      setKeys(fresh.keys ?? [])
+    }
+    setGenerating(false)
+  }
+
+  async function handleRevoke(id: string) {
+    setRevoking(id)
+    await fetch(`/api/api-keys/${id}`, { method: 'DELETE' })
+    setKeys((prev) => prev.filter((k) => k.id !== id))
+    setRevoking(null)
+  }
+
+  function copyKey() {
+    if (!newKey) return
+    navigator.clipboard.writeText(newKey)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const DAILY_LIMITS: Record<string, string> = { free: '100 req/day', pro: '1,000 req/day', agency: '10,000 req/day' }
+
+  return (
+    <div className="space-y-6">
+      {/* New key banner */}
+      {newKey && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-semibold text-amber-800 mb-1">Save this key — it won&apos;t be shown again</p>
+          <div className="flex items-center gap-2 mt-2">
+            <code className="flex-1 rounded-lg bg-white border border-amber-200 px-3 py-2 text-xs font-mono text-slate-700 truncate">
+              {showKey ? newKey : '•'.repeat(40)}
+            </code>
+            <button onClick={() => setShowKey((v) => !v)} className="p-2 rounded-lg hover:bg-amber-100 text-amber-700">
+              {showKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+            <button onClick={copyKey} className="p-2 rounded-lg hover:bg-amber-100 text-amber-700">
+              {copied ? <Check className="h-4 w-4 text-emerald-600" /> : <Copy className="h-4 w-4" />}
+            </button>
+          </div>
+          <button onClick={() => setNewKey(null)} className="mt-2 text-xs text-amber-600 hover:underline">Dismiss</button>
+        </div>
+      )}
+
+      {/* Generate */}
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+        <h2 className="text-base font-semibold text-[#0F172A] mb-1">API Keys</h2>
+        <p className="text-sm text-slate-500 mb-5">Use API keys to query LeadZip programmatically. Keys are scoped to your account and plan.</p>
+
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            value={newKeyName}
+            onChange={(e) => setNewKeyName(e.target.value)}
+            placeholder="Key name (optional)"
+            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/30 focus:border-[#0369A1]"
+          />
+          <button
+            onClick={handleGenerate}
+            disabled={generating}
+            className="flex items-center gap-2 rounded-lg bg-[#0369A1] px-4 py-2 text-sm font-medium text-white hover:bg-[#0284C7] disabled:opacity-50 transition-colors"
+          >
+            {generating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Code2 className="h-4 w-4" />}
+            Generate key
+          </button>
+        </div>
+
+        {/* Rate limits info */}
+        <div className="flex flex-wrap gap-3 mt-4 mb-6">
+          {Object.entries(DAILY_LIMITS).map(([plan, limit]) => (
+            <span key={plan} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 font-medium capitalize">
+              {plan}: {limit}
+            </span>
+          ))}
+        </div>
+
+        {/* Key list */}
+        {loading ? (
+          <p className="text-sm text-slate-400">Loading keys…</p>
+        ) : keys.length === 0 ? (
+          <p className="text-sm text-slate-400">No API keys yet. Generate one above.</p>
+        ) : (
+          <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+            {keys.map((k) => (
+              <div key={k.id} className="flex items-center gap-3 px-4 py-3 bg-white">
+                <code className="flex-1 text-xs font-mono text-slate-600">{k.key_prefix}••••••••••••••••••••••••</code>
+                <div className="text-right min-w-[120px]">
+                  <p className="text-xs font-medium text-slate-700">{k.name}</p>
+                  <p className="text-xs text-slate-400">
+                    {k.last_used_at
+                      ? `Last used ${new Date(k.last_used_at).toLocaleDateString()}`
+                      : `Created ${new Date(k.created_at).toLocaleDateString()}`}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleRevoke(k.id)}
+                  disabled={revoking === k.id}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                >
+                  {revoking === k.id ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+        See the <a href="/api-docs" className="text-[#0369A1] font-medium hover:underline">API documentation</a> for endpoint reference and code examples.
+      </div>
+    </div>
+  )
+}
+
 function WhiteLabelTab() {
   const [settings, setSettings] = useState<WhiteLabelSettings>({ agencyName: '', logoDataUrl: '', accentColor: '#0369A1' })
   const [saved, setSaved] = useState(false)
@@ -698,6 +855,7 @@ export default function SettingsPage() {
       case 'notifications': return <NotificationsTab />
       case 'compliance': return <ComplianceTab />
       case 'whitelabel': return <WhiteLabelTab />
+      case 'api': return <ApiTab />
     }
   }
 

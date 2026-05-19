@@ -43,6 +43,25 @@ export const savedSearchesLimiter = new Ratelimit({
   prefix: 'rl:saved-searches',
 })
 
+// API v1 key limiters (daily quota per plan)
+export const apiKeyLimiterFree = new Ratelimit({
+  redis,
+  limiter: Ratelimit.fixedWindow(100, '1 d'),
+  prefix: 'rl:v1:free',
+})
+
+export const apiKeyLimiterPro = new Ratelimit({
+  redis,
+  limiter: Ratelimit.fixedWindow(1000, '1 d'),
+  prefix: 'rl:v1:pro',
+})
+
+export const apiKeyLimiterAgency = new Ratelimit({
+  redis,
+  limiter: Ratelimit.fixedWindow(10000, '1 d'),
+  prefix: 'rl:v1:agency',
+})
+
 // Per-IP limiter for auth endpoints
 export const authLimiter = new Ratelimit({
   redis,

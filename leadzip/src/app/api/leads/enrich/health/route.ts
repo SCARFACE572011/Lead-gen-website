@@ -21,6 +21,37 @@ function computeScore(details: DigitalHealthDetails): number {
   )
 }
 
+function isSafeUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url)
+    const hostname = parsed.hostname
+
+    // Block localhost and loopback
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '::1'
+    ) {
+      return false
+    }
+
+    // Block private/link-local IPv4 ranges
+    if (hostname.startsWith('10.')) return false
+    if (hostname.startsWith('192.168.')) return false
+    if (hostname.startsWith('169.254.')) return false
+    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return false
+
+    // Block IPv6 ULA ranges
+    if (hostname.startsWith('fc00:')) return false
+    if (hostname.startsWith('fd')) return false
+
+    return true
+  } catch {
+    return false
+  }
+}
+
 export async function POST(request: Request) {
   const supabase = await createClient()
   const {
@@ -44,6 +75,10 @@ export async function POST(request: Request) {
 
   const url = website.startsWith('http') ? website : `https://${website}`
 
+  if (!isSafeUrl(url)) {
+    return NextResponse.json({ error: 'unreachable' })
+  }
+
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), 5000)
   const fetchStart = Date.now()
@@ -58,7 +93,27 @@ export async function POST(request: Request) {
     if (!res.ok) {
       return NextResponse.json({ error: 'unreachable' })
     }
-    html = await res.text()
+    const MAX_BYTES = 512 * 1024
+    const reader = res.body?.getReader()
+    const chunks: Uint8Array[] = []
+    let total = 0
+    if (reader) {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done || !value) break
+        chunks.push(value)
+        total += value.byteLength
+        if (total >= MAX_BYTES) break
+      }
+    }
+    html = new TextDecoder().decode(
+      chunks.reduce((acc, chunk) => {
+        const merged = new Uint8Array(acc.byteLength + chunk.byteLength)
+        merged.set(acc)
+        merged.set(chunk, acc.byteLength)
+        return merged
+      }, new Uint8Array(0))
+    )
   } catch {
     clearTimeout(timeoutId)
     return NextResponse.json({ error: 'unreachable' })

@@ -290,8 +290,8 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   const queryTerm = CATEGORY_QUERY[params.category] ?? params.category
   const queryText =
     params.category === 'Custom Keyword' && params.keyword
-      ? `${params.keyword} near ${geoCity}, ${geoState}`
-      : `${queryTerm} near ${geoCity}, ${geoState}`
+      ? params.keyword
+      : queryTerm
 
   const baseParams = new URLSearchParams({
     query: queryText,
@@ -423,7 +423,7 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
         businessHours: d?.businessHours,
       } satisfies Omit<Lead, 'leadScore' | 'status' | 'notes'>
     })
-    .filter((l): l is NonNullable<typeof l> => l !== null && l.distanceMiles <= params.radiusMiles)
+    .filter((l): l is NonNullable<typeof l> => l !== null && l.distanceMiles <= params.radiusMiles * 1.1)
 
   let leads: Lead[] = partialLeads.map((l) => ({
     ...l,

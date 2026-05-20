@@ -1,7 +1,8 @@
 import { SearchParams, SearchResult } from '@/types/lead'
 import { searchLeadsGooglePlaces } from './googlePlacesProvider'
-import { searchLeadsFoursquare } from './foursquareProvider'
 import { searchLeadsYelp } from './yelpProvider'
+import { searchLeadsHere } from './hereProvider'
+import { searchLeadsTomTom } from './tomtomProvider'
 import { searchLeadsOSM } from './osmProvider'
 
 /**
@@ -9,10 +10,10 @@ import { searchLeadsOSM } from './osmProvider'
  *
  * Priority:
  * 1. Google Places  (richest data — if GOOGLE_PLACES_API_KEY is set)
- * 2. Foursquare     (free 1,000/day — ratings, phone, website — if FOURSQUARE_API_KEY is set)
- * 3. Yelp           (high-quality local business data — if YELP_API_KEY is set)
- * 4. OpenStreetMap  (free, no key — real businesses, sparse contact info)
- * 5. Dynamic        (always works — regional deterministic fallback, built into OSM provider)
+ * 2. Yelp           (high-quality local business data — if YELP_API_KEY is set)
+ * 3. Here Places    (free 1,000/day — if HERE_API_KEY is set)
+ * 4. TomTom         (free 2,500/day — if TOMTOM_API_KEY is set)
+ * 5. OpenStreetMap  (free, no key — real businesses, sparse contact info)
  */
 export async function searchLeadsCombined(params: SearchParams): Promise<SearchResult> {
   // 1. Google Places
@@ -25,17 +26,7 @@ export async function searchLeadsCombined(params: SearchParams): Promise<SearchR
     }
   }
 
-  // 2. Foursquare
-  if (process.env.FOURSQUARE_API_KEY) {
-    try {
-      const result = await searchLeadsFoursquare(params)
-      if (result.leads.length > 0) return { ...result, source: 'foursquare' }
-    } catch (err) {
-      console.warn('[combinedProvider] Foursquare failed:', err)
-    }
-  }
-
-  // 3. Yelp
+  // 2. Yelp
   if (process.env.YELP_API_KEY) {
     try {
       const result = await searchLeadsYelp(params)
@@ -45,6 +36,26 @@ export async function searchLeadsCombined(params: SearchParams): Promise<SearchR
     }
   }
 
-  // 4. OSM (falls back to dynamic internally, which sets source: 'demo')
+  // 3. Here Places
+  if (process.env.HERE_API_KEY) {
+    try {
+      const result = await searchLeadsHere(params)
+      if (result.leads.length > 0) return { ...result, source: 'here' }
+    } catch (err) {
+      console.warn('[combinedProvider] Here failed:', err)
+    }
+  }
+
+  // 4. TomTom
+  if (process.env.TOMTOM_API_KEY) {
+    try {
+      const result = await searchLeadsTomTom(params)
+      if (result.leads.length > 0) return { ...result, source: 'tomtom' }
+    } catch (err) {
+      console.warn('[combinedProvider] TomTom failed:', err)
+    }
+  }
+
+  // 5. OSM (falls back to dynamic internally, which sets source: 'demo')
   return searchLeadsOSM(params)
 }

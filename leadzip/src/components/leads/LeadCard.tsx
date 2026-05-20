@@ -186,6 +186,66 @@ export function LeadCard({
         </div>
       )}
 
+      {/* Compact layout — mobile only */}
+      <div className="lg:hidden">
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex-1 min-w-0">
+            <h3 className="truncate text-sm font-semibold text-slate-900">{lead.businessName}</h3>
+            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+              {lead.rating !== null && (
+                <span className="text-xs text-amber-600 font-medium">★ {lead.rating?.toFixed(1)}</span>
+              )}
+              {lead.distanceMiles !== null && lead.distanceMiles !== undefined && (
+                <span className="text-xs text-slate-500">· {lead.distanceMiles.toFixed(1)} mi</span>
+              )}
+              {lead.openNow === true && (
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Open</span>
+              )}
+              {lead.openNow === false && (
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Closed</span>
+              )}
+            </div>
+          </div>
+          <LeadScore score={lead.leadScore} size="sm" />
+        </div>
+
+        <div className="mt-3 flex items-center gap-2">
+          <button
+            onClick={() => onSave({ ...lead, notes: noteDraft })}
+            className={cn(
+              'flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold min-h-[44px] transition-all duration-150',
+              isSaved ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            )}
+          >
+            {isSaved ? <BookmarkCheck className="h-4 w-4 shrink-0" /> : <Bookmark className="h-4 w-4 shrink-0" />}
+            {isSaved ? 'Saved' : 'Save Lead'}
+          </button>
+          {lead.phone && (
+            <a
+              href={`tel:${lead.phone.replace(/\D/g, '')}`}
+              className="flex items-center justify-center rounded-lg bg-slate-100 p-2.5 text-slate-600 hover:bg-slate-200 transition-colors min-h-[44px] min-w-[44px]"
+              aria-label={`Call ${lead.businessName}`}
+            >
+              <Phone className="h-4 w-4" />
+            </a>
+          )}
+          {lead.website && (
+            <a
+              href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center rounded-lg bg-slate-100 p-2.5 text-slate-600 hover:bg-slate-200 transition-colors min-h-[44px] min-w-[44px]"
+              aria-label={`Visit ${lead.businessName} website`}
+            >
+              <Globe className="h-4 w-4" />
+            </a>
+          )}
+        </div>
+      </div>
+
+      {/* Full layout — desktop only */}
+      <div className="hidden lg:flex flex-col gap-3">
+
       {/* Header */}
       <div className={cn('flex items-start justify-between gap-2', onSelect && 'pl-6')}>
         <div className="flex-1 min-w-0">
@@ -514,6 +574,7 @@ export function LeadCard({
           className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
         />
       )}
+      </div>{/* end full layout */}
     </div>
   )
 }

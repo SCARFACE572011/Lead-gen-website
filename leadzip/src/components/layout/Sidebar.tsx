@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   LayoutDashboard,
   Search,
@@ -233,6 +233,18 @@ export default function Sidebar({
   mobileOpen = false,
   onMobileClose,
 }: SidebarProps) {
+  const touchStartX = useRef(0)
+  const touchCurrentX = useRef(0)
+
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [mobileOpen])
+
   return (
     <>
       {/* Desktop Sidebar — fixed left, always visible */}
@@ -243,35 +255,49 @@ export default function Sidebar({
         <SidebarContent currentPath={currentPath} user={user} />
       </aside>
 
-      {/* Mobile Sidebar — drawer overlay */}
-      {mobileOpen && (
-        <>
-          {/* Backdrop */}
-          <div
-            className="lg:hidden fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity"
+      {/* Mobile Sidebar — always in DOM, animated with CSS transforms */}
+      <>
+        {/* Backdrop */}
+        <div
+          className={cn(
+            'lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300',
+            mobileOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+          )}
+          onClick={onMobileClose}
+          aria-hidden="true"
+        />
+
+        {/* Drawer */}
+        <aside
+          className={cn(
+            'lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-white z-50 shadow-2xl',
+            'transition-transform duration-300 ease-in-out will-change-transform',
+            mobileOpen ? 'translate-x-0' : '-translate-x-full'
+          )}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
+          onTouchMove={(e) => { touchCurrentX.current = e.touches[0].clientX }}
+          onTouchEnd={() => {
+            const delta = touchStartX.current - touchCurrentX.current
+            if (delta > 60 && onMobileClose) onMobileClose()
+            touchStartX.current = 0
+            touchCurrentX.current = 0
+          }}
+        >
+          <button
             onClick={onMobileClose}
-            aria-hidden="true"
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10 min-h-[44px] min-w-[44px]"
+            aria-label="Close sidebar"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          <SidebarContent
+            currentPath={currentPath}
+            user={user}
+            onLinkClick={onMobileClose}
           />
-
-          {/* Drawer */}
-          <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-72 bg-white z-50 shadow-2xl">
-            {/* Close Button */}
-            <button
-              onClick={onMobileClose}
-              className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10"
-              aria-label="Close sidebar"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <SidebarContent
-              currentPath={currentPath}
-              user={user}
-              onLinkClick={onMobileClose}
-            />
-          </aside>
-        </>
-      )}
+        </aside>
+      </>
     </>
   )
 }

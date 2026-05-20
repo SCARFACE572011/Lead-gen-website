@@ -194,6 +194,8 @@ export default function DashboardLayout({
   const [drawerOpen, setDrawerOpen] = useState(false)
   const touchStartX = useRef(0)
   const touchCurrentX = useRef(0)
+  const drawerCloseButtonRef = useRef<HTMLButtonElement>(null)
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (drawerOpen) {
@@ -203,6 +205,25 @@ export default function DashboardLayout({
     }
     return () => { document.body.style.overflow = '' }
   }, [drawerOpen])
+
+  useEffect(() => {
+    if (drawerOpen) {
+      drawerCloseButtonRef.current?.focus()
+    } else {
+      hamburgerRef.current?.focus()
+    }
+  }, [drawerOpen])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches) {
+        setDrawerOpen(false)
+      }
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
 
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-50">
@@ -231,8 +252,17 @@ export default function DashboardLayout({
         aria-modal="true"
         role="dialog"
         aria-hidden={!drawerOpen}
-        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchCurrentX.current = e.touches[0].clientX }}
-        onTouchMove={(e) => { touchCurrentX.current = e.touches[0].clientX }}
+        onTouchStart={(e) => {
+          const t = e.touches[0]
+          if (!t) return
+          touchStartX.current = t.clientX
+          touchCurrentX.current = t.clientX
+        }}
+        onTouchMove={(e) => {
+          const t = e.touches[0]
+          if (!t) return
+          touchCurrentX.current = t.clientX
+        }}
         onTouchEnd={() => {
           const delta = touchStartX.current - touchCurrentX.current
           if (delta > 60) setDrawerOpen(false)
@@ -242,6 +272,7 @@ export default function DashboardLayout({
       >
         <div className="absolute right-3 top-4">
           <button
+            ref={drawerCloseButtonRef}
             onClick={() => setDrawerOpen(false)}
             aria-label="Close navigation"
             className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
@@ -257,6 +288,7 @@ export default function DashboardLayout({
         {/* Mobile topbar */}
         <header className="flex items-center gap-3 border-b border-slate-200 bg-white px-4 py-3 lg:hidden">
           <button
+            ref={hamburgerRef}
             onClick={() => setDrawerOpen(true)}
             aria-label="Open navigation menu"
             className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"

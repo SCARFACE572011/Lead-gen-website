@@ -235,6 +235,7 @@ export default function Sidebar({
 }: SidebarProps) {
   const touchStartX = useRef(0)
   const touchCurrentX = useRef(0)
+  const drawerCloseButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     if (mobileOpen) {
@@ -244,6 +245,21 @@ export default function Sidebar({
     }
     return () => { document.body.style.overflow = '' }
   }, [mobileOpen])
+
+  useEffect(() => {
+    if (mobileOpen) {
+      drawerCloseButtonRef.current?.focus()
+    }
+  }, [mobileOpen])
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)')
+    const handler = (e: MediaQueryListEvent) => {
+      if (e.matches && onMobileClose) onMobileClose()
+    }
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [onMobileClose])
 
   return (
     <>
@@ -274,8 +290,17 @@ export default function Sidebar({
             'transition-transform duration-300 ease-in-out will-change-transform',
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           )}
-          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchCurrentX.current = e.touches[0].clientX }}
-          onTouchMove={(e) => { touchCurrentX.current = e.touches[0].clientX }}
+          onTouchStart={(e) => {
+            const t = e.touches[0]
+            if (!t) return
+            touchStartX.current = t.clientX
+            touchCurrentX.current = t.clientX
+          }}
+          onTouchMove={(e) => {
+            const t = e.touches[0]
+            if (!t) return
+            touchCurrentX.current = t.clientX
+          }}
           onTouchEnd={() => {
             const delta = touchStartX.current - touchCurrentX.current
             if (delta > 60 && onMobileClose) onMobileClose()
@@ -284,6 +309,7 @@ export default function Sidebar({
           }}
         >
           <button
+            ref={drawerCloseButtonRef}
             onClick={onMobileClose}
             className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10"
             aria-label="Close sidebar"

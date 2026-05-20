@@ -403,7 +403,7 @@ function SearchPageInner() {
     }
   }, [savedLeadIds])
 
-  // Auto-run search if URL params are present (from history Rerun)
+  // Auto-run search if URL params are present (from history Rerun or onboarding)
   useEffect(() => {
     const zip = searchParams.get('zip')
     if (zip) {
@@ -413,6 +413,10 @@ function SearchPageInner() {
         radiusMiles: searchParams.get('radius') ? Number(searchParams.get('radius')) : 25,
         category: searchParams.get('category') ?? '',
         keyword: searchParams.get('keyword') ?? undefined,
+        noWebsite: searchParams.get('noWebsite') === 'true' || undefined,
+        hasWebsite: searchParams.get('hasWebsite') === 'true' || undefined,
+        minRating: searchParams.get('minRating') ? Number(searchParams.get('minRating')) : undefined,
+        minReviews: searchParams.get('minReviews') ? Number(searchParams.get('minReviews')) : undefined,
       })
     }
     // Only on mount

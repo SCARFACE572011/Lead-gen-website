@@ -138,7 +138,7 @@ async function enrichWithDetails(
   apiKey: string
 ): Promise<Map<string, PlaceEnrichment>> {
   const results = new Map<string, PlaceEnrichment>()
-  const batch = placeIds.slice(0, 10) // cap at 10 to avoid excessive API spend
+  const batch = placeIds.slice(0, 20)
 
   await Promise.allSettled(
     batch.map(async (placeId) => {
@@ -168,45 +168,65 @@ async function enrichWithDetails(
 
 // --- Main export ---
 
+async function fetchPage(
+  urlParams: URLSearchParams,
+  apiKey: string,
+  pageToken?: string
+): Promise<GooglePlacesResponse> {
+  const params = new URLSearchParams(urlParams)
+  if (pageToken) {
+    params.set('pagetoken', pageToken)
+  }
+  const res = await fetch(`${PLACES_TEXT_SEARCH_URL}?${params.toString()}`)
+  if (!res.ok) throw new Error(`Google Places HTTP ${res.status}`)
+  return res.json() as Promise<GooglePlacesResponse>
+}
+
 export async function searchLeadsGooglePlaces(params: SearchParams): Promise<SearchResult> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
   if (!apiKey) throw new Error('GOOGLE_PLACES_API_KEY not configured')
 
   const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
-  const radiusMeters = Math.round(params.radiusMiles * 1609.34)
+  // Google Text Search caps radius at 50km; use max 50km as the location bias
+  const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 50000)
 
   const queryText =
     params.category === 'Custom Keyword' && params.keyword
       ? `${params.keyword} near ${geoCity}, ${geoState}`
       : `${params.category} near ${geoCity}, ${geoState}`
 
-  const urlParams = new URLSearchParams({
+  const baseParams = new URLSearchParams({
     query: queryText,
     location: `${lat},${lon}`,
     radius: String(radiusMeters),
     key: apiKey,
   })
+  // Do NOT set `type` — it's too restrictive and dramatically reduces results.
+  // The text query already contains the category name for relevance ranking.
 
-  const placeType = GOOGLE_PLACES_TYPES[params.category]
-  if (placeType) urlParams.set('type', placeType)
+  // Fetch up to 3 pages (60 results). Google requires a 2s pause between pages.
+  const allResults: GooglePlacesResult[] = []
+  let pageToken: string | undefined
 
-  const response = await fetch(`${PLACES_TEXT_SEARCH_URL}?${urlParams.toString()}`)
-  if (!response.ok) throw new Error(`Google Places HTTP ${response.status}`)
-
-  const data = (await response.json()) as GooglePlacesResponse
-
-  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-    throw new Error(
-      `Google Places error: ${data.status}${data.error_message ? ` — ${data.error_message}` : ''}`
-    )
+  for (let page = 0; page < 3; page++) {
+    if (page > 0) await new Promise((r) => setTimeout(r, 2000))
+    const data = await fetchPage(baseParams, apiKey, pageToken)
+    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+      if (page === 0) throw new Error(`Google Places error: ${data.status}${data.error_message ? ` — ${data.error_message}` : ''}`)
+      break
+    }
+    allResults.push(...(data.results ?? []))
+    if (!data.next_page_token) break
+    pageToken = data.next_page_token
   }
 
-  const results = data.results ?? []
-  if (results.length === 0) throw new Error('Google Places returned zero results')
+  if (allResults.length === 0) throw new Error('Google Places returned zero results')
 
   // Enrich with phone + website via Place Details API
-  const placeIds = results.map((r) => r.place_id)
+  const placeIds = allResults.map((r) => r.place_id)
   const details = await enrichWithDetails(placeIds, apiKey)
+
+  const results = allResults
 
   // Deduplicate by name + address
   const seen = new Set<string>()

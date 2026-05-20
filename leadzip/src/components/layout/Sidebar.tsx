@@ -274,7 +274,7 @@ export default function Sidebar({
             'transition-transform duration-300 ease-in-out will-change-transform',
             mobileOpen ? 'translate-x-0' : '-translate-x-full'
           )}
-          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX }}
+          onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchCurrentX.current = e.touches[0].clientX }}
           onTouchMove={(e) => { touchCurrentX.current = e.touches[0].clientX }}
           onTouchEnd={() => {
             const delta = touchStartX.current - touchCurrentX.current
@@ -285,7 +285,7 @@ export default function Sidebar({
         >
           <button
             onClick={onMobileClose}
-            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10 min-h-[44px] min-w-[44px]"
+            className="absolute top-4 right-4 w-11 h-11 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors z-10"
             aria-label="Close sidebar"
           >
             <X className="w-4 h-4" />

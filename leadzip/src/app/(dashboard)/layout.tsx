@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
@@ -192,6 +192,17 @@ export default function DashboardLayout({
 }) {
   const pathname = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const touchStartX = useRef(0)
+  const touchCurrentX = useRef(0)
+
+  useEffect(() => {
+    if (drawerOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [drawerOpen])
 
   return (
     <div className="flex h-dvh overflow-hidden bg-slate-50">
@@ -200,29 +211,40 @@ export default function DashboardLayout({
         <SidebarContent pathname={pathname} />
       </aside>
 
-      {/* Mobile drawer backdrop */}
-      {drawerOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
-          aria-hidden="true"
-          onClick={() => setDrawerOpen(false)}
-        />
-      )}
+      {/* Mobile drawer backdrop — always rendered, opacity-toggled */}
+      <div
+        className={cn(
+          'fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden transition-opacity duration-300',
+          drawerOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        )}
+        aria-hidden="true"
+        onClick={() => setDrawerOpen(false)}
+      />
 
       {/* Mobile drawer */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-50 w-60 transform bg-white transition-transform duration-300 ease-in-out lg:hidden',
+          'fixed inset-y-0 left-0 z-50 w-60 bg-white transition-transform duration-300 ease-in-out will-change-transform lg:hidden',
           drawerOpen ? 'translate-x-0 shadow-xl' : '-translate-x-full'
         )}
         aria-label="Mobile navigation"
+        aria-modal="true"
+        role="dialog"
         aria-hidden={!drawerOpen}
+        onTouchStart={(e) => { touchStartX.current = e.touches[0].clientX; touchCurrentX.current = e.touches[0].clientX }}
+        onTouchMove={(e) => { touchCurrentX.current = e.touches[0].clientX }}
+        onTouchEnd={() => {
+          const delta = touchStartX.current - touchCurrentX.current
+          if (delta > 60) setDrawerOpen(false)
+          touchStartX.current = 0
+          touchCurrentX.current = 0
+        }}
       >
         <div className="absolute right-3 top-4">
           <button
             onClick={() => setDrawerOpen(false)}
             aria-label="Close navigation"
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100"
           >
             <X className="h-4 w-4 shrink-0" />
           </button>

@@ -3,8 +3,7 @@ import { searchLeads } from '@/lib/providers/leadDataProvider'
 import type { SearchParams } from '@/types/lead'
 import { searchLimiterFree, searchLimiterPaid, checkRateLimit } from '@/lib/ratelimit'
 
-// Cache TTL: 24h when Google Places is active, 6h for OSM-only results
-const CACHE_TTL_MS = 6 * 60 * 60 * 1000
+const CACHE_TTL_MS = 2 * 60 * 60 * 1000 // 2 hours
 
 function buildCacheKey(params: SearchParams): string {
   // Cache by the raw search pool — keyword/filters are applied after retrieval
@@ -38,7 +37,7 @@ export async function POST(request: NextRequest) {
 
         const { data: cached } = await supabase
           .from('leads_cache')
-          .select('leads, total, source')
+          .select('leads, total, source, expires_at')
           .eq('cache_key', cacheKey)
           .gt('expires_at', new Date().toISOString())
           .maybeSingle()
@@ -46,11 +45,16 @@ export async function POST(request: NextRequest) {
         if (cached) {
           const firstWithCoords = (cached.leads as { latitude?: number; longitude?: number }[])
             .find((l) => l.latitude != null && l.longitude != null)
+          // Approximate fetchedAt from expires_at - TTL
+          const fetchedAt = cached.expires_at
+            ? new Date(new Date(cached.expires_at as string).getTime() - CACHE_TTL_MS).toISOString()
+            : new Date().toISOString()
           return NextResponse.json({
             leads: cached.leads,
             total: cached.total,
             fromCache: true,
             source: cached.source,
+            fetchedAt,
             center: firstWithCoords
               ? { lat: firstWithCoords.latitude, lon: firstWithCoords.longitude }
               : undefined,
@@ -195,7 +199,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ...results, source: results.source })
+    return NextResponse.json({ ...results, source: results.source, fetchedAt: new Date().toISOString() })
   } catch (error) {
     console.error('Lead search error:', error)
     return NextResponse.json({ error: 'Search failed' }, { status: 500 })

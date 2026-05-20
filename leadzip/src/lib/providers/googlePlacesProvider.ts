@@ -5,7 +5,8 @@ import { geocodeZip } from '@/lib/geocode'
 const PLACES_TEXT_SEARCH_URL = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
 const PLACES_DETAILS_URL = 'https://maps.googleapis.com/maps/api/place/details/json'
 
-// Maps LeadZip categories to Google Places types for precise filtering
+// Google Places type used as a precise first-pass filter.
+// If this returns < MIN_TYPED_RESULTS we fall back to the broad text search.
 const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Restaurants': 'restaurant',
   'Dentists': 'dentist',
@@ -19,37 +20,84 @@ const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Plumbers': 'plumber',
   'Electricians': 'electrician',
   'Landscaping': 'landscaping',
-  'HVAC Services': 'general_contractor',
-  'Pet Services': 'veterinary_care',
   'Roofing': 'roofing_contractor',
   'Insurance Agents': 'insurance_agency',
   'Accountants': 'accounting',
   'Chiropractors': 'physiotherapist',
   'Photographers': 'photographer',
   'Cleaning Services': 'cleaning_service',
-  'Catering': 'meal_delivery',
   'Moving Companies': 'moving_company',
-  'Manufacturers': 'store',
-  'Distributors': 'store',
-  'IT Services': 'electronics_store',
-  'Financial Advisors': 'finance',
-  'Mortgage Brokers': 'finance',
-  'Property Management': 'real_estate_agency',
-  'Tutoring Centers': 'school',
   'Childcare & Daycares': 'child_care_agency',
-  'Yoga Studios': 'gym',
-  'Therapy & Counseling': 'health',
   'Veterinarians': 'veterinary_care',
-  'Optometrists': 'doctor',
   'Pharmacies': 'pharmacy',
-  'Event Planners': 'event_venue',
-  'Printing Services': 'store',
-  'Security Companies': 'store',
-  'Pest Control': 'general_contractor',
-  'Pool Services': 'general_contractor',
-  'Solar Installers': 'electrician',
-  'Marketing Agencies': 'store',
 }
+
+// More specific search queries per category — improves Google relevance ranking
+// vs just using the raw category name.
+const CATEGORY_QUERY: Record<string, string> = {
+  'Dentists': 'dental office dentist',
+  'Law Firms': 'law firm attorney office',
+  'Contractors': 'general contractor home improvement',
+  'Auto Shops': 'auto repair shop mechanic',
+  'Medical Clinics': 'medical clinic doctor office',
+  'Gyms & Fitness': 'gym fitness center',
+  'Hair & Beauty Salons': 'hair salon beauty salon',
+  'Plumbers': 'plumbing contractor',
+  'Electricians': 'electrical contractor electrician',
+  'Landscaping': 'landscaping lawn care',
+  'HVAC Services': 'HVAC heating cooling air conditioning',
+  'Cleaning Services': 'cleaning service janitorial',
+  'Roofing': 'roofing contractor',
+  'Moving Companies': 'moving company movers',
+  'Insurance Agents': 'insurance agency',
+  'Accountants': 'accounting firm CPA',
+  'Chiropractors': 'chiropractic office',
+  'Pet Services': 'pet grooming veterinary',
+  'IT Services': 'IT services managed services technology',
+  'Financial Advisors': 'financial advisor wealth management',
+  'Mortgage Brokers': 'mortgage broker lender',
+  'Property Management': 'property management company',
+  'Tutoring Centers': 'tutoring center learning',
+  'Childcare & Daycares': 'daycare childcare center',
+  'Yoga Studios': 'yoga studio',
+  'Therapy & Counseling': 'therapy counseling mental health',
+  'Veterinarians': 'veterinary clinic animal hospital',
+  'Optometrists': 'optometrist eye doctor',
+  'Event Planners': 'event planning company',
+  'Pest Control': 'pest control exterminator',
+  'Pool Services': 'pool service maintenance',
+  'Solar Installers': 'solar panel installation',
+  'Marketing Agencies': 'marketing agency digital marketing',
+  'Security Companies': 'security company alarm systems',
+  'Printing Services': 'printing service print shop',
+  'Catering': 'catering company',
+  'Photographers': 'photography studio',
+}
+
+// Keywords that MUST appear in results for each category to pass relevance filter.
+// Any result matching at least one keyword is kept. Overly broad to avoid
+// false positives — only obvious mismatches are removed.
+const RELEVANCE_KEYWORDS: Record<string, string[]> = {
+  'Dentists': ['dental', 'dentist', 'orthodont', 'endodont', 'periodon', 'smile', 'teeth', 'oral'],
+  'Law Firms': ['law', 'legal', 'attorney', 'lawyer', 'counsel', 'llp', 'pc', 'litigation'],
+  'Auto Shops': ['auto', 'car', 'vehicle', 'motor', 'tire', 'brake', 'transmission', 'mechanic', 'automotive'],
+  'Medical Clinics': ['medical', 'clinic', 'health', 'doctor', 'physician', 'urgent care', 'primary care', 'medicine'],
+  'Plumbers': ['plumb', 'pipe', 'drain', 'sewer', 'water', 'leak'],
+  'Electricians': ['electric', 'wiring', 'power', 'lighting', 'voltage'],
+  'HVAC Services': ['hvac', 'heating', 'cooling', 'air condition', 'furnace', 'heat pump', 'climate'],
+  'Roofing': ['roof', 'shingle', 'gutter'],
+  'Pest Control': ['pest', 'exterminator', 'termite', 'bug', 'rodent', 'insect'],
+  'Cleaning Services': ['clean', 'maid', 'janitorial', 'housekeeping', 'sanitiz'],
+  'Moving Companies': ['moving', 'mover', 'relocation', 'storage', 'hauling'],
+  'Landscaping': ['landscape', 'lawn', 'garden', 'tree', 'yard', 'mow', 'turf'],
+  'Chiropractors': ['chiro', 'spine', 'wellness', 'adjustment'],
+  'Yoga Studios': ['yoga', 'pilates', 'meditation', 'mindfulness'],
+  'Solar Installers': ['solar', 'photovoltaic', 'renewable', 'energy'],
+  'Pool Services': ['pool', 'spa', 'hot tub', 'aquatic'],
+}
+
+// Minimum results from the typed search before we fall back to broad text search
+const MIN_TYPED_RESULTS = 8
 
 // --- Google Places API response types ---
 
@@ -123,6 +171,15 @@ function parseFormattedAddress(
   return { address: cleaned, city: fallbackCity, state: fallbackState, zipCode: fallbackZip }
 }
 
+// Returns true if the business name passes the relevance check for the category.
+// Only filters when we have explicit keywords for that category.
+function isRelevant(businessName: string, category: string): boolean {
+  const keywords = RELEVANCE_KEYWORDS[category]
+  if (!keywords) return true // no filter defined — keep everything
+  const lower = businessName.toLowerCase()
+  return keywords.some((kw) => lower.includes(kw))
+}
+
 interface PlaceEnrichment {
   phone: string
   website: string
@@ -132,23 +189,22 @@ interface PlaceEnrichment {
   businessHours?: string[]
 }
 
-// Fetch phone, website, hours, price level for up to 10 places concurrently
+// Enrich all leads with phone, website, hours, price level concurrently
 async function enrichWithDetails(
   placeIds: string[],
   apiKey: string
 ): Promise<Map<string, PlaceEnrichment>> {
-  const results = new Map<string, PlaceEnrichment>()
-  const batch = placeIds.slice(0, 20)
+  const enriched = new Map<string, PlaceEnrichment>()
 
   await Promise.allSettled(
-    batch.map(async (placeId) => {
+    placeIds.map(async (placeId) => {
       try {
         const url = `${PLACES_DETAILS_URL}?place_id=${encodeURIComponent(placeId)}&fields=formatted_phone_number,website,business_status,price_level,opening_hours&key=${apiKey}`
         const res = await fetch(url)
         if (!res.ok) return
         const data = (await res.json()) as PlaceDetailsResponse
         if (data.status === 'OK' && data.result) {
-          results.set(placeId, {
+          enriched.set(placeId, {
             phone: data.result.formatted_phone_number ?? '',
             website: data.result.website ?? '',
             businessStatus: data.result.business_status ?? 'OPERATIONAL',
@@ -163,37 +219,54 @@ async function enrichWithDetails(
     })
   )
 
-  return results
+  return enriched
 }
-
-// --- Main export ---
 
 async function fetchPage(
   urlParams: URLSearchParams,
   apiKey: string,
   pageToken?: string
 ): Promise<GooglePlacesResponse> {
-  const params = new URLSearchParams(urlParams)
-  if (pageToken) {
-    params.set('pagetoken', pageToken)
-  }
-  const res = await fetch(`${PLACES_TEXT_SEARCH_URL}?${params.toString()}`)
+  const p = new URLSearchParams(urlParams)
+  if (pageToken) p.set('pagetoken', pageToken)
+  const res = await fetch(`${PLACES_TEXT_SEARCH_URL}?${p.toString()}`)
   if (!res.ok) throw new Error(`Google Places HTTP ${res.status}`)
   return res.json() as Promise<GooglePlacesResponse>
 }
+
+// Fetch up to 3 pages (60 results) for a given URL params set.
+// Google requires a 2s pause before each subsequent page token is valid.
+async function fetchAllPages(urlParams: URLSearchParams, apiKey: string): Promise<GooglePlacesResult[]> {
+  const all: GooglePlacesResult[] = []
+  let token: string | undefined
+
+  for (let page = 0; page < 3; page++) {
+    if (page > 0) await new Promise((r) => setTimeout(r, 2000))
+    const data = await fetchPage(urlParams, apiKey, token)
+    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') break
+    all.push(...(data.results ?? []))
+    if (!data.next_page_token) break
+    token = data.next_page_token
+  }
+
+  return all
+}
+
+// --- Main export ---
 
 export async function searchLeadsGooglePlaces(params: SearchParams): Promise<SearchResult> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
   if (!apiKey) throw new Error('GOOGLE_PLACES_API_KEY not configured')
 
   const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
-  // Google Text Search caps radius at 50km; use max 50km as the location bias
+  // Google Text Search caps effective radius at ~50km regardless of what's passed
   const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 50000)
 
+  const queryTerm = CATEGORY_QUERY[params.category] ?? params.category
   const queryText =
     params.category === 'Custom Keyword' && params.keyword
       ? `${params.keyword} near ${geoCity}, ${geoState}`
-      : `${params.category} near ${geoCity}, ${geoState}`
+      : `${queryTerm} near ${geoCity}, ${geoState}`
 
   const baseParams = new URLSearchParams({
     query: queryText,
@@ -201,36 +274,58 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
     radius: String(radiusMeters),
     key: apiKey,
   })
-  // Do NOT set `type` — it's too restrictive and dramatically reduces results.
-  // The text query already contains the category name for relevance ranking.
 
-  // Fetch up to 3 pages (60 results). Google requires a 2s pause between pages.
-  const allResults: GooglePlacesResult[] = []
-  let pageToken: string | undefined
+  // --- Strategy: typed search first, broad fallback if too few results ---
+  let allResults: GooglePlacesResult[] = []
+  const placeType = GOOGLE_PLACES_TYPES[params.category]
 
-  for (let page = 0; page < 3; page++) {
-    if (page > 0) await new Promise((r) => setTimeout(r, 2000))
-    const data = await fetchPage(baseParams, apiKey, pageToken)
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      if (page === 0) throw new Error(`Google Places error: ${data.status}${data.error_message ? ` — ${data.error_message}` : ''}`)
-      break
+  if (placeType) {
+    // Page 1 with type filter to gauge result quality
+    const typedParams = new URLSearchParams(baseParams)
+    typedParams.set('type', placeType)
+    const firstData = await fetchPage(typedParams, apiKey)
+
+    if (firstData.status === 'OK' || firstData.status === 'ZERO_RESULTS') {
+      const firstPage = firstData.results ?? []
+
+      if (firstPage.length >= MIN_TYPED_RESULTS) {
+        // Good signal — paginate this typed search for up to 60 results
+        allResults = [...firstPage]
+        let token = firstData.next_page_token
+        for (let p = 1; p < 3 && token; p++) {
+          await new Promise((r) => setTimeout(r, 2000))
+          const next = await fetchPage(typedParams, apiKey, token)
+          allResults.push(...(next.results ?? []))
+          token = next.next_page_token
+        }
+      } else {
+        // Typed search is too sparse — switch to broad text search.
+        // Keep any typed results and supplement with broad results.
+        const broadResults = await fetchAllPages(baseParams, apiKey)
+        const seenIds = new Set(firstPage.map((r) => r.place_id))
+        allResults = [...firstPage]
+        for (const r of broadResults) {
+          if (!seenIds.has(r.place_id)) {
+            seenIds.add(r.place_id)
+            allResults.push(r)
+          }
+        }
+      }
     }
-    allResults.push(...(data.results ?? []))
-    if (!data.next_page_token) break
-    pageToken = data.next_page_token
+  } else {
+    // No type mapping for this category — go straight to broad text search
+    allResults = await fetchAllPages(baseParams, apiKey)
   }
 
   if (allResults.length === 0) throw new Error('Google Places returned zero results')
 
-  // Enrich with phone + website via Place Details API
+  // Enrich ALL results with phone + website + hours + price level concurrently
   const placeIds = allResults.map((r) => r.place_id)
   const details = await enrichWithDetails(placeIds, apiKey)
 
-  const results = allResults
-
-  // Deduplicate by name + address
+  // Deduplicate by name + address, filter closed + irrelevant businesses
   const seen = new Set<string>()
-  const partialLeads = results
+  const partialLeads = allResults
     .map((place) => {
       const { lat: pLat, lng: pLng } = place.geometry.location
       const { address, city, state, zipCode } = parseFormattedAddress(
@@ -244,8 +339,10 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
       if (seen.has(key)) return null
       seen.add(key)
 
-      // Skip permanently closed businesses
       if (d?.businessStatus === 'CLOSED_PERMANENTLY') return null
+
+      // Relevance filter — drop obvious category mismatches
+      if (!isRelevant(place.name, params.category)) return null
 
       return {
         id: `gp_${place.place_id}`,

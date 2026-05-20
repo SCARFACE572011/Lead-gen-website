@@ -69,6 +69,15 @@ function computeCompetitorDensity(leads: Lead[]): Lead[] {
   })
 }
 
+function formatAge(iso: string): string {
+  const secs = Math.floor((Date.now() - new Date(iso).getTime()) / 1000)
+  if (secs < 60) return 'just now'
+  const mins = Math.floor(secs / 60)
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  return `${hrs}h ago`
+}
+
 function SkeletonCard() {
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -176,6 +185,7 @@ function SearchPageInner() {
   const healthCheckAbortRef = useRef(false)
   const [dataSource, setDataSource] = useState<string | null>(null)
   const [sourceBannerDismissed, setSourceBannerDismissed] = useState(false)
+  const [fetchedAt, setFetchedAt] = useState<string | null>(null)
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -254,7 +264,7 @@ function SearchPageInner() {
         return
       }
 
-      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number }; source?: string }
+      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number }; source?: string; fetchedAt?: string }
       const filteredLeads = params.excludeSaved
         ? result.leads.filter((l) => !savedLeadIds.has(l.id))
         : result.leads
@@ -264,6 +274,7 @@ function SearchPageInner() {
       setTotalFound(enrichedLeads.length)
       if (result.center) setMapCenter(result.center)
       setDataSource(result.source ?? null)
+      setFetchedAt(result.fetchedAt ?? null)
       setSourceBannerDismissed(false)
 
       // Save to search history in localStorage
@@ -600,6 +611,11 @@ function SearchPageInner() {
                       </>
                     ) : (
                       <>{totalFound === 1 ? 'lead' : 'leads'} found</>
+                    )}
+                    {fetchedAt && (
+                      <span className="ml-2 text-slate-400">
+                        · fetched {formatAge(fetchedAt)}
+                      </span>
                     )}
                     {noResultZips.length > 0 && (
                       <span className="ml-2 inline-flex items-center rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">

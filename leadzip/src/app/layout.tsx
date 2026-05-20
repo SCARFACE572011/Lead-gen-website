@@ -50,7 +50,7 @@ export default function RootLayout({
       lang="en"
       className={`${plusJakartaSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">
+      <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         {/* GTM noscript fallback */}
         {process.env.NEXT_PUBLIC_GTM_ID && (

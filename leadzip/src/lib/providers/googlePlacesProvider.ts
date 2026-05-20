@@ -252,6 +252,31 @@ async function fetchAllPages(urlParams: URLSearchParams, apiKey: string): Promis
   return all
 }
 
+// For radius > 30 miles, generate a ring of additional search centers.
+// Each center is within Google's ~31-mile bias cap, so together they
+// tile the full requested radius with overlapping circles.
+function generateRingCenters(
+  lat: number,
+  lon: number,
+  radiusMiles: number
+): Array<{ lat: number; lon: number }> {
+  // Ring at 55% of the search radius — keeps ring centers' 31-mile bias
+  // from extending outside the requested boundary.
+  const ringMiles = Math.min(radiusMiles * 0.55, 42)
+  // 4 directions for 31–60 mi, 8 directions for 60+ mi
+  const count = radiusMiles > 60 ? 8 : 4
+  const centers: Array<{ lat: number; lon: number }> = []
+
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * 2 * Math.PI
+    const dLat = (ringMiles / 69.0) * Math.cos(angle)
+    const dLon = (ringMiles / (69.0 * Math.cos((lat * Math.PI) / 180))) * Math.sin(angle)
+    centers.push({ lat: lat + dLat, lon: lon + dLon })
+  }
+
+  return centers
+}
+
 // --- Main export ---
 
 export async function searchLeadsGooglePlaces(params: SearchParams): Promise<SearchResult> {
@@ -317,6 +342,39 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
     allResults = await fetchAllPages(baseParams, apiKey)
   }
 
+  // --- Multi-center radius expansion for radius > 30 miles ---
+  // Google's Text Search caps effective bias at ~31 miles. For larger radii
+  // we fire additional 1-page searches from ring points so the full requested
+  // area is covered. Parallel calls — no page-token waits needed here.
+  if (params.radiusMiles > 30) {
+    const ringCenters = generateRingCenters(lat, lon, params.radiusMiles)
+    const seenPlaceIds = new Set(allResults.map((r) => r.place_id))
+
+    const ringSearches = await Promise.allSettled(
+      ringCenters.map(async (center) => {
+        const ringParams = new URLSearchParams({
+          query: queryText,
+          location: `${center.lat},${center.lon}`,
+          radius: '50000',
+          key: apiKey,
+        })
+        const data = await fetchPage(ringParams, apiKey)
+        return data.status === 'OK' ? (data.results ?? []) : []
+      })
+    )
+
+    for (const res of ringSearches) {
+      if (res.status === 'fulfilled') {
+        for (const r of res.value) {
+          if (!seenPlaceIds.has(r.place_id)) {
+            seenPlaceIds.add(r.place_id)
+            allResults.push(r)
+          }
+        }
+      }
+    }
+  }
+
   if (allResults.length === 0) throw new Error('Google Places returned zero results')
 
   // Enrich ALL results with phone + website + hours + price level concurrently
@@ -365,7 +423,7 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
         businessHours: d?.businessHours,
       } satisfies Omit<Lead, 'leadScore' | 'status' | 'notes'>
     })
-    .filter((l): l is NonNullable<typeof l> => l !== null)
+    .filter((l): l is NonNullable<typeof l> => l !== null && l.distanceMiles <= params.radiusMiles)
 
   let leads: Lead[] = partialLeads.map((l) => ({
     ...l,

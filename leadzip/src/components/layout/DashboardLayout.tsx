@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { usePathname } from 'next/navigation'
 import { Menu } from 'lucide-react'
 import { Toaster } from 'sonner'
@@ -14,6 +14,7 @@ interface DashboardLayoutProps {
 
 export default function DashboardLayout({ children, currentPath }: DashboardLayoutProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const hamburgerRef = useRef<HTMLButtonElement>(null)
   const pathname = usePathname()
   const activePath = currentPath ?? pathname ?? '/dashboard'
 
@@ -32,6 +33,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         user={user}
         mobileOpen={mobileOpen}
         onMobileClose={() => setMobileOpen(false)}
+        triggerRef={hamburgerRef}
       />
 
       {/* Main content area — offset by sidebar width on desktop */}
@@ -39,6 +41,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         {/* Mobile top bar */}
         <header className="lg:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white border-b border-[#E2E8F0]">
           <button
+            ref={hamburgerRef}
             onClick={() => setMobileOpen(true)}
             className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
             aria-label="Open navigation"

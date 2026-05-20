@@ -46,6 +46,7 @@ interface SidebarProps {
   }
   mobileOpen?: boolean
   onMobileClose?: () => void
+  triggerRef?: React.RefObject<HTMLButtonElement | null>
 }
 
 function NavLink({
@@ -232,6 +233,7 @@ export default function Sidebar({
   user,
   mobileOpen = false,
   onMobileClose,
+  triggerRef,
 }: SidebarProps) {
   const touchStartX = useRef(0)
   const touchCurrentX = useRef(0)
@@ -249,8 +251,10 @@ export default function Sidebar({
   useEffect(() => {
     if (mobileOpen) {
       drawerCloseButtonRef.current?.focus()
+    } else {
+      triggerRef?.current?.focus()
     }
-  }, [mobileOpen])
+  }, [mobileOpen, triggerRef])
 
   useEffect(() => {
     const mq = window.matchMedia('(min-width: 1024px)')

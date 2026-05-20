@@ -16,7 +16,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/layout/Navbar";
-import FAQSection from "@/components/landing/FAQSection";
+import FAQSection from "@/components/landing/FAQSection"
+import { HeroSearchWidget } from "@/components/landing/HeroSearchWidget";
 
 export const metadata = {
   title: "LeadZip — Find Local Business Leads by ZIP Code | Free Lead Generation Tool",
@@ -426,7 +427,13 @@ export default function HomePage() {
                 Export and outreach&nbsp;— all in one place.
               </p>
 
-              <div className="flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
+              {/* Mobile: inline search widget */}
+              <div className="sm:hidden w-full max-w-sm">
+                <HeroSearchWidget />
+              </div>
+
+              {/* Tablet+: original CTA buttons */}
+              <div className="hidden sm:flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
                 <Link href="/signup">
                   <Button className="h-12 rounded-xl bg-[#0369A1] px-7 text-base font-semibold text-white hover:bg-[#0284C7] shadow-sm transition-all hover:shadow-md hover:-translate-y-px">
                     Start Searching Free

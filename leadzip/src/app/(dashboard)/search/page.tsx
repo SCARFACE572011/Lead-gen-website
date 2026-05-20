@@ -14,6 +14,7 @@ import {
   Loader2,
   Bell,
   Activity,
+  SlidersHorizontal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead, SearchParams, SearchHistory } from '@/types/lead'
@@ -186,6 +187,7 @@ function SearchPageInner() {
   const [dataSource, setDataSource] = useState<string | null>(null)
   const [sourceBannerDismissed, setSourceBannerDismissed] = useState(false)
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -574,18 +576,59 @@ function SearchPageInner() {
 
         {/* Results */}
         <div className="flex-1 min-w-0 space-y-4">
-          {/* Mobile search filters */}
-          <div className="lg:hidden">
-            <SearchFilters
-              onSearch={handleSearch}
-              onBulkSearch={handleBulkSearch}
-              isLoading={isLoading}
-              initialValues={initialValues}
-              searchMode={searchMode}
-              onSearchModeChange={setSearchMode}
-              maxBulkZips={maxBulkZips}
-            />
+          {/* Mobile filter trigger */}
+          <div className="lg:hidden mb-4 flex items-center gap-2">
+            <button
+              onClick={() => setFilterSheetOpen(true)}
+              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors min-h-[44px]"
+            >
+              <SlidersHorizontal className="h-4 w-4 text-slate-400" />
+              Filters
+            </button>
           </div>
+
+          {/* Mobile bottom sheet */}
+          {filterSheetOpen && (
+            <>
+              {/* Backdrop */}
+              <div
+                className="lg:hidden fixed inset-0 bg-black/50 z-40"
+                onClick={() => setFilterSheetOpen(false)}
+                aria-hidden="true"
+              />
+              {/* Sheet */}
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white shadow-2xl animate-slide-up max-h-[70vh] overflow-y-auto">
+                {/* Drag handle */}
+                <div className="flex justify-center pt-3 pb-1">
+                  <div className="h-1 w-10 rounded-full bg-slate-300" />
+                </div>
+                <div className="flex items-center justify-between px-4 pb-2">
+                  <h2 className="text-sm font-semibold text-slate-900">Filters</h2>
+                  <button
+                    onClick={() => setFilterSheetOpen(false)}
+                    className="rounded-lg p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    aria-label="Close filters"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="px-4 pb-6">
+                  <SearchFilters
+                    onSearch={(params) => {
+                      handleSearch(params)
+                      setFilterSheetOpen(false)
+                    }}
+                    onBulkSearch={handleBulkSearch}
+                    isLoading={isLoading}
+                    initialValues={initialValues}
+                    searchMode={searchMode}
+                    onSearchModeChange={setSearchMode}
+                    maxBulkZips={maxBulkZips}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
           {/* Results toolbar */}
           {(hasSearched || leads.length > 0) && (
@@ -742,7 +785,7 @@ function SearchPageInner() {
                     aria-label="Table view"
                     aria-pressed={viewMode === 'table'}
                     className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-md transition-all',
+                      'hidden lg:flex h-7 w-7 items-center justify-center rounded-md transition-all',
                       viewMode === 'table'
                         ? 'bg-blue-600 text-white shadow-sm'
                         : 'text-slate-400 hover:text-slate-600'

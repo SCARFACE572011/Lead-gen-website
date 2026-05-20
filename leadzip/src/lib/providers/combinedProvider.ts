@@ -17,7 +17,7 @@ export async function searchLeadsCombined(params: SearchParams): Promise<SearchR
   if (process.env.GOOGLE_PLACES_API_KEY) {
     try {
       const result = await searchLeadsGooglePlaces(params)
-      if (result.leads.length > 0) return result
+      if (result.leads.length > 0) return { ...result, source: 'google_places' }
     } catch (err) {
       console.warn('[combinedProvider] Google Places failed:', err)
     }
@@ -27,12 +27,12 @@ export async function searchLeadsCombined(params: SearchParams): Promise<SearchR
   if (process.env.FOURSQUARE_API_KEY) {
     try {
       const result = await searchLeadsFoursquare(params)
-      if (result.leads.length > 0) return result
+      if (result.leads.length > 0) return { ...result, source: 'foursquare' }
     } catch (err) {
       console.warn('[combinedProvider] Foursquare failed:', err)
     }
   }
 
-  // 3. OSM (falls back to dynamic internally)
+  // 3. OSM (falls back to dynamic internally, which sets source: 'demo')
   return searchLeadsOSM(params)
 }

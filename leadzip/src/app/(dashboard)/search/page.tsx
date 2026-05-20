@@ -174,6 +174,8 @@ function SearchPageInner() {
   const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([])
   const [healthCheckProgress, setHealthCheckProgress] = useState<{ done: number; total: number } | null>(null)
   const healthCheckAbortRef = useRef(false)
+  const [dataSource, setDataSource] = useState<string | null>(null)
+  const [sourceBannerDismissed, setSourceBannerDismissed] = useState(false)
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -252,7 +254,7 @@ function SearchPageInner() {
         return
       }
 
-      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number } }
+      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number }; source?: string }
       const filteredLeads = params.excludeSaved
         ? result.leads.filter((l) => !savedLeadIds.has(l.id))
         : result.leads
@@ -261,6 +263,8 @@ function SearchPageInner() {
       setLeads(enrichedLeads)
       setTotalFound(enrichedLeads.length)
       if (result.center) setMapCenter(result.center)
+      setDataSource(result.source ?? null)
+      setSourceBannerDismissed(false)
 
       // Save to search history in localStorage
       try {
@@ -741,6 +745,34 @@ function SearchPageInner() {
                   </button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Data source banner */}
+          {!isLoading && leads.length > 0 && !sourceBannerDismissed && dataSource && dataSource !== 'google_places' && dataSource !== 'foursquare' && (
+            <div className={cn(
+              'flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-sm',
+              dataSource === 'demo'
+                ? 'border-amber-200 bg-amber-50 text-amber-800'
+                : 'border-slate-200 bg-slate-50 text-slate-600'
+            )}>
+              <span>
+                {dataSource === 'demo' ? (
+                  <>
+                    <span className="font-semibold">Demo data</span> — these are sample businesses, not real leads.{' '}
+                    Add a <span className="font-medium">GOOGLE_PLACES_API_KEY</span> in your Vercel environment variables to get real results.
+                  </>
+                ) : (
+                  <>Data from <span className="font-medium">OpenStreetMap</span> · Real businesses, limited contact info</>
+                )}
+              </span>
+              <button
+                onClick={() => setSourceBannerDismissed(true)}
+                aria-label="Dismiss"
+                className="shrink-0 rounded p-0.5 hover:bg-black/10 transition-colors"
+              >
+                <X className="h-3.5 w-3.5 shrink-0" />
+              </button>
             </div>
           )}
 

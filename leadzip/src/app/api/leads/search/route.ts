@@ -195,7 +195,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json(results)
+    return NextResponse.json({ ...results, source: results.source })
   } catch (error) {
     console.error('Lead search error:', error)
     return NextResponse.json({ error: 'Search failed' }, { status: 500 })

@@ -70,6 +70,7 @@ export interface SearchResult {
   total: number
   searchId?: string
   center?: { lat: number; lon: number }
+  source?: string
 }
 
 export interface SearchHistory {

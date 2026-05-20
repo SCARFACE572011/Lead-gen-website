@@ -560,11 +560,6 @@ function generateBusinessesForCategory(
     }
     usedNames.add(name)
 
-    const hasWebsite = rand() < 0.40
-    const website = hasWebsite
-      ? `https://www.${generateSlug(name)}.com`
-      : ''
-
     // Place business at a random point uniformly distributed within the search radius
     const angle = rand() * 2 * Math.PI
     const distMiles = generateDistance(radiusMiles, rand)
@@ -574,7 +569,6 @@ function generateBusinessesForCategory(
     const lonJitter = lonDeg * Math.sin(angle)
 
     const employeeCount = generateEmployeeCount(rand)
-    const socials = generateSocialUrls(name, rand)
 
     businesses.push({
       businessName: name,
@@ -584,7 +578,7 @@ function generateBusinessesForCategory(
       state: zipEntry.state,
       zipCode: searchZip,
       phone: generatePhone(zipEntry.areaCode, rand),
-      website,
+      website: '',
       rating: generateRating(rand),
       reviewCount: generateReviewCount(rand),
       distanceMiles: distMiles,
@@ -592,9 +586,9 @@ function generateBusinessesForCategory(
       longitude: zipEntry.lon + lonJitter,
       employeeCount,
       revenueEstimate: generateRevenueEstimate(employeeCount),
-      facebookUrl: socials.facebookUrl,
-      instagramUrl: socials.instagramUrl,
-      linkedinUrl: socials.linkedinUrl,
+      facebookUrl: null,
+      instagramUrl: null,
+      linkedinUrl: null,
     })
   }
 
@@ -718,5 +712,5 @@ export async function searchLeadsDynamic(params: SearchParams): Promise<SearchRe
   // Sort by leadScore descending
   leads.sort((a, b) => b.leadScore - a.leadScore)
 
-  return { leads, total: leads.length, center: { lat: zipEntry.lat, lon: zipEntry.lon } }
+  return { leads, total: leads.length, center: { lat: zipEntry.lat, lon: zipEntry.lon }, source: 'demo' }
 }

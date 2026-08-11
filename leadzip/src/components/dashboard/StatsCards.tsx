@@ -52,7 +52,7 @@ export function StatsCards({ stats }: StatsCardsProps) {
               <span className="font-mono text-3xl font-bold tracking-tight text-ink">
                 {formatNumber(value)}
               </span>
-              <p className="readout mt-1.5 text-stone">{card.label}</p>
+              <p className="mt-1.5 text-sm font-medium text-stone">{card.label}</p>
             </div>
             {!card.trendUp && (
               <p className="mt-2 text-xs text-stone">{card.trend}</p>

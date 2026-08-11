@@ -114,7 +114,7 @@ export default function RootLayout({
       className={`${bricolage.variable} ${hanken.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
         <SmoothScroll />
         {/* SEO — JSON-LD structured data (Organization, WebSite, SoftwareApplication, FAQ) */}
         <StructuredData />

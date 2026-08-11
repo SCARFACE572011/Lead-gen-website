@@ -188,7 +188,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <div className="grain relative overflow-hidden rounded-3xl border border-sand bg-card p-6 map-grid sm:p-7">
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="readout text-signal">{greeting}</span>
+            <span className="text-sm font-semibold text-signal">{greeting}</span>
             <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink sm:text-[2rem]">
               Welcome back, {firstName}
             </h1>
@@ -234,7 +234,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <div className="rounded-2xl border border-sand bg-card">
             <div className="border-b border-sand px-5 py-4">
               <h2 className="font-display text-base font-bold text-ink">Leads by category</h2>
-              <p className="readout mt-1 text-stone">Based on recent searches</p>
+              <p className="mt-1 text-xs text-stone">Based on recent searches</p>
             </div>
             <div className="px-4 pb-4 pt-3">
               <LeadChart data={CHART_DATA} />

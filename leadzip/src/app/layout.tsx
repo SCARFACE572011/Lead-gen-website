@@ -33,10 +33,10 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
-const SITE_TITLE = "LeadZipp — Type a ZIP code, get the whole street";
+const SITE_TITLE = "LeadZipp — Find local business leads by ZIP code";
 const SITE_DESCRIPTION =
-  "Type a ZIP code and pick a trade. LeadZipp pulls live business listings from Google Places and Yelp, scores the ones most likely to need you, finds emails, and exports to CSV, PDF, or your CRM.";
-const OG_IMAGE = "/og?title=Type+a+ZIP+code,+get+the+whole+street&subtitle=Live,+scored+local+business+leads";
+  "Drop a pin, fill your pipeline. LeadZipp turns any ZIP code into a scored list of real local businesses from live Google Places and Yelp data — with phones, websites, and owner emails, ready to export to CSV, PDF, or your CRM.";
+const OG_IMAGE = "/og?title=Drop+a+pin.+Fill+your+pipeline.&subtitle=Scored+local+business+leads,+by+ZIP+code";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://leadzipp.com"),

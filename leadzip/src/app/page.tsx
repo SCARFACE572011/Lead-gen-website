@@ -82,7 +82,7 @@ export default function Home() {
             <a href="#how" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">How it works</a>
             <a href="#features" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Features</a>
             <Link href="/pricing" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Pricing</Link>
-            <a href="#faq" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">FAQ</a>
+            <Link href="/blog" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Blog</Link>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="hidden text-sm font-semibold text-ink transition-colors hover:text-signal sm:block">Log in</Link>
@@ -102,16 +102,17 @@ export default function Home() {
               <span className="h-1.5 w-1.5 rounded-full bg-lime" /> Local lead intelligence
             </span>
             <h1 className="mt-6 font-display text-[2.7rem] font-extrabold leading-[0.98] tracking-tight sm:text-6xl">
-              Type a ZIP code.<br />
-              Get the whole <span className="relative whitespace-nowrap text-signal">street.
+              Drop a pin.<br />
+              Fill your <span className="relative whitespace-nowrap text-signal">pipeline.
                 <svg className="absolute -bottom-2 left-0 w-full" height="10" viewBox="0 0 200 10" fill="none" aria-hidden>
                   <path d="M2 7C40 3 160 3 198 7" stroke="#CBF23F" strokeWidth="3" strokeLinecap="round" />
                 </svg>
               </span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/75">
-              LeadZip maps every local business in any ZIP — scored by who needs you most —
-              with real phones, websites, and owner emails. Not a scraped demo. Actual businesses you can call today.
+              Find and score every local business in any ZIP code — with real phones, websites,
+              and owner emails. Live Google &amp; Yelp data, not a scraped demo. The businesses
+              that need you most, first.
             </p>
             <div className="mt-8">
               <HeroSearchWidget />

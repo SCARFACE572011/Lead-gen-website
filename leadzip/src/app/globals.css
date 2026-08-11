@@ -286,6 +286,69 @@
 .lead-card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 44px -24px rgba(23,19,14,.4); }
 .sidebar-shadow { box-shadow: 1px 0 0 var(--color-sand); }
 
+/* ---- Blog article typography ---- */
+.article-body {
+  color: var(--color-ink-soft);
+  font-size: 1.0625rem;
+  line-height: 1.78;
+}
+.article-body > * + * { margin-top: 1.25rem; }
+.article-body h2 {
+  font-family: var(--font-display), "Bricolage Grotesque", sans-serif;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--color-ink);
+  letter-spacing: -0.02em;
+  margin-top: 2.75rem;
+  line-height: 1.15;
+}
+.article-body h3 {
+  font-family: var(--font-display), "Bricolage Grotesque", sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-top: 2rem;
+}
+.article-body h2 + p, .article-body h3 + p { margin-top: 0.85rem; }
+.article-body a {
+  color: var(--color-signal);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+}
+.article-body a:hover { color: var(--color-signal-600); }
+.article-body strong { color: var(--color-ink); font-weight: 700; }
+.article-body ul, .article-body ol { padding-left: 1.4rem; }
+.article-body ul { list-style: disc; }
+.article-body ol { list-style: decimal; }
+.article-body li { margin-top: 0.5rem; padding-left: 0.25rem; }
+.article-body li::marker { color: var(--color-signal); font-weight: 700; }
+.article-body blockquote {
+  border-left: 3px solid var(--color-signal);
+  padding: 0.25rem 0 0.25rem 1.25rem;
+  color: var(--color-ink);
+  font-style: italic;
+}
+.article-body code {
+  background: var(--color-paper-2);
+  border: 1px solid var(--color-sand);
+  padding: 0.12em 0.4em;
+  border-radius: 6px;
+  font-family: var(--font-mono), "Space Mono", monospace;
+  font-size: 0.88em;
+}
+.article-body pre {
+  background: var(--color-forest);
+  color: #F3EFE6;
+  padding: 1.1rem 1.25rem;
+  border-radius: 14px;
+  overflow-x: auto;
+}
+.article-body pre code { background: transparent; border: 0; padding: 0; color: inherit; }
+.article-body hr { border: 0; border-top: 1px solid var(--color-sand); margin: 2.75rem 0; }
+.article-body img { border-radius: 14px; }
+
 /* Prevent iOS auto-zoom on input focus (font-size must be >= 16px) */
 @media (max-width: 1023px) {
   input[type="text"], input[type="email"], input[type="password"],

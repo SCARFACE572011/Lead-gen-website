@@ -1,12 +1,30 @@
 import Link from "next/link";
-import { Zap, CheckCircle } from "lucide-react";
+import { MapPin, Check } from "lucide-react";
 
 const BRAND_BULLETS = [
-  "Search by ZIP, category, and radius",
-  "Leads scored 0-100 automatically",
-  "Export to CSV — integrate with any CRM",
-  "Track outreach status per lead",
+  "Search any ZIP by category and radius",
+  "Every lead scored 0–100 automatically",
+  "Real phones, websites & owner emails",
+  "Export to CSV — or straight into your CRM",
 ];
+
+// Live-data readouts (honest capability tiles, not invented vanity numbers)
+const READOUTS = [
+  { value: "Live", label: "Google + Yelp data" },
+  { value: "0–100", label: "Opportunity scoring" },
+  { value: "CSV", label: "+ CRM export" },
+];
+
+// The LeadZipp mark: orange pin tile + lime "live" dot. Ringed in forest so the
+// dot reads cleanly on the dark brand panel.
+function BrandMark() {
+  return (
+    <span className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-signal">
+      <MapPin className="h-4.5 w-4.5 text-white" aria-hidden="true" />
+      <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-forest" />
+    </span>
+  );
+}
 
 export default function AuthLayout({
   children,
@@ -14,85 +32,102 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-paper">
       {/* ── Left brand panel (desktop only) ── */}
-      <div className="hidden lg:flex lg:w-[480px] xl:w-[540px] shrink-0 flex-col justify-between bg-[#0F172A] px-10 py-10 xl:px-14">
+      <div className="relative hidden shrink-0 flex-col justify-between overflow-hidden bg-forest px-10 py-10 lg:flex lg:w-[480px] xl:w-[540px] xl:px-14">
+        {/* Map-grid texture */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(203,242,63,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(203,242,63,0.05) 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+          }}
+        />
+        {/* Warm signal glow */}
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-signal/25 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-28 right-0 h-64 w-64 rounded-full bg-lime/10 blur-3xl"
+        />
+
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 group w-fit">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#0369A1] shadow-sm transition-transform group-hover:scale-105">
-            <Zap className="h-4.5 w-4.5 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-xl font-extrabold text-white">
-            Lead<span className="text-[#0EA5E9]">Zip</span>
+        <Link href="/" className="relative z-10 flex w-fit items-center gap-2.5">
+          <BrandMark />
+          <span className="font-display text-xl font-extrabold tracking-tight text-white">
+            LeadZipp
           </span>
         </Link>
 
         {/* Center content */}
-        <div>
-          <p className="mb-6 text-xs font-semibold uppercase tracking-widest text-[#0369A1]">
-            Local Lead Intelligence
+        <div className="relative z-10">
+          <p className="mb-5 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-lime">
+            Local lead intelligence
           </p>
-          <h2 className="mb-5 text-3xl font-extrabold leading-snug text-white xl:text-4xl">
-            Find local leads.
+          <h2 className="mb-5 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-white xl:text-[2.75rem]">
+            Drop a pin.
             <br />
-            Close more clients.
+            Fill your <span className="text-lime">pipeline.</span>
           </h2>
-          <p className="mb-8 text-base leading-relaxed text-[#94A3B8]">
-            LeadZipp surfaces scored, ranked local businesses so your team can
-            focus on outreach — not research.
+          <p className="mb-8 max-w-sm text-base leading-relaxed text-white/70">
+            LeadZipp turns any ZIP code into a scored list of real local
+            businesses — from live Google and Yelp data. Spend your time on
+            outreach, not research.
           </p>
 
           <ul className="space-y-3">
             {BRAND_BULLETS.map((bullet) => (
               <li key={bullet} className="flex items-center gap-3">
-                <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#0369A1]/20">
-                  <CheckCircle className="h-3.5 w-3.5 text-[#0EA5E9]" />
-                </div>
-                <span className="text-sm text-[#CBD5E1]">{bullet}</span>
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-lime/15">
+                  <Check className="h-3.5 w-3.5 text-lime" strokeWidth={3} />
+                </span>
+                <span className="text-sm text-white/85">{bullet}</span>
               </li>
             ))}
           </ul>
 
-          {/* Fake stats */}
-          <div className="mt-10 grid grid-cols-3 gap-4 border-t border-[#1E293B] pt-8">
-            {[
-              { label: "Businesses indexed", value: "500K+" },
-              { label: "Leads exported", value: "12K+" },
-              { label: "Avg lead score", value: "74 / 100" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <p className="text-xl font-extrabold text-white">{stat.value}</p>
-                <p className="mt-0.5 text-xs text-[#64748B]">{stat.label}</p>
+          {/* Live-data readouts */}
+          <div className="mt-10 grid grid-cols-3 gap-4 border-t border-white/10 pt-8">
+            {READOUTS.map((r) => (
+              <div key={r.label}>
+                <p className="font-mono text-xl font-bold tracking-tight text-white">
+                  {r.value}
+                </p>
+                <p className="mt-1 text-xs leading-snug text-white/45">
+                  {r.label}
+                </p>
               </div>
             ))}
           </div>
         </div>
 
         {/* Footer */}
-        <p className="text-xs text-[#334155]">
+        <p className="relative z-10 text-xs text-white/40">
           &copy; {new Date().getFullYear()} LeadZipp &nbsp;·&nbsp;{" "}
-          <Link href="/privacy" className="hover:text-[#64748B] transition-colors">
+          <Link href="/privacy" className="transition-colors hover:text-white/70">
             Privacy
           </Link>
           &nbsp;·&nbsp;
-          <Link href="/terms" className="hover:text-[#64748B] transition-colors">
+          <Link href="/terms" className="transition-colors hover:text-white/70">
             Terms
           </Link>
         </p>
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-white px-4 py-12 sm:px-8">
+      <div className="flex flex-1 flex-col items-center justify-center bg-paper px-4 py-12 sm:px-8">
         {/* Mobile logo */}
-        <Link
-          href="/"
-          className="mb-8 flex items-center gap-2 lg:hidden"
-        >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0369A1]">
-            <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
-          </div>
-          <span className="text-lg font-extrabold text-[#0F172A]">
-            Lead<span className="text-[#0369A1]">Zip</span>
+        <Link href="/" className="mb-8 flex items-center gap-2.5 lg:hidden">
+          <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal">
+            <MapPin className="h-4 w-4 text-white" aria-hidden="true" />
+            <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-lime ring-2 ring-paper" />
+          </span>
+          <span className="font-display text-lg font-extrabold tracking-tight text-ink">
+            LeadZipp
           </span>
         </Link>
 

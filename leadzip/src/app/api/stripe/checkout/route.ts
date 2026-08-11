@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: user.email || undefined,
       client_reference_id: user.id,
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/dashboard?payment=success&plan=${plan}`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/dashboard?payment=success&plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/pricing?payment=cancelled`,
       metadata: { plan, billing, user_id: user.id },
       allow_promotion_codes: true,

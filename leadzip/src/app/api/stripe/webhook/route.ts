@@ -1,115 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
+import {
+  STRIPE_API_VERSION,
+  subscriptionPeriods,
+  resolveUserId,
+  syncSubscriptionRow,
+  syncProfilePlan,
+} from '@/lib/stripe/subscriptionSync'
 
 export const runtime = 'nodejs'
-
-// In API 2026-04-22.dahlia, period fields moved to subscription.items.data[0]
-function subscriptionPeriods(subscription: Stripe.Subscription) {
-  const firstItem = subscription.items.data[0]
-  const periodStart = firstItem?.current_period_start
-    ? new Date(firstItem.current_period_start * 1000).toISOString()
-    : new Date().toISOString()
-  const periodEnd = firstItem?.current_period_end
-    ? new Date(firstItem.current_period_end * 1000).toISOString()
-    : new Date().toISOString()
-  return { periodStart, periodEnd }
-}
-
-// Resolve the app user behind a Stripe event: explicit metadata / client_reference_id
-// first, then fall back to an existing subscriptions row for the customer.
-async function resolveUserId(
-  supabase: SupabaseClient,
-  explicitUserId: string | null | undefined,
-  customerId: string | null
-): Promise<{ userId: string | null; dbError: string | null }> {
-  if (explicitUserId) {
-    return { userId: explicitUserId, dbError: null }
-  }
-  if (!customerId) {
-    return { userId: null, dbError: null }
-  }
-  const { data, error } = await supabase
-    .from('subscriptions')
-    .select('user_id')
-    .eq('stripe_customer_id', customerId)
-    .maybeSingle()
-  if (error) {
-    return { userId: null, dbError: error.message }
-  }
-  return { userId: (data?.user_id as string | undefined) ?? null, dbError: null }
-}
-
-// subscriptions has NO unique constraint on stripe_customer_id, so
-// upsert({ onConflict: 'stripe_customer_id' }) always fails with 42P10.
-// Do an explicit select-then-update-or-insert instead (user_id is NOT NULL).
-// Returns an error message on DB failure, null on success.
-async function syncSubscriptionRow(
-  supabase: SupabaseClient,
-  sync: {
-    userId: string
-    customerId: string
-    subscriptionId: string
-    plan: string
-    status: string
-    periodStart: string
-    periodEnd: string
-  }
-): Promise<string | null> {
-  const values = {
-    user_id: sync.userId,
-    stripe_customer_id: sync.customerId,
-    stripe_subscription_id: sync.subscriptionId,
-    plan: sync.plan,
-    status: sync.status,
-    current_period_start: sync.periodStart,
-    current_period_end: sync.periodEnd,
-    updated_at: new Date().toISOString(),
-  }
-
-  const { data: byCustomer, error: customerSelectError } = await supabase
-    .from('subscriptions')
-    .select('id')
-    .eq('stripe_customer_id', sync.customerId)
-    .maybeSingle()
-  if (customerSelectError) return customerSelectError.message
-
-  let existingId = byCustomer?.id as string | undefined
-  if (!existingId) {
-    // user_id is unique — reuse the user's row if one exists under another customer id
-    const { data: byUser, error: userSelectError } = await supabase
-      .from('subscriptions')
-      .select('id')
-      .eq('user_id', sync.userId)
-      .maybeSingle()
-    if (userSelectError) return userSelectError.message
-    existingId = byUser?.id as string | undefined
-  }
-
-  if (existingId) {
-    const { error } = await supabase
-      .from('subscriptions')
-      .update(values)
-      .eq('id', existingId)
-    return error ? error.message : null
-  }
-
-  const { error } = await supabase.from('subscriptions').insert(values)
-  return error ? error.message : null
-}
-
-// Returns an error message on DB failure, null on success.
-async function syncProfilePlan(
-  supabase: SupabaseClient,
-  userId: string,
-  plan: string
-): Promise<string | null> {
-  const { error } = await supabase
-    .from('users_profile')
-    .update({ plan, updated_at: new Date().toISOString() })
-    .eq('id', userId)
-  return error ? error.message : null
-}
 
 // IMPORTANT: Stripe webhooks require raw body — disable body parsing
 export async function POST(request: NextRequest) {
@@ -117,7 +17,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 })
   }
 
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' })
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: STRIPE_API_VERSION })
   const body = await request.text()
   const sig = request.headers.get('stripe-signature')!
 

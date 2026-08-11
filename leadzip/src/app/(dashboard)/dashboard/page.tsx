@@ -85,7 +85,7 @@ const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
 interface PageProps {
-  searchParams: Promise<{ payment?: string }>
+  searchParams: Promise<{ payment?: string; session_id?: string }>
 }
 
 export default async function DashboardPage({ searchParams }: PageProps) {
@@ -105,6 +105,19 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         data: { user },
       } = await supabase.auth.getUser()
       const userId = user?.id
+
+      // Webhook-free subscription activation: when a buyer returns from Stripe
+      // Checkout (?payment=success&session_id=...), verify the session and
+      // upgrade their plan here — no webhook endpoint required. Idempotent and
+      // non-fatal; runs before the profile read so the new plan shows at once.
+      if (userId && paymentSuccess && params.session_id) {
+        try {
+          const { confirmCheckoutSession } = await import('@/lib/stripe/subscriptionSync')
+          await confirmCheckoutSession(params.session_id, userId)
+        } catch {
+          // Non-fatal — the Stripe webhook (if configured) is the backstop.
+        }
+      }
 
       if (userId) {
         const [usageRes, searchRes, profileRes] = await Promise.all([

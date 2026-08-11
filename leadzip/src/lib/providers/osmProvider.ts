@@ -1,6 +1,5 @@
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
-import { searchLeadsDynamic } from './dynamicProvider'
 import { geocodeZip } from '@/lib/geocode'
 import { formatPhone } from '@/lib/phoneFormatter'
 
@@ -183,8 +182,10 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
     } else {
       const tags = OSM_CATEGORY_TAGS[params.category]
       if (!tags || tags.length === 0) {
-        console.warn(`[osmProvider] No OSM tags for category "${params.category}", falling back to mock`)
-        return searchLeadsDynamic(params)
+        // No mapping for this category — return an honest empty result rather
+        // than fabricated leads.
+        console.warn(`[osmProvider] No OSM tags for category "${params.category}"; returning empty`)
+        return { leads: [], total: 0, center: { lat, lon }, source: 'osm' }
       }
       query = buildOverpassQuery(tags, lat, lon, radiusM)
     }
@@ -256,15 +257,15 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
 
     leads.sort((a, b) => b.leadScore - a.leadScore)
 
-    // Sparse area: fall back to dynamic provider for region-appropriate results
+    // No real businesses found — return an honest empty result. We never
+    // fabricate leads to fill a sparse area.
     if (leads.length === 0) {
-      console.warn('[osmProvider] 0 real results from Overpass, falling back to dynamic provider')
-      return searchLeadsDynamic(params)
+      return { leads: [], total: 0, center: { lat, lon }, source: 'osm' }
     }
 
     return { leads, total: leads.length, center: { lat, lon }, source: 'osm' }
   } catch (err) {
-    console.error('[osmProvider] Error, falling back to dynamic provider:', err)
-    return searchLeadsDynamic(params)
+    console.error('[osmProvider] Overpass error; returning empty (no fabricated data):', err)
+    return { leads: [], total: 0, source: 'osm' }
   }
 }

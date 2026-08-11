@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
             )
           }
 
-          await supabase.from('leads').upsert({
+          const baseRow = {
             id: lead.id,
             user_id: user.id,
             business_name: lead.businessName,
@@ -50,7 +50,29 @@ export async function POST(request: NextRequest) {
             lead_score: lead.leadScore,
             status: lead.status ?? 'new',
             notes: lead.notes ?? '',
-          })
+          }
+
+          // Enrichment fields (B2 email finder, socials, firmographics)
+          const enrichedRow = {
+            ...baseRow,
+            email: lead.email ?? null,
+            email_confidence: lead.emailConfidence ?? null,
+            employee_count: lead.employeeCount ?? null,
+            revenue_estimate: lead.revenueEstimate ?? null,
+            facebook_url: lead.facebookUrl ?? null,
+            instagram_url: lead.instagramUrl ?? null,
+            linkedin_url: lead.linkedinUrl ?? null,
+            digital_health_score: lead.digitalHealthScore ?? null,
+          }
+
+          const { error } = await supabase.from('leads').upsert(enrichedRow)
+          if (error) {
+            // DBs without the enrichment columns reject the whole row
+            // (PGRST204 / 42703) — retry with core fields so the save is
+            // never lost.
+            console.error('Lead save enriched upsert error:', error.message)
+            await supabase.from('leads').upsert(baseRow)
+          }
         }
       } catch {
         // Non-fatal — fall back to localStorage-only on client

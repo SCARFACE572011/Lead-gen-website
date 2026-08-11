@@ -1,12 +1,69 @@
 import type { Lead } from '@/types/lead'
 import { getWhiteLabel } from '@/lib/white-label'
 
-function downloadCSV(headers: string[], rows: (string | number | null)[][], filename: string): void {
-  const csvRows = rows.map((row) =>
-    row.map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')
+export interface LeadExportField {
+  key: string
+  label: string
+  value: (l: Lead) => string | number
+}
+
+// Single source of truth for exportable lead columns — shared by the exports
+// page field picker, the client-side CSV downloads, and /api/leads/export so
+// the column sets never drift.
+export const LEAD_EXPORT_FIELDS: LeadExportField[] = [
+  { key: 'businessName', label: 'Business Name', value: (l) => l.businessName },
+  { key: 'category', label: 'Category', value: (l) => l.category },
+  { key: 'address', label: 'Address', value: (l) => l.address },
+  { key: 'city', label: 'City', value: (l) => l.city },
+  { key: 'state', label: 'State', value: (l) => l.state },
+  { key: 'zipCode', label: 'ZIP', value: (l) => l.zipCode },
+  { key: 'phone', label: 'Phone', value: (l) => l.phone },
+  { key: 'website', label: 'Website', value: (l) => l.website },
+  { key: 'email', label: 'Email', value: (l) => l.email ?? '' },
+  { key: 'emailConfidence', label: 'Email Confidence', value: (l) => l.emailConfidence ?? '' },
+  { key: 'digitalHealthScore', label: 'Digital Health Score', value: (l) => l.digitalHealthScore ?? '' },
+  { key: 'rating', label: 'Rating', value: (l) => l.rating ?? '' },
+  { key: 'reviewCount', label: 'Review Count', value: (l) => l.reviewCount ?? '' },
+  { key: 'employeeCount', label: 'Employees', value: (l) => l.employeeCount ?? '' },
+  { key: 'revenueEstimate', label: 'Revenue Estimate', value: (l) => l.revenueEstimate ?? '' },
+  { key: 'facebookUrl', label: 'Facebook', value: (l) => l.facebookUrl ?? '' },
+  { key: 'instagramUrl', label: 'Instagram', value: (l) => l.instagramUrl ?? '' },
+  { key: 'linkedinUrl', label: 'LinkedIn', value: (l) => l.linkedinUrl ?? '' },
+  { key: 'leadScore', label: 'Lead Score', value: (l) => l.leadScore },
+  { key: 'status', label: 'Status', value: (l) => l.status },
+  { key: 'notes', label: 'Notes', value: (l) => l.notes },
+  { key: 'savedAt', label: 'Date Saved', value: (l) => l.savedAt ?? '' },
+]
+
+// Quote a CSV cell and neutralize spreadsheet formula injection (OWASP):
+// values starting with =, +, -, @, tab, or CR are prefixed with a single quote
+// so Excel/Sheets treat them as text instead of executing them as formulas.
+function csvCell(v: string | number | null): string {
+  let s = String(v ?? '')
+  if (/^[=+\-@\t\r]/.test(s)) {
+    s = `'${s}`
+  }
+  return `"${s.replace(/"/g, '""')}"`
+}
+
+function toCsv(headers: string[], rows: (string | number | null)[][]): string {
+  return [headers.map(csvCell).join(','), ...rows.map((row) => row.map(csvCell).join(','))].join('\n')
+}
+
+export function buildLeadsCsv(leads: Lead[], fieldKeys?: string[]): string {
+  const selected = fieldKeys && fieldKeys.length > 0
+    ? LEAD_EXPORT_FIELDS.filter((f) => fieldKeys.includes(f.key))
+    : LEAD_EXPORT_FIELDS
+  const fields = selected.length > 0 ? selected : LEAD_EXPORT_FIELDS
+  return toCsv(
+    fields.map((f) => f.label),
+    leads.map((l) => fields.map((f) => f.value(l)))
   )
-  const csv = [headers.map((h) => `"${h}"`).join(','), ...csvRows].join('\n')
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
+}
+
+function downloadCSV(csv: string, filename: string, bom = false): void {
+  // \uFEFF is the UTF-8 byte-order mark — required for Excel to detect UTF-8
+  const blob = new Blob([bom ? `\uFEFF${csv}` : csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
@@ -17,75 +74,34 @@ function downloadCSV(headers: string[], rows: (string | number | null)[][], file
   URL.revokeObjectURL(url)
 }
 
-export function exportToCSV(leads: Lead[], filename: string): void {
-  const headers = [
-    'Business Name',
-    'Category',
-    'Address',
-    'City',
-    'State',
-    'ZIP',
-    'Phone',
-    'Website',
-    'Email',
-    'Digital Health Score',
-    'Rating',
-    'Review Count',
-    'Employees',
-    'Revenue Estimate',
-    'Facebook',
-    'Instagram',
-    'LinkedIn',
-    'Lead Score',
-    'Status',
-    'Notes',
-    'Date Saved',
-  ]
+export interface ExportCsvOptions {
+  /** Field keys (from LEAD_EXPORT_FIELDS) to include; defaults to all fields */
+  fields?: string[]
+  /** Prepend a UTF-8 BOM so Excel opens the file with correct encoding */
+  bom?: boolean
+}
 
-  const rows = leads.map((l) => [
-    l.businessName,
-    l.category,
-    l.address,
-    l.city,
-    l.state,
-    l.zipCode,
-    l.phone,
-    l.website,
-    l.email ?? '',
-    l.digitalHealthScore ?? '',
-    l.rating ?? '',
-    l.reviewCount ?? '',
-    l.employeeCount ?? '',
-    l.revenueEstimate ?? '',
-    l.facebookUrl ?? '',
-    l.instagramUrl ?? '',
-    l.linkedinUrl ?? '',
-    l.leadScore,
-    l.status,
-    l.notes,
-    l.savedAt ?? '',
-  ])
-
-  downloadCSV(headers, rows, filename)
+export function exportToCSV(leads: Lead[], filename: string, options?: ExportCsvOptions): void {
+  downloadCSV(buildLeadsCsv(leads, options?.fields), filename, options?.bom ?? false)
 }
 
 export function exportToHubSpot(leads: Lead[]): void {
-  const headers = ['First Name', 'Last Name', 'Company Name', 'Phone Number', 'Website URL', 'City', 'State/Region', 'Zip Code', 'Lead Status']
+  const headers = ['First Name', 'Last Name', 'Company Name', 'Phone Number', 'Website URL', 'Email', 'City', 'State/Region', 'Zip Code', 'Lead Status']
   const rows = leads.map((l) => {
     const parts = l.businessName.split(' ')
-    return [parts[0] ?? '', parts.slice(1).join(' '), l.businessName, l.phone, l.website, l.city, l.state, l.zipCode, 'New']
+    return [parts[0] ?? '', parts.slice(1).join(' '), l.businessName, l.phone, l.website, l.email ?? '', l.city, l.state, l.zipCode, 'New']
   })
-  downloadCSV(headers, rows, 'leadzip-hubspot-export.csv')
+  downloadCSV(toCsv(headers, rows), 'leadzip-hubspot-export.csv')
 }
 
 export function exportToSalesforce(leads: Lead[]): void {
-  const headers = ['Last Name', 'Company', 'Phone', 'Website', 'City', 'State', 'PostalCode', 'LeadSource', 'Status', 'Rating']
+  const headers = ['Last Name', 'Company', 'Phone', 'Website', 'Email', 'City', 'State', 'PostalCode', 'LeadSource', 'Status', 'Rating']
   const rows = leads.map((l) => [
-    l.businessName, l.businessName, l.phone, l.website, l.city, l.state, l.zipCode,
+    l.businessName, l.businessName, l.phone, l.website, l.email ?? '', l.city, l.state, l.zipCode,
     'LeadZip', 'Open - Not Contacted',
     l.leadScore >= 80 ? 'Hot' : l.leadScore >= 50 ? 'Warm' : 'Cold',
   ])
-  downloadCSV(headers, rows, 'leadzip-salesforce-export.csv')
+  downloadCSV(toCsv(headers, rows), 'leadzip-salesforce-export.csv')
 }
 
 export async function exportToBrandedPDF(leads: Lead[], reportTitle?: string): Promise<void> {
@@ -137,12 +153,13 @@ export async function exportToBrandedPDF(leads: Lead[], reportTitle?: string): P
   // ── Table ─────────────────────────────────────────────────────────────────
   autoTable(doc, {
     startY: 68,
-    head: [['Business Name', 'Category', 'Phone', 'Website', 'Rating', 'Score', 'Status']],
+    head: [['Business Name', 'Category', 'Phone', 'Website', 'Email', 'Rating', 'Score', 'Status']],
     body: leads.map((l) => [
       l.businessName,
       l.category,
       l.phone || '—',
       l.website || '—',
+      l.email || '—',
       l.rating != null ? `${l.rating} ★` : '—',
       String(l.leadScore),
       l.status,
@@ -156,13 +173,14 @@ export async function exportToBrandedPDF(leads: Lead[], reportTitle?: string): P
     bodyStyles: { fontSize: 8, textColor: [30, 30, 30] },
     alternateRowStyles: { fillColor: [248, 250, 252] },
     columnStyles: {
-      0: { cellWidth: 140 },
-      1: { cellWidth: 90 },
-      2: { cellWidth: 90 },
-      3: { cellWidth: 110 },
-      4: { cellWidth: 50, halign: 'center' },
-      5: { cellWidth: 40, halign: 'center' },
-      6: { cellWidth: 65, halign: 'center' },
+      0: { cellWidth: 130 },
+      1: { cellWidth: 80 },
+      2: { cellWidth: 85 },
+      3: { cellWidth: 105 },
+      4: { cellWidth: 110 },
+      5: { cellWidth: 50, halign: 'center' },
+      6: { cellWidth: 40, halign: 'center' },
+      7: { cellWidth: 65, halign: 'center' },
     },
     margin: { left: 40, right: 40 },
   })

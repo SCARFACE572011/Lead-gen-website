@@ -21,6 +21,7 @@ export async function searchLeadsCombined(params: SearchParams): Promise<SearchR
     try {
       const result = await searchLeadsGooglePlaces(params)
       if (result.leads.length > 0) return { ...result, source: 'google_places' }
+      console.warn('[combinedProvider] Google Places returned 0 leads, falling through')
     } catch (err) {
       console.warn('[combinedProvider] Google Places failed:', err)
     }
@@ -31,6 +32,7 @@ export async function searchLeadsCombined(params: SearchParams): Promise<SearchR
     try {
       const result = await searchLeadsYelp(params)
       if (result.leads.length > 0) return { ...result, source: 'yelp' }
+      console.warn('[combinedProvider] Yelp returned 0 leads, falling through')
     } catch (err) {
       console.warn('[combinedProvider] Yelp failed:', err)
     }

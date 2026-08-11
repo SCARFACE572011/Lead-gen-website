@@ -12,29 +12,37 @@ export async function GET(request: NextRequest) {
   // Verify the request is from Vercel Cron (or manual trigger with the secret)
   const authHeader = request.headers.get('authorization')
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret || authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   const isSupabaseConfigured =
-    process.env.NEXT_PUBLIC_SUPABASE_URL &&
-    process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+    supabaseUrl &&
+    supabaseUrl !== 'https://placeholder.supabase.co' &&
+    serviceRoleKey
 
   if (!isSupabaseConfigured) {
     return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
   }
 
-  const { createClient } = await import('@/lib/supabase/server')
-  const supabase = await createClient()
+  // Service-role client: search_history is RLS-protected (auth.uid() = user_id),
+  // and a cron invocation has no user session, so the anon client sees 0 rows.
+  const { createClient } = await import('@supabase/supabase-js')
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 
-  // Get the top 20 most-searched ZIP+category combos
+  // Get the top 20 most-searched ZIP+category combos from recent history
   const { data: topSearches, error } = await supabase
     .from('search_history')
     .select('zip_code, category')
     .not('zip_code', 'is', null)
     .not('category', 'is', null)
     .neq('category', '')
-    .limit(200) // pull enough rows to dedupe and count
+    .order('created_at', { ascending: false })
+    .limit(2000) // pull enough recent rows to dedupe and count
 
   if (error || !topSearches) {
     return NextResponse.json({ error: 'Failed to read search history' }, { status: 500 })
@@ -70,16 +78,23 @@ export async function GET(request: NextRequest) {
       const result = await searchLeadsCombined(params)
 
       const cacheKey = `${zipCode}|${category}|25`
-      await supabase.from('leads_cache').upsert({
+      const { error: upsertError } = await supabase.from('leads_cache').upsert({
         cache_key: cacheKey,
         leads: result.leads,
         total: result.total,
-        source: process.env.GOOGLE_PLACES_API_KEY ? 'google_places' : 'osm',
+        source: result.source ?? 'osm',
         expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
       })
 
+      if (upsertError) {
+        console.error(`prefetch-leads: leads_cache upsert failed for ${cacheKey}`, upsertError)
+        errors++
+        continue
+      }
+
       prefetched++
-    } catch {
+    } catch (err) {
+      console.error('prefetch-leads: search failed', err)
       errors++
     }
   }

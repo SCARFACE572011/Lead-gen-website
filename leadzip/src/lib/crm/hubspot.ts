@@ -12,6 +12,8 @@ async function createContact(apiKey: string, lead: CrmLead): Promise<CrmResult> 
     body: JSON.stringify({
       properties: {
         company: lead.businessName,
+        // email is HubSpot's contact dedupe/identity key
+        ...(lead.email ? { email: lead.email } : {}),
         phone: lead.phone ?? '',
         website: lead.website ?? '',
         address: lead.address ?? '',

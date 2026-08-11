@@ -56,6 +56,9 @@ export function OnboardingModal() {
   const [catError, setCatError] = useState('')
 
   useEffect(() => {
+    // Legitimate post-hydration setState: localStorage is only readable on the client,
+    // and a lazy initializer here would cause a hydration mismatch (modal is in the root layout).
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!localStorage.getItem(STORAGE_KEY)) setVisible(true)
   }, [])
 
@@ -118,7 +121,7 @@ export function OnboardingModal() {
           <div className="p-6 space-y-5">
             <div>
               <h2 className="text-xl font-bold text-slate-900">Welcome to LeadZip 👋</h2>
-              <p className="mt-1 text-sm text-slate-500">Let's find your first batch of leads. Takes 30 seconds.</p>
+              <p className="mt-1 text-sm text-slate-500">Let&apos;s find your first batch of leads. Takes 30 seconds.</p>
             </div>
 
             <div className="space-y-4">
@@ -228,8 +231,8 @@ export function OnboardingModal() {
             </div>
 
             <div>
-              <h2 className="text-xl font-bold text-slate-900">You're all set!</h2>
-              <p className="mt-1 text-sm text-slate-500">Here's what we'll search for:</p>
+              <h2 className="text-xl font-bold text-slate-900">You&apos;re all set!</h2>
+              <p className="mt-1 text-sm text-slate-500">Here&apos;s what we&apos;ll search for:</p>
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left space-y-2">

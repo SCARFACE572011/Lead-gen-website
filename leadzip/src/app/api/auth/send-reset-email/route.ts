@@ -4,26 +4,53 @@ import { createClient } from '@supabase/supabase-js'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER,
-    pass: process.env.GMAIL_APP_PASSWORD,
-  },
-})
+// Log misconfiguration once per server instance instead of on every request
+let loggedMissingGmailConfig = false
+let loggedMissingSupabaseConfig = false
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
 
 export async function POST(request: NextRequest) {
+  let email: string
   try {
-    const { email } = await request.json() as { email: string }
+    const body = (await request.json()) as { email?: string }
+    email = body.email ?? ''
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 })
+  }
 
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
+  }
+
+  if (!process.env.GMAIL_USER || !process.env.GMAIL_APP_PASSWORD) {
+    if (!loggedMissingGmailConfig) {
+      console.error('send-reset-email: GMAIL_USER/GMAIL_APP_PASSWORD not configured')
+      loggedMissingGmailConfig = true
     }
+    return NextResponse.json({ error: 'Email not configured' }, { status: 503 })
+  }
 
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    if (!loggedMissingSupabaseConfig) {
+      console.error('send-reset-email: Supabase URL/service role key not configured')
+      loggedMissingSupabaseConfig = true
+    }
+    return NextResponse.json({ error: 'Service not configured' }, { status: 503 })
+  }
+
+  try {
     // Use service role to generate a reset link — bypasses Supabase email entirely
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY,
       { auth: { autoRefreshToken: false, persistSession: false } }
     )
 
@@ -36,11 +63,25 @@ export async function POST(request: NextRequest) {
     })
 
     if (error || !data?.properties?.action_link) {
-      // Don't reveal whether the email exists
+      // Don't reveal whether the email exists — but keep a server-side signal
+      // so a broken key/config is distinguishable from an unknown account.
+      console.error(
+        'send-reset-email: generateLink failed',
+        error?.message ?? 'no action_link returned'
+      )
       return NextResponse.json({ success: true })
     }
 
     const resetLink = data.properties.action_link
+    const safeEmail = escapeHtml(email)
+
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD,
+      },
+    })
 
     await transporter.sendMail({
       from: `"LeadZip" <${process.env.GMAIL_USER}>`,
@@ -73,7 +114,7 @@ export async function POST(request: NextRequest) {
           <td style="padding:36px 32px 28px;">
             <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Reset your password</h1>
             <p style="margin:0 0 24px;font-size:15px;color:#64748B;line-height:1.6;">
-              We received a request to reset the password for your LeadZip account associated with <strong style="color:#0F172A;">${email}</strong>.
+              We received a request to reset the password for your LeadZip account associated with <strong style="color:#0F172A;">${safeEmail}</strong>.
             </p>
             <p style="margin:0 0 28px;font-size:15px;color:#64748B;line-height:1.6;">
               Click the button below to set a new password. This link expires in <strong style="color:#0F172A;">60 minutes</strong>.
@@ -123,7 +164,9 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Send reset email error:', error)
-    return NextResponse.json({ error: 'Failed to send email' }, { status: 500 })
+    // Same generic response as the success path — SMTP/Supabase failures must
+    // not be distinguishable client-side (account-enumeration side channel).
+    console.error('send-reset-email: failed to send reset email', error)
+    return NextResponse.json({ success: true })
   }
 }

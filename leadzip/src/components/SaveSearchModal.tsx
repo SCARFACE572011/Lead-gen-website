@@ -1,7 +1,7 @@
 // src/components/SaveSearchModal.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { X } from 'lucide-react'
 import type { SavedSearch } from '@/types/saved-search'
 
@@ -33,12 +33,14 @@ export function SaveSearchModal({
   const [name, setName] = useState(defaultName)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [prevDefaultName, setPrevDefaultName] = useState(defaultName)
 
-  // Sync name when defaultName changes (new search performed)
-  useEffect(() => {
+  // Sync name when defaultName changes (new search performed) — adjust state during render
+  if (prevDefaultName !== defaultName) {
+    setPrevDefaultName(defaultName)
     setName(defaultName)
     setError(null)
-  }, [defaultName])
+  }
 
   if (!isOpen) return null
 

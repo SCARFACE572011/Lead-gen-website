@@ -148,6 +148,7 @@ export default function AdminPage() {
     page: 1, limit: 25, search: '', plan: '', status: '', sort: 'created_at', order: 'desc',
   })
   const [selectedUser, setSelectedUser] = useState<UserRow | null>(null)
+  const usersQueryRef = useRef(usersQuery)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Billing tab
@@ -202,20 +203,25 @@ export default function AdminPage() {
     }
   }, [])
 
-  useEffect(() => {
-    if (activeTab === 'users') fetchUsers(usersQuery)
-  }, [usersQuery, activeTab, fetchUsers])
+  // Event-driven: update the query state and fetch in the same event, instead of
+  // re-fetching from an effect (avoids setState-in-effect cascading renders).
+  const updateUsersQuery = useCallback((update: (q: typeof usersQueryRef.current) => typeof usersQueryRef.current) => {
+    const next = update(usersQueryRef.current)
+    usersQueryRef.current = next
+    setUsersQuery(next)
+    fetchUsers(next)
+  }, [fetchUsers])
 
   function handleSearchInput(val: string) {
     setSearchInput(val)
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
-      setUsersQuery(q => ({ ...q, search: val, page: 1 }))
+      updateUsersQuery(q => ({ ...q, search: val, page: 1 }))
     }, 300)
   }
 
   function handleSort(col: string) {
-    setUsersQuery(q => ({
+    updateUsersQuery(q => ({
       ...q,
       sort: col,
       order: q.sort === col && q.order === 'desc' ? 'asc' : 'desc',
@@ -236,7 +242,7 @@ export default function AdminPage() {
 
   function handleTabChange(tab: string) {
     setActiveTab(tab)
-    if (tab === 'users' && !usersLoadedOnce) fetchUsers(usersQuery)
+    if (tab === 'users') fetchUsers(usersQueryRef.current)
     if (tab === 'billing' && !billingLoadedOnce) fetchBilling()
   }
 
@@ -436,7 +442,7 @@ export default function AdminPage() {
                   className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-[#0F172A] placeholder:text-slate-400 outline-none focus:border-[#0369A1] focus:ring-2 focus:ring-[#0369A1]/10"
                 />
               </div>
-              <Select value={usersQuery.plan || 'all'} onValueChange={v => setUsersQuery(q => ({ ...q, plan: v === 'all' ? '' : (v ?? ''), page: 1 }))}>
+              <Select value={usersQuery.plan || 'all'} onValueChange={v => updateUsersQuery(q => ({ ...q, plan: v === 'all' ? '' : (v ?? ''), page: 1 }))}>
                 <SelectTrigger className="w-full sm:w-36 h-[42px] text-sm border-slate-200">
                   <SelectValue placeholder="All Plans" />
                 </SelectTrigger>
@@ -447,7 +453,7 @@ export default function AdminPage() {
                   <SelectItem value="agency">Agency</SelectItem>
                 </SelectContent>
               </Select>
-              <Select value={usersQuery.status || 'all'} onValueChange={v => setUsersQuery(q => ({ ...q, status: v === 'all' ? '' : (v ?? ''), page: 1 }))}>
+              <Select value={usersQuery.status || 'all'} onValueChange={v => updateUsersQuery(q => ({ ...q, status: v === 'all' ? '' : (v ?? ''), page: 1 }))}>
                 <SelectTrigger className="w-full sm:w-36 h-[42px] text-sm border-slate-200">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
@@ -558,7 +564,7 @@ export default function AdminPage() {
                   </span>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setUsersQuery(q => ({ ...q, page: q.page - 1 }))}
+                      onClick={() => updateUsersQuery(q => ({ ...q, page: q.page - 1 }))}
                       disabled={(users?.page ?? 1) <= 1}
                       className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
                     >
@@ -568,7 +574,7 @@ export default function AdminPage() {
                       {users?.page} / {users?.totalPages}
                     </span>
                     <button
-                      onClick={() => setUsersQuery(q => ({ ...q, page: q.page + 1 }))}
+                      onClick={() => updateUsersQuery(q => ({ ...q, page: q.page + 1 }))}
                       disabled={(users?.page ?? 1) >= (users?.totalPages ?? 1)}
                       className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
                     >

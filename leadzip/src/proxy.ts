@@ -4,7 +4,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { authLimiter, checkRateLimit } from '@/lib/ratelimit'
 
 const PROTECTED_ROUTES = ['/dashboard', '/search', '/saved', '/history', '/exports', '/settings', '/admin']
-const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password']
+// Note: /reset-password is intentionally NOT an auth route — the recovery flow
+// establishes an authenticated session before landing there, and updateUser
+// requires that session, so authenticated users must be allowed to reach it.
+const AUTH_ROUTES = ['/login', '/signup', '/forgot-password']
 const PLACEHOLDER_URL = 'https://placeholder.supabase.co'
 
 export async function proxy(request: NextRequest) {

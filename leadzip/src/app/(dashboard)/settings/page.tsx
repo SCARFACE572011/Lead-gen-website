@@ -759,18 +759,19 @@ function TeamTab() {
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [userPlan, setUserPlan] = useState<string>('free')
 
-  const load = async () => {
-    const [wsRes, profileRes] = await Promise.all([
+  // State is only set in the async continuation (never synchronously), so this is
+  // safe to call from an effect without triggering cascading renders.
+  const load = () =>
+    Promise.all([
       fetch('/api/workspace').then(r => r.json()),
       fetch('/api/leads/saved').then(() => null).catch(() => null), // just a way to get plan
-    ])
-    void profileRes
-    setWorkspaceName(wsRes.workspace?.name ?? null)
-    setRole(wsRes.role)
-    setMembers(wsRes.members ?? [])
-    setPendingInvites(wsRes.pendingInvites ?? [])
-    setLoading(false)
-  }
+    ]).then(([wsRes]) => {
+      setWorkspaceName(wsRes.workspace?.name ?? null)
+      setRole(wsRes.role)
+      setMembers(wsRes.members ?? [])
+      setPendingInvites(wsRes.pendingInvites ?? [])
+      setLoading(false)
+    })
 
   useEffect(() => {
     load()
@@ -983,7 +984,7 @@ function TeamTab() {
             <Users className="w-4 h-4 text-violet-500" />
             <p className="text-sm font-semibold text-[#0F172A]">{workspaceName}</p>
           </div>
-          <p className="text-xs text-slate-500 pl-6">You have access to all features under this team's plan.</p>
+          <p className="text-xs text-slate-500 pl-6">You have access to all features under this team&apos;s plan.</p>
         </div>
       )}
     </div>
@@ -1145,11 +1146,11 @@ function IntegrationsTab() {
 }
 
 function WhiteLabelTab() {
-  const [settings, setSettings] = useState<WhiteLabelSettings>({ agencyName: '', logoDataUrl: '', accentColor: '#0369A1' })
+  // Lazy initializer: WhiteLabelTab only mounts client-side (tab switch), so reading
+  // localStorage here is safe and avoids a setState-in-effect cascade.
+  const [settings, setSettings] = useState<WhiteLabelSettings>(() => getWhiteLabel())
   const [saved, setSaved] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
-
-  useEffect(() => { setSettings(getWhiteLabel()) }, [])
 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -1261,7 +1262,7 @@ function WhiteLabelTab() {
       </div>
 
       <div className="rounded-xl border border-amber-100 bg-amber-50 px-4 py-3 text-sm text-amber-700">
-        <strong>Pro tip:</strong> After saving, go to <strong>Exports</strong> and choose <em>Branded PDF</em> to generate a report with your agency's logo and colors.
+        <strong>Pro tip:</strong> After saving, go to <strong>Exports</strong> and choose <em>Branded PDF</em> to generate a report with your agency&apos;s logo and colors.
       </div>
     </div>
   )

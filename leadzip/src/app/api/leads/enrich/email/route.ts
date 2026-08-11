@@ -2,12 +2,25 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enrichEmailLimiter, checkRateLimit } from '@/lib/ratelimit'
 
-function parseDomain(raw: string): string {
-  return raw
-    .replace(/^https?:\/\//, '')
-    .replace(/^www\./, '')
-    .replace(/\/.*$/, '')
-    .trim()
+const HOSTNAME_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
+
+function parseDomain(raw: string): string | null {
+  const input = raw.trim().toLowerCase()
+  if (!input) return null
+
+  let parsed: URL
+  try {
+    parsed = new URL(input.includes('://') ? input : `https://${input}`)
+  } catch {
+    return null
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return null
+
+  const host = parsed.hostname.replace(/^www\./, '')
+  if (!host || !HOSTNAME_RE.test(host)) return null
+
+  return host
 }
 
 export async function POST(request: Request) {
@@ -39,18 +52,26 @@ export async function POST(request: Request) {
   }
 
   const body = raw as { domain?: string }
-  const domain = parseDomain(body.domain ?? '')
-
-  if (!domain) {
+  if (!body.domain || !body.domain.trim()) {
     return NextResponse.json({ error: 'domain is required' }, { status: 400 })
   }
 
-  // 3. Hunter.io lookup (when API key is configured)
+  const domain = parseDomain(body.domain)
+  if (!domain) {
+    return NextResponse.json(
+      { error: 'domain could not be parsed into a valid hostname' },
+      { status: 422 }
+    )
+  }
+
+  // 4. Hunter.io lookup (when API key is configured)
   const hunterKey = process.env.HUNTER_API_KEY
   if (hunterKey) {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 5000)
     try {
       const url = `https://api.hunter.io/v2/domain-search?domain=${encodeURIComponent(domain)}&api_key=${hunterKey}&limit=1`
-      const res = await fetch(url)
+      const res = await fetch(url, { signal: controller.signal })
       if (res.ok) {
         const json = (await res.json()) as {
           data?: { emails?: { value: string; score?: number }[] }
@@ -63,12 +84,17 @@ export async function POST(request: Request) {
             confidence: (top.score ?? 0) >= 90 ? 'verified' : 'likely',
           })
         }
+      } else {
+        console.warn(`enrich/email: Hunter.io responded ${res.status} for domain lookup`)
       }
-    } catch {
+    } catch (err) {
       // Fall through to pattern generation
+      console.warn('enrich/email: Hunter.io request failed', err)
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 
-  // 4. Pattern generation fallback
+  // 5. Pattern generation fallback
   return NextResponse.json({ email: `info@${domain}`, confidence: 'guessed' })
 }

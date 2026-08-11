@@ -15,7 +15,7 @@ import {
   FileImage,
 } from 'lucide-react'
 import { Lead } from '@/types/lead'
-import { exportToCSV, exportToBrandedPDF } from '@/lib/export'
+import { exportToCSV, exportToBrandedPDF, LEAD_EXPORT_FIELDS } from '@/lib/export'
 import { cn } from '@/lib/utils'
 
 const STORAGE_KEY = 'leadzip_saved_leads'
@@ -30,24 +30,22 @@ interface ExportRecord {
   createdAt: string
 }
 
-const ALL_FIELDS = [
-  { key: 'businessName', label: 'Business Name' },
-  { key: 'category', label: 'Category' },
-  { key: 'address', label: 'Address' },
-  { key: 'city', label: 'City' },
-  { key: 'state', label: 'State' },
-  { key: 'zipCode', label: 'ZIP Code' },
-  { key: 'phone', label: 'Phone' },
-  { key: 'website', label: 'Website' },
-  { key: 'rating', label: 'Rating' },
-  { key: 'reviewCount', label: 'Review Count' },
-  { key: 'leadScore', label: 'Lead Score' },
-  { key: 'status', label: 'Status' },
-  { key: 'notes', label: 'Notes' },
-  { key: 'savedAt', label: 'Date Saved' },
-]
+// Shared with the CSV/PDF exporters so the picker and output never drift
+const ALL_FIELDS = LEAD_EXPORT_FIELDS
 
 type TabId = 'export' | 'history'
+
+function newExportFilename(): string {
+  return `leadzip-export-${Date.now()}`
+}
+
+function newExportRecord(data: Omit<ExportRecord, 'id' | 'createdAt'>): ExportRecord {
+  return {
+    ...data,
+    id: `exp-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+  }
+}
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -112,45 +110,34 @@ export default function ExportsPage() {
 
   const handleExport = async () => {
     if (selectedLeads.length === 0) return
-    // eslint-disable-next-line react-hooks/purity
-    const filename = `leadzip-export-${Date.now()}`
+    const filename = newExportFilename()
 
     if (format === 'branded_pdf') {
       await exportToBrandedPDF(selectedLeads)
-      const record: ExportRecord = {
-        id: `exp-${Date.now()}`,
+      const record = newExportRecord({
         filename: `${filename}.pdf`,
         leadCount: selectedLeads.length,
         format: 'Branded PDF',
         fields: ['All fields'],
-        createdAt: new Date().toISOString(),
-      }
+      })
       const updated = [record, ...exportHistory]
       setExportHistory(updated)
       localStorage.setItem(EXPORT_HISTORY_KEY, JSON.stringify(updated))
       return
     }
 
-    // Filter fields for CSV
-    const filteredLeads = selectedLeads.map((lead) => {
-      const filtered: Partial<Lead> = {}
-      for (const key of selectedFields) {
-        ; (filtered as unknown as Record<string, unknown>)[key] = (lead as unknown as Record<string, unknown>)[key]
-      }
-      return filtered as Lead
+    exportToCSV(selectedLeads, filename, {
+      fields: Array.from(selectedFields),
+      bom: format === 'excel_csv',
     })
-    exportToCSV(filteredLeads, filename)
 
     // Record export
-    const record: ExportRecord = {
-      // eslint-disable-next-line react-hooks/purity
-      id: `exp-${Date.now()}`,
+    const record = newExportRecord({
       filename: `${filename}.csv`,
       leadCount: selectedLeads.length,
       format: format === 'excel_csv' ? 'Excel CSV' : 'CSV',
       fields: Array.from(selectedFields),
-      createdAt: new Date().toISOString(),
-    }
+    })
     const updated = [record, ...exportHistory]
     setExportHistory(updated)
     localStorage.setItem(EXPORT_HISTORY_KEY, JSON.stringify(updated))
@@ -158,7 +145,12 @@ export default function ExportsPage() {
 
   const handleDownloadAgain = (record: ExportRecord) => {
     const relevantLeads = leads.slice(0, record.leadCount)
-    exportToCSV(relevantLeads, record.filename)
+    const validKeys = new Set(ALL_FIELDS.map((f) => f.key))
+    const fields = record.fields.filter((f) => validKeys.has(f))
+    exportToCSV(relevantLeads, record.filename, {
+      fields: fields.length > 0 ? fields : undefined,
+      bom: record.format === 'Excel CSV',
+    })
   }
 
   if (!mounted) return null

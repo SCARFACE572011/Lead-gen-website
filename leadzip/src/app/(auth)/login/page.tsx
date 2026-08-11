@@ -8,6 +8,21 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
 
+// Only allow same-origin relative paths (single leading '/'); anything else
+// (absolute URLs, protocol-relative '//', '/\' tricks) falls back to /dashboard.
+function safeRedirect(target: string | null): string {
+  if (!target || !target.startsWith("/") || target.startsWith("//") || target.startsWith("/\\")) {
+    return "/dashboard";
+  }
+  try {
+    const resolved = new URL(target, window.location.origin);
+    if (resolved.origin !== window.location.origin) return "/dashboard";
+    return resolved.pathname + resolved.search + resolved.hash;
+  } catch {
+    return "/dashboard";
+  }
+}
+
 function DeactivatedNotice() {
   const searchParams = useSearchParams()
   if (searchParams.get('deactivated') !== 'true') return null
@@ -16,6 +31,19 @@ function DeactivatedNotice() {
       <p className="text-sm font-semibold text-red-700 dark:text-red-400">Account Deactivated</p>
       <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
         Your account has been deactivated. Contact support if you believe this is an error.
+      </p>
+    </div>
+  )
+}
+
+function AuthCallbackErrorNotice() {
+  const searchParams = useSearchParams()
+  if (searchParams.get('error') !== 'auth_callback_failed') return null
+  return (
+    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950">
+      <p className="text-sm font-semibold text-red-700 dark:text-red-400">Sign-in link failed</p>
+      <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
+        Your sign-in link is invalid or has expired. Please sign in or request a new link.
       </p>
     </div>
   )
@@ -64,7 +92,7 @@ export default function LoginPage() {
     }
 
     const params = new URLSearchParams(window.location.search);
-    const redirectTo = params.get("redirectTo") || "/dashboard";
+    const redirectTo = safeRedirect(params.get("redirectTo"));
     router.push(redirectTo);
   }
 
@@ -78,6 +106,7 @@ export default function LoginPage() {
       </div>
 
       <Suspense fallback={null}><DeactivatedNotice /></Suspense>
+      <Suspense fallback={null}><AuthCallbackErrorNotice /></Suspense>
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Email */}

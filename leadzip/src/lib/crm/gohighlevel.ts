@@ -11,6 +11,7 @@ async function createContact(apiKey: string, lead: CrmLead): Promise<CrmResult> 
     },
     body: JSON.stringify({
       name: lead.businessName,
+      ...(lead.email ? { email: lead.email } : {}),
       phone: lead.phone ?? '',
       website: lead.website ?? '',
       address1: lead.address ?? '',

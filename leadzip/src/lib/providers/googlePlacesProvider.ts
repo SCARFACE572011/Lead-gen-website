@@ -2,10 +2,29 @@ import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
 import { geocodeZip } from '@/lib/geocode'
 
-const PLACES_TEXT_SEARCH_URL = 'https://maps.googleapis.com/maps/api/place/textsearch/json'
-const PLACES_DETAILS_URL = 'https://maps.googleapis.com/maps/api/place/details/json'
+// Places API (New) — the legacy /maps/api/place endpoints are not enabled for
+// API keys created after March 2025, so all requests go to places.googleapis.com.
+const PLACES_SEARCH_TEXT_URL = 'https://places.googleapis.com/v1/places:searchText'
 
-// Google Places type used as a precise first-pass filter.
+// Fields requested per place. Phone/website/hours arrive directly in the search
+// response, so no per-place Details calls are needed.
+const FIELD_MASK = [
+  'places.id',
+  'places.displayName',
+  'places.formattedAddress',
+  'places.location',
+  'places.rating',
+  'places.userRatingCount',
+  'places.nationalPhoneNumber',
+  'places.websiteUri',
+  'places.businessStatus',
+  'places.priceLevel',
+  'places.regularOpeningHours.openNow',
+  'places.regularOpeningHours.weekdayDescriptions',
+  'nextPageToken',
+].join(',')
+
+// Place type used as a precise first-pass filter (Places API New, Table A).
 // If this returns < MIN_TYPED_RESULTS we fall back to the broad text search.
 const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Restaurants': 'restaurant',
@@ -19,13 +38,10 @@ const GOOGLE_PLACES_TYPES: Record<string, string> = {
   'Hair & Beauty Salons': 'beauty_salon',
   'Plumbers': 'plumber',
   'Electricians': 'electrician',
-  'Landscaping': 'landscaping',
   'Roofing': 'roofing_contractor',
   'Insurance Agents': 'insurance_agency',
   'Accountants': 'accounting',
   'Chiropractors': 'physiotherapist',
-  'Photographers': 'photographer',
-  'Cleaning Services': 'cleaning_service',
   'Moving Companies': 'moving_company',
   'Childcare & Daycares': 'child_care_agency',
   'Veterinarians': 'veterinary_care',
@@ -99,36 +115,44 @@ const RELEVANCE_KEYWORDS: Record<string, string[]> = {
 // Minimum results from the typed search before we fall back to broad text search
 const MIN_TYPED_RESULTS = 8
 
-// --- Google Places API response types ---
+// Places API (New) enum → legacy numeric price level
+const PRICE_LEVEL_MAP: Record<string, number> = {
+  PRICE_LEVEL_FREE: 0,
+  PRICE_LEVEL_INEXPENSIVE: 1,
+  PRICE_LEVEL_MODERATE: 2,
+  PRICE_LEVEL_EXPENSIVE: 3,
+  PRICE_LEVEL_VERY_EXPENSIVE: 4,
+}
 
-interface GooglePlacesResult {
-  place_id: string
-  name: string
-  formatted_address: string
-  geometry: { location: { lat: number; lng: number } }
+// --- Places API (New) response types ---
+
+interface GooglePlaceNew {
+  id: string
+  displayName?: { text?: string }
+  formattedAddress?: string
+  location?: { latitude: number; longitude: number }
   rating?: number
-  user_ratings_total?: number
+  userRatingCount?: number
+  nationalPhoneNumber?: string
+  websiteUri?: string
+  businessStatus?: string
+  priceLevel?: string
+  regularOpeningHours?: { openNow?: boolean; weekdayDescriptions?: string[] }
 }
 
-interface GooglePlacesResponse {
-  status: string
-  error_message?: string
-  results: GooglePlacesResult[]
-  next_page_token?: string
+interface SearchTextResponse {
+  places?: GooglePlaceNew[]
+  nextPageToken?: string
 }
 
-interface PlaceDetailsResponse {
-  status: string
-  result?: {
-    formatted_phone_number?: string
-    website?: string
-    business_status?: string
-    price_level?: number
-    opening_hours?: {
-      open_now?: boolean
-      weekday_text?: string[]
-    }
+interface SearchTextRequest {
+  textQuery: string
+  pageSize: number
+  locationBias: {
+    circle: { center: { latitude: number; longitude: number }; radius: number }
   }
+  includedType?: string
+  pageToken?: string
 }
 
 // --- Helpers ---
@@ -180,73 +204,42 @@ function isRelevant(businessName: string, category: string): boolean {
   return keywords.some((kw) => lower.includes(kw))
 }
 
-interface PlaceEnrichment {
-  phone: string
-  website: string
-  businessStatus: string
-  priceLevel: number | null
-  openNow?: boolean
-  businessHours?: string[]
+async function fetchPage(body: SearchTextRequest, apiKey: string): Promise<SearchTextResponse> {
+  const res = await fetch(PLACES_SEARCH_TEXT_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': FIELD_MASK,
+    },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) {
+    // Surface the real API error (REQUEST_DENIED, key restrictions, API not
+    // enabled, …) instead of letting it masquerade as "zero results".
+    let detail = ''
+    try {
+      const err = (await res.json()) as { error?: { status?: string; message?: string } }
+      detail = ` ${err.error?.status ?? ''}: ${err.error?.message ?? ''}`
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new Error(`Google Places HTTP ${res.status}${detail}`)
+  }
+  return res.json() as Promise<SearchTextResponse>
 }
 
-// Enrich all leads with phone, website, hours, price level concurrently
-async function enrichWithDetails(
-  placeIds: string[],
-  apiKey: string
-): Promise<Map<string, PlaceEnrichment>> {
-  const enriched = new Map<string, PlaceEnrichment>()
-
-  await Promise.allSettled(
-    placeIds.map(async (placeId) => {
-      try {
-        const url = `${PLACES_DETAILS_URL}?place_id=${encodeURIComponent(placeId)}&fields=formatted_phone_number,website,business_status,price_level,opening_hours&key=${apiKey}`
-        const res = await fetch(url)
-        if (!res.ok) return
-        const data = (await res.json()) as PlaceDetailsResponse
-        if (data.status === 'OK' && data.result) {
-          enriched.set(placeId, {
-            phone: data.result.formatted_phone_number ?? '',
-            website: data.result.website ?? '',
-            businessStatus: data.result.business_status ?? 'OPERATIONAL',
-            priceLevel: data.result.price_level ?? null,
-            openNow: data.result.opening_hours?.open_now,
-            businessHours: data.result.opening_hours?.weekday_text,
-          })
-        }
-      } catch {
-        // Non-fatal — lead still appears without enrichment
-      }
-    })
-  )
-
-  return enriched
-}
-
-async function fetchPage(
-  urlParams: URLSearchParams,
-  apiKey: string,
-  pageToken?: string
-): Promise<GooglePlacesResponse> {
-  const p = new URLSearchParams(urlParams)
-  if (pageToken) p.set('pagetoken', pageToken)
-  const res = await fetch(`${PLACES_TEXT_SEARCH_URL}?${p.toString()}`)
-  if (!res.ok) throw new Error(`Google Places HTTP ${res.status}`)
-  return res.json() as Promise<GooglePlacesResponse>
-}
-
-// Fetch up to 3 pages (60 results) for a given URL params set.
-// Google requires a 2s pause before each subsequent page token is valid.
-async function fetchAllPages(urlParams: URLSearchParams, apiKey: string): Promise<GooglePlacesResult[]> {
-  const all: GooglePlacesResult[] = []
+// Fetch up to 3 pages (60 results) for a given request.
+// Places API (New) page tokens are usable immediately — no forced delay.
+async function fetchAllPages(base: SearchTextRequest, apiKey: string): Promise<GooglePlaceNew[]> {
+  const all: GooglePlaceNew[] = []
   let token: string | undefined
 
   for (let page = 0; page < 3; page++) {
-    if (page > 0) await new Promise((r) => setTimeout(r, 2000))
-    const data = await fetchPage(urlParams, apiKey, token)
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') break
-    all.push(...(data.results ?? []))
-    if (!data.next_page_token) break
-    token = data.next_page_token
+    const data = await fetchPage(token ? { ...base, pageToken: token } : base, apiKey)
+    all.push(...(data.places ?? []))
+    if (!data.nextPageToken) break
+    token = data.nextPageToken
   }
 
   return all
@@ -284,7 +277,7 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   if (!apiKey) throw new Error('GOOGLE_PLACES_API_KEY not configured')
 
   const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
-  // Google Text Search caps effective radius at ~50km regardless of what's passed
+  // Text Search location bias caps at 50km regardless of what's requested
   const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 50000)
 
   const queryTerm = CATEGORY_QUERY[params.category] ?? params.category
@@ -293,81 +286,96 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
       ? params.keyword
       : queryTerm
 
-  const baseParams = new URLSearchParams({
-    query: queryText,
-    location: `${lat},${lon}`,
-    radius: String(radiusMeters),
-    key: apiKey,
-  })
+  const baseRequest: SearchTextRequest = {
+    textQuery: queryText,
+    pageSize: 20,
+    locationBias: {
+      circle: { center: { latitude: lat, longitude: lon }, radius: radiusMeters },
+    },
+  }
 
   // --- Strategy: typed search first, broad fallback if too few results ---
-  let allResults: GooglePlacesResult[] = []
+  let allResults: GooglePlaceNew[] = []
   const placeType = GOOGLE_PLACES_TYPES[params.category]
 
   if (placeType) {
-    // Page 1 with type filter to gauge result quality
-    const typedParams = new URLSearchParams(baseParams)
-    typedParams.set('type', placeType)
-    const firstData = await fetchPage(typedParams, apiKey)
+    // Page 1 with type filter to gauge result quality. A rejected type
+    // (INVALID_ARGUMENT) falls through to the broad search rather than
+    // failing the whole provider.
+    let firstData: SearchTextResponse | null = null
+    try {
+      firstData = await fetchPage({ ...baseRequest, includedType: placeType }, apiKey)
+    } catch (err) {
+      console.warn(`[googlePlacesProvider] typed search (${placeType}) failed, using broad search:`, err)
+    }
 
-    if (firstData.status === 'OK' || firstData.status === 'ZERO_RESULTS') {
-      const firstPage = firstData.results ?? []
+    if (firstData) {
+      const firstPage = firstData.places ?? []
 
       if (firstPage.length >= MIN_TYPED_RESULTS) {
         // Good signal — paginate this typed search for up to 60 results
         allResults = [...firstPage]
-        let token = firstData.next_page_token
+        let token = firstData.nextPageToken
         for (let p = 1; p < 3 && token; p++) {
-          await new Promise((r) => setTimeout(r, 2000))
-          const next = await fetchPage(typedParams, apiKey, token)
-          allResults.push(...(next.results ?? []))
-          token = next.next_page_token
+          const next = await fetchPage(
+            { ...baseRequest, includedType: placeType, pageToken: token },
+            apiKey
+          )
+          allResults.push(...(next.places ?? []))
+          token = next.nextPageToken
         }
       } else {
         // Typed search is too sparse — switch to broad text search.
         // Keep any typed results and supplement with broad results.
-        const broadResults = await fetchAllPages(baseParams, apiKey)
-        const seenIds = new Set(firstPage.map((r) => r.place_id))
+        const broadResults = await fetchAllPages(baseRequest, apiKey)
+        const seenIds = new Set(firstPage.map((r) => r.id))
         allResults = [...firstPage]
         for (const r of broadResults) {
-          if (!seenIds.has(r.place_id)) {
-            seenIds.add(r.place_id)
+          if (!seenIds.has(r.id)) {
+            seenIds.add(r.id)
             allResults.push(r)
           }
         }
       }
+    } else {
+      allResults = await fetchAllPages(baseRequest, apiKey)
     }
   } else {
     // No type mapping for this category — go straight to broad text search
-    allResults = await fetchAllPages(baseParams, apiKey)
+    allResults = await fetchAllPages(baseRequest, apiKey)
   }
 
   // --- Multi-center radius expansion for radius > 30 miles ---
-  // Google's Text Search caps effective bias at ~31 miles. For larger radii
-  // we fire additional 1-page searches from ring points so the full requested
-  // area is covered. Parallel calls — no page-token waits needed here.
+  // Text Search caps effective bias at ~31 miles. For larger radii we fire
+  // additional 1-page searches from ring points so the full requested area
+  // is covered. Parallel calls — no page-token waits needed here.
   if (params.radiusMiles > 30) {
     const ringCenters = generateRingCenters(lat, lon, params.radiusMiles)
-    const seenPlaceIds = new Set(allResults.map((r) => r.place_id))
+    const seenPlaceIds = new Set(allResults.map((r) => r.id))
 
     const ringSearches = await Promise.allSettled(
-      ringCenters.map(async (center) => {
-        const ringParams = new URLSearchParams({
-          query: queryText,
-          location: `${center.lat},${center.lon}`,
-          radius: '50000',
-          key: apiKey,
-        })
-        const data = await fetchPage(ringParams, apiKey)
-        return data.status === 'OK' ? (data.results ?? []) : []
-      })
+      ringCenters.map((center) =>
+        fetchPage(
+          {
+            textQuery: queryText,
+            pageSize: 20,
+            locationBias: {
+              circle: {
+                center: { latitude: center.lat, longitude: center.lon },
+                radius: 50000,
+              },
+            },
+          },
+          apiKey
+        ).then((data) => data.places ?? [])
+      )
     )
 
     for (const res of ringSearches) {
       if (res.status === 'fulfilled') {
         for (const r of res.value) {
-          if (!seenPlaceIds.has(r.place_id)) {
-            seenPlaceIds.add(r.place_id)
+          if (!seenPlaceIds.has(r.id)) {
+            seenPlaceIds.add(r.id)
             allResults.push(r)
           }
         }
@@ -377,50 +385,49 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
 
   if (allResults.length === 0) throw new Error('Google Places returned zero results')
 
-  // Enrich ALL results with phone + website + hours + price level concurrently
-  const placeIds = allResults.map((r) => r.place_id)
-  const details = await enrichWithDetails(placeIds, apiKey)
-
   // Deduplicate by name + address, filter closed + irrelevant businesses
   const seen = new Set<string>()
   const partialLeads = allResults
     .map((place) => {
-      const { lat: pLat, lng: pLng } = place.geometry.location
+      const name = place.displayName?.text ?? ''
+      const pLat = place.location?.latitude
+      const pLng = place.location?.longitude
+      if (!name || pLat == null || pLng == null) return null
+
       const { address, city, state, zipCode } = parseFormattedAddress(
-        place.formatted_address,
+        place.formattedAddress ?? '',
         geoCity,
         geoState,
         params.zipCode
       )
-      const d = details.get(place.place_id)
-      const key = `${place.name.toLowerCase()}|${address.toLowerCase()}`
+      const key = `${name.toLowerCase()}|${address.toLowerCase()}`
       if (seen.has(key)) return null
       seen.add(key)
 
-      if (d?.businessStatus === 'CLOSED_PERMANENTLY') return null
+      if (place.businessStatus === 'CLOSED_PERMANENTLY') return null
 
       // Relevance filter — drop obvious category mismatches
-      if (!isRelevant(place.name, params.category)) return null
+      if (!isRelevant(name, params.category)) return null
 
       return {
-        id: `gp_${place.place_id}`,
-        businessName: place.name,
+        id: `gp_${place.id}`,
+        businessName: name,
         category: params.category,
         address,
         city,
         state,
         zipCode,
-        phone: d?.phone ?? '',
-        website: d?.website ?? '',
+        phone: place.nationalPhoneNumber ?? '',
+        website: place.websiteUri ?? '',
         rating: place.rating ?? null,
-        reviewCount: place.user_ratings_total ?? null,
+        reviewCount: place.userRatingCount ?? null,
         latitude: pLat,
         longitude: pLng,
         distanceMiles: haversineDistanceMiles(lat, lon, pLat, pLng),
         createdAt: new Date().toISOString(),
-        priceLevel: d?.priceLevel ?? null,
-        openNow: d?.openNow,
-        businessHours: d?.businessHours,
+        priceLevel: place.priceLevel != null ? PRICE_LEVEL_MAP[place.priceLevel] ?? null : null,
+        openNow: place.regularOpeningHours?.openNow,
+        businessHours: place.regularOpeningHours?.weekdayDescriptions,
       } satisfies Omit<Lead, 'leadScore' | 'status' | 'notes'>
     })
     .filter((l): l is NonNullable<typeof l> => l !== null && l.distanceMiles <= params.radiusMiles * 1.1)

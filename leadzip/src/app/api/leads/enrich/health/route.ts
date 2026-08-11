@@ -22,35 +22,72 @@ function computeScore(details: DigitalHealthDetails): number {
   )
 }
 
+// TLDs that only resolve on internal networks — never fetch them server-side
+const BLOCKED_TLDS = new Set([
+  'localhost',
+  'local',
+  'internal',
+  'intranet',
+  'corp',
+  'home',
+  'lan',
+  'test',
+])
+
+// The WHATWG URL parser normalizes decimal/octal/hex IPv4 forms
+// (e.g. http://2130706433/) to dotted-quad, so octet checks are reliable here.
+function isPrivateIpv4(hostname: string): boolean {
+  const octets = hostname.split('.').map(Number)
+  if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o) || o < 0 || o > 255)) {
+    return false // not an IPv4 literal
+  }
+  const [a, b] = octets
+  if (a === 0 || a === 10 || a === 127) return true // "this net", private, loopback
+  if (a === 169 && b === 254) return true // link-local
+  if (a === 172 && b >= 16 && b <= 31) return true // private
+  if (a === 192 && b === 168) return true // private
+  if (a === 100 && b >= 64 && b <= 127) return true // CGNAT
+  return false
+}
+
+function isBlockedIpv6(bracketed: string): boolean {
+  const addr = bracketed.slice(1, -1).toLowerCase() // strip [ ]
+  if (addr === '::' || addr === '::1') return true // unspecified, loopback
+  if (/^fe[89ab]/.test(addr)) return true // link-local fe80::/10
+  if (addr.startsWith('fc') || addr.startsWith('fd')) return true // ULA fc00::/7
+  if (addr.startsWith('::ffff:')) return true // IPv4-mapped
+  if (addr.startsWith('64:ff9b:')) return true // NAT64
+  return false
+}
+
 function isSafeUrl(url: string): boolean {
+  let parsed: URL
   try {
-    const parsed = new URL(url)
-    const hostname = parsed.hostname
-
-    // Block localhost and loopback
-    if (
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname === '0.0.0.0' ||
-      hostname === '::1'
-    ) {
-      return false
-    }
-
-    // Block private/link-local IPv4 ranges
-    if (hostname.startsWith('10.')) return false
-    if (hostname.startsWith('192.168.')) return false
-    if (hostname.startsWith('169.254.')) return false
-    if (/^172\.(1[6-9]|2\d|3[01])\./.test(hostname)) return false
-
-    // Block IPv6 ULA ranges
-    if (hostname.startsWith('fc00:')) return false
-    if (hostname.startsWith('fd')) return false
-
-    return true
+    parsed = new URL(url)
   } catch {
     return false
   }
+
+  // Only plain http/https
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
+
+  // No embedded credentials
+  if (parsed.username || parsed.password) return false
+
+  const hostname = parsed.hostname.toLowerCase()
+  if (!hostname) return false
+
+  // IPv6 literals come back bracketed, e.g. [::1]
+  if (hostname.startsWith('[')) return !isBlockedIpv6(hostname)
+
+  if (isPrivateIpv4(hostname)) return false
+
+  // Block single-label hosts (only resolvable on internal DNS) and internal TLDs
+  const labels = hostname.replace(/\.$/, '').split('.')
+  if (labels.length < 2) return false
+  if (BLOCKED_TLDS.has(labels[labels.length - 1])) return false
+
+  return true
 }
 
 export async function POST(request: Request) {
@@ -82,7 +119,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'website is required' }, { status: 400 })
   }
 
-  const url = website.startsWith('http') ? website : `https://${website}`
+  const url = /^https?:\/\//i.test(website) ? website : `https://${website}`
 
   if (!isSafeUrl(url)) {
     return NextResponse.json({ error: 'unreachable' })

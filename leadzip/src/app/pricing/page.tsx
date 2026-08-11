@@ -65,7 +65,7 @@ const PLANS: Plan[] = [
   {
     name: "Pro",
     monthlyPrice: 25,
-    annualPrice: 39,
+    annualPrice: 20,
     description: "For agencies and sales teams ready to grow their pipeline.",
     cta: "Start Pro Trial",
     ctaHref: "/signup?plan=pro",
@@ -87,7 +87,7 @@ const PLANS: Plan[] = [
   {
     name: "Agency",
     monthlyPrice: 50,
-    annualPrice: 79,
+    annualPrice: 40,
     description: "Built for scaling agencies with high-volume lead needs.",
     cta: "Contact Sales",
     ctaHref: "mailto:hello@leadzip.com",
@@ -337,6 +337,11 @@ export default function PricingPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan, billing: billingCycle }),
       })
+      if (res.status === 401) {
+        // Checkout requires a logged-in account
+        window.location.href = "/login?redirectTo=/pricing"
+        return
+      }
       const data = await res.json()
       if (data.url) {
         window.location.href = data.url

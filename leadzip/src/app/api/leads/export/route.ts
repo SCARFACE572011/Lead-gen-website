@@ -1,54 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Lead } from '@/types/lead'
+import { buildLeadsCsv } from '@/lib/export'
 
 export async function POST(request: NextRequest) {
   try {
-    const { leads } = (await request.json()) as { leads: Lead[] }
+    // Require an authenticated Supabase session
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    let body: { leads?: Lead[]; fields?: string[] }
+    try {
+      body = (await request.json()) as { leads?: Lead[]; fields?: string[] }
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+
+    const { leads, fields } = body
 
     if (!leads || leads.length === 0) {
       return NextResponse.json({ error: 'No leads to export' }, { status: 400 })
     }
 
-    // Generate CSV content server-side
-    const headers = [
-      'Business Name',
-      'Category',
-      'Address',
-      'City',
-      'State',
-      'ZIP',
-      'Phone',
-      'Website',
-      'Rating',
-      'Review Count',
-      'Lead Score',
-      'Status',
-      'Notes',
-      'Date Saved',
-    ]
-
-    const rows = leads.map((l) =>
-      [
-        l.businessName,
-        l.category,
-        l.address,
-        l.city,
-        l.state,
-        l.zipCode,
-        l.phone,
-        l.website,
-        l.rating ?? '',
-        l.reviewCount ?? '',
-        l.leadScore,
-        l.status,
-        l.notes,
-        l.savedAt ?? '',
-      ]
-        .map((v) => `"${String(v ?? '').replace(/"/g, '""')}"`)
-        .join(',')
-    )
-
-    const csv = [headers.join(','), ...rows].join('\n')
+    // Same field set (and formula-injection escaping) as the client exporter
+    const csv = buildLeadsCsv(leads, fields)
 
     return new NextResponse(csv, {
       headers: {

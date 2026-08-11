@@ -18,6 +18,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Email not configured' }, { status: 503 })
   }
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!supabaseUrl || !serviceRoleKey) {
+    console.error('alert-digest: Supabase URL/service role key not configured')
+    return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 })
+  }
+
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -26,11 +33,9 @@ export async function GET(request: NextRequest) {
     },
   })
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { autoRefreshToken: false, persistSession: false } }
-  )
+  const supabase = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 
   const { data: savedSearches, error: fetchError } = await supabase
     .from('saved_searches')

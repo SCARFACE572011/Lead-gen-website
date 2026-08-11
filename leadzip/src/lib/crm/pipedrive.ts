@@ -29,6 +29,7 @@ async function createOrganization(apiKey: string, lead: CrmLead): Promise<CrmRes
       name: lead.businessName,
       org_id: orgId,
       phone: lead.phone ? [{ value: lead.phone, primary: true }] : [],
+      email: lead.email ? [{ value: lead.email, primary: true }] : [],
     }),
   })
 

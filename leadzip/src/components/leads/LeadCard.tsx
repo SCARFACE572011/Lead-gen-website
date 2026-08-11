@@ -146,6 +146,21 @@ export function LeadCard({
     }
   }
 
+  // Merge Find Email / health results into the lead on save so the
+  // enrichment data reaches localStorage, Supabase, and exports instead of
+  // living only in component state
+  function handleSaveClick() {
+    onSave({
+      ...lead,
+      notes: noteDraft,
+      ...(emailState === 'found' && foundEmail
+        ? { email: foundEmail, emailConfidence }
+        : {}),
+      ...(localHealthScore != null ? { digitalHealthScore: localHealthScore } : {}),
+      ...(localHealthDetails ? { digitalHealthDetails: localHealthDetails } : {}),
+    })
+  }
+
   function healthColor(score: number) {
     if (score <= 30) return { label: 'text-red-700', bar: 'bg-red-500' }
     if (score <= 60) return { label: 'text-amber-700', bar: 'bg-amber-400' }
@@ -211,7 +226,7 @@ export function LeadCard({
 
         <div className="mt-3 flex items-center gap-2">
           <button
-            onClick={() => onSave({ ...lead, notes: noteDraft })}
+            onClick={handleSaveClick}
             className={cn(
               'flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold min-h-[44px] transition-all duration-150',
               isSaved ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -561,7 +576,7 @@ export function LeadCard({
       )}
 
       {hasWebsite && healthState === 'unreachable' && (
-        <p className="mt-1 text-xs text-slate-400">⚠ Couldn't reach site</p>
+        <p className="mt-1 text-xs text-slate-400">⚠ Couldn&apos;t reach site</p>
       )}
 
       {/* Note area */}

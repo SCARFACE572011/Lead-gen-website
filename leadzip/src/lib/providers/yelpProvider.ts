@@ -113,7 +113,12 @@ export async function searchLeadsYelp(params: SearchParams): Promise<SearchResul
       next: { revalidate: 0 },
     })
 
-    if (!res.ok) break
+    if (!res.ok) {
+      // Surface auth/quota failures — a dead key must not read as "no results"
+      const body = await res.text().catch(() => '')
+      console.warn(`[yelpProvider] HTTP ${res.status}: ${body.slice(0, 300)}`)
+      break
+    }
 
     const data = (await res.json()) as YelpSearchResponse
     if (!data.businesses?.length) break

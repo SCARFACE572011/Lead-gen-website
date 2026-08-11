@@ -4,6 +4,7 @@ LeadZip is a B2B lead generation SaaS that lets agencies and sales teams find lo
 
 ## Tech Stack
 
+
 | Layer | Technology |
 |---|---|
 | Framework | Next.js 14 (App Router) |

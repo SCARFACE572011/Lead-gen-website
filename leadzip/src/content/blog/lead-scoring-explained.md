@@ -83,7 +83,7 @@ Doing all of this by hand — opening each listing, checking for a website, coun
 
 [LeadZipp](/signup) automates it. Run a [ZIP + radius search](/search) and it pulls **live Google Places and Yelp data** for every business in the area — real names, phones, addresses, and websites (or the conspicuous absence of one). It checks each of the signals above automatically and rolls them into a single **0–100 score**. By design, "no website / weak reviews" scores highest, so the businesses most likely to need your services float straight to the top of the list.
 
-Because the data is live rather than a stale purchased file, the score reflects reality today — not a snapshot from a year ago when that café still had five reviews. From there you can see everyone on a **map view**, pull decision-maker emails with the built-in **email finder**, and export the batch to **CSV, PDF, or directly into HubSpot, Salesforce, or Pipedrive** so nothing falls through the cracks.
+Because the data is live rather than a stale purchased file, the score reflects reality today — not a snapshot from a year ago when that café still had five reviews. From there you can see everyone on a **map view**, pull decision-maker emails with the built-in **email finder**, and export the batch to **CSV, PDF, or directly into HubSpot, Pipedrive, or GoHighLevel** so nothing falls through the cracks.
 
 ## How to work a scored list top-down
 

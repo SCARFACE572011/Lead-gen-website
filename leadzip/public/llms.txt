@@ -19,7 +19,7 @@ LeadZipp maps every local business in a ZIP code or radius using live data from 
 - Real business data pulled live from Google Places and Yelp — verified names, addresses, phones, ratings, and websites.
 - Lead scoring (0–100) that surfaces the best opportunities first — businesses with no website, few reviews, or a low rating rank highest.
 - Decision-maker email finder that returns the best contact email for any business with a domain, with a confidence badge.
-- One-click export to CSV, branded PDF, or CRM (HubSpot, Salesforce, Pipedrive).
+- One-click export to CSV, branded PDF, or CRM (HubSpot, Pipedrive, GoHighLevel).
 - Map view to see every lead across a neighborhood and plan a route.
 - Filters for radius, rating, review count, has-website, and category.
 

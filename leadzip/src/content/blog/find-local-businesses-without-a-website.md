@@ -60,7 +60,7 @@ Here's what changes:
 - **Coverage, not sampling.** A radius search around a ZIP pulls the businesses in that area systematically, instead of you re-scrolling Maps neighborhood by neighborhood.
 - **The website check is already done.** Each result shows whether a site exists, so "no website" becomes a filter, not a hundred manual clicks.
 - **Every lead is scored 0-100.** The score weights the signals that predict a real need — and **"no website" is the single strongest signal, so those businesses float to the top.** Weak or missing reviews push the score higher still, because they compound the same problem. We break down exactly how the number is built in [lead scoring explained](/blog/lead-scoring-explained).
-- **It's ready to work.** Export to CSV or PDF, or push straight into HubSpot, Salesforce, or Pipedrive. Add the built-in email finder and a map view, and you go from "a ZIP code" to "a prioritized outreach list" without touching a spreadsheet.
+- **It's ready to work.** Export to CSV or PDF, or push straight into HubSpot, Pipedrive, or GoHighLevel. Add the built-in email finder and a map view, and you go from "a ZIP code" to "a prioritized outreach list" without touching a spreadsheet.
 
 The point isn't that manual methods are wrong — it's that a tool collapses an afternoon of clicking into a search you run between calls. If you want the mechanics of prospecting a whole territory this way, see [prospect local clients by ZIP code](/blog/prospect-local-clients-by-zip-code).
 

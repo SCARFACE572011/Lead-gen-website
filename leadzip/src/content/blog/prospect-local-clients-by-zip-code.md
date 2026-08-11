@@ -80,7 +80,7 @@ Then next Monday, you pick the adjacent ZIP and do it again. Because it's next d
 
 A worked territory is only valuable if it doesn't evaporate on Friday. Everything you learned — who you touched, what they use, who's a maybe — needs a home.
 
-LeadZipp exports to **CSV or PDF**, or straight into **HubSpot, Salesforce, or Pipedrive**, so a worked ZIP lands in your pipeline with scores and contacts attached instead of getting retyped by hand. From there:
+LeadZipp exports to **CSV or PDF**, or straight into **HubSpot, Pipedrive, or GoHighLevel**, so a worked ZIP lands in your pipeline with scores and contacts attached instead of getting retyped by hand. From there:
 
 - **Tag deals by ZIP.** Now your CRM is a map. You can see at a glance which territories are worked, which are warm, and which are untouched.
 - **Set follow-up cadences per tier.** High-score no-shows get a quick second touch; mid-scores go into a longer nurture.

@@ -23,7 +23,7 @@ const FAQ: { question: string; answer: string }[] = [
   {
     question: "How do exports work?",
     answer:
-      "Export any result set to CSV or branded PDF, or push leads into HubSpot, Salesforce, or Pipedrive.",
+      "Export any result set to CSV or branded PDF, ready to import into HubSpot, Pipedrive, or GoHighLevel.",
   },
   {
     question: "Do I need a credit card to start?",

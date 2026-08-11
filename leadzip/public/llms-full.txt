@@ -19,7 +19,7 @@ LeadZipp maps every local business in a ZIP code or radius using live data from 
 - Real business data. Live listings from Google Places and Yelp with verified names, addresses, phones, ratings, and websites.
 - Lead scoring. Each business gets a 0–100 score based on how likely it is to need help. No website, few reviews, or a low rating push a business higher.
 - Email finder. For any business with a website, one tap returns the best contact email with a confidence badge (verified, likely, or pattern-based).
-- Export. One click to CSV, branded PDF, or CRM (HubSpot, Salesforce, Pipedrive). Email, phone, score, and every field come along.
+- Export. One click to CSV, branded PDF, or CRM (HubSpot, Pipedrive, GoHighLevel). Email, phone, score, and every field come along.
 - Map view. See every lead plotted across the neighborhood to work a block and plan a route.
 - Filters. Narrow by radius, rating, review count, has-website, and category before reaching out.
 
@@ -51,7 +51,7 @@ Q: Can I find email addresses?
 A: Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).
 
 Q: How do exports work?
-A: Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Salesforce, or Pipedrive. Email, phone, score, and every field come along.
+A: Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel. Email, phone, score, and every field come along.
 
 Q: Do I need a credit card to start?
 A: No. The Starter plan is free forever and includes 25 searches a month against real data. Upgrade to Pro only when you want unlimited searches and the email finder.

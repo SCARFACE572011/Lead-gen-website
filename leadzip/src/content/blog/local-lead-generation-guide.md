@@ -63,7 +63,7 @@ A business name and a general phone line is a start; a decision-maker's email is
 
 ### Step 5 — Deduplicate and organize
 
-Merge duplicates, drop anything already in your CRM, and keep the list somewhere you can act on it. Export to CSV or PDF, or push straight into HubSpot, Salesforce, or Pipedrive so your follow-up lives where you already work.
+Merge duplicates, drop anything already in your CRM, and keep the list somewhere you can act on it. Export to CSV or PDF, or push straight into HubSpot, Pipedrive, or GoHighLevel so your follow-up lives where you already work.
 
 ## Qualify and score before you reach out
 
@@ -99,7 +99,7 @@ You can run local lead generation with a spreadsheet, Google Maps, and stubbornn
 - **Sourcing + scoring:** a ZIP-based tool that returns real, scored local businesses in one search, so you skip the copy-paste-verify loop entirely.
 - **Contact enrichment:** an email finder for decision-maker addresses.
 - **Outreach:** a dialer or just your phone, plus a simple email tool.
-- **Organization:** CSV/PDF export, or direct CRM sync to HubSpot, Salesforce, or Pipedrive.
+- **Organization:** CSV/PDF export, or direct CRM sync to HubSpot, Pipedrive, or GoHighLevel.
 - **A map view** to plan walk-in routes and cluster nearby prospects.
 
 The fast path is collapsing the first two steps. Instead of spending a morning building a list and an afternoon deciding who's worth calling, a ZIP + radius search with built-in scoring hands you a prioritized, contactable list before your coffee's cold. That's the difference between prospecting as a chore and prospecting as a repeatable system. Compare what you get on each tier on the [pricing](/pricing) page.

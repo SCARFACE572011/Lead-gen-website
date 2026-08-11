@@ -3,7 +3,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
 
 function serviceClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
@@ -64,9 +64,9 @@ export async function POST(request: NextRequest) {
       const inviterName = inviterProfile?.full_name || inviterProfile?.email || 'Someone'
 
       await mailer().sendMail({
-        from: `"LeadZip" <${process.env.GMAIL_USER}>`,
+        from: `"LeadZipp" <${process.env.GMAIL_USER}>`,
         to: email,
-        subject: `${inviterName} invited you to join ${workspace.name} on LeadZip`,
+        subject: `${inviterName} invited you to join ${workspace.name} on LeadZipp`,
         html: `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;">
         <tr>
           <td style="background:#FF4D23;padding:28px 32px;text-align:center;">
-            <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">📍 LeadZip</span>
+            <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">📍 LeadZipp</span>
           </td>
         </tr>
         <tr>
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
             <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#17130E;">You're invited to join a team</h1>
             <p style="margin:0 0 24px;font-size:15px;color:#64748B;line-height:1.6;">
               <strong style="color:#17130E;">${inviterName}</strong> has invited you to join
-              <strong style="color:#17130E;">${workspace.name}</strong> on LeadZip — the local SMB lead generation platform.
+              <strong style="color:#17130E;">${workspace.name}</strong> on LeadZipp — the local SMB lead generation platform.
             </p>
             <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
               <tr>

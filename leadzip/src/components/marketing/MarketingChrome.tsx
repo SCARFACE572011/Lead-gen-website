@@ -10,7 +10,7 @@ export function SiteHeader() {
             <MapPin className="h-4 w-4 text-white" />
             <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-paper" />
           </span>
-          <span className="font-display text-xl font-extrabold tracking-tight">LeadZip</span>
+          <span className="font-display text-xl font-extrabold tracking-tight">LeadZipp</span>
         </Link>
         <div className="hidden items-center gap-8 md:flex">
           <Link href="/#how" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">How it works</Link>
@@ -39,7 +39,7 @@ export function SiteFooter() {
               <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
                 <MapPin className="h-4 w-4 text-white" />
               </span>
-              <span className="font-display text-xl font-extrabold text-white">LeadZip</span>
+              <span className="font-display text-xl font-extrabold text-white">LeadZipp</span>
             </div>
             <p className="mt-4 text-sm leading-relaxed">
               Turn any ZIP code into a map of local businesses that need what you sell.
@@ -73,7 +73,7 @@ export function SiteFooter() {
           </div>
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm sm:flex-row">
-          <p>© {new Date().getFullYear()} LeadZip. Built for people who sell to Main Street.</p>
+          <p>© {new Date().getFullYear()} LeadZipp. Built for people who sell to Main Street.</p>
           <p className="readout text-white/40">Real data · Google &amp; Yelp</p>
         </div>
       </div>

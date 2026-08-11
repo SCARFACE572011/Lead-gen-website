@@ -4,7 +4,7 @@ import { geocodeZip } from '@/lib/geocode'
 import { formatPhone } from '@/lib/phoneFormatter'
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
-const USER_AGENT = 'LeadZip/1.0 (+https://leadzip.vercel.app)'
+const USER_AGENT = 'LeadZipp/1.0 (+https://leadzipp.com)'
 
 // OSM tag expressions per category
 const OSM_CATEGORY_TAGS: Record<string, string[]> = {

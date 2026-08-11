@@ -110,7 +110,7 @@ function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 shrink-0">
           <MapPin className="h-4.5 w-4.5 text-white" aria-hidden="true" />
         </div>
-        <span className="text-lg font-bold tracking-tight text-slate-900">LeadZip</span>
+        <span className="text-lg font-bold tracking-tight text-slate-900">LeadZipp</span>
       </div>
 
       {/* Nav */}
@@ -299,7 +299,7 @@ export default function DashboardLayout({
             <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600 shrink-0">
               <MapPin className="h-3.5 w-3.5 text-white" aria-hidden="true" />
             </div>
-            <span className="text-base font-bold text-slate-900">LeadZip</span>
+            <span className="text-base font-bold text-slate-900">LeadZipp</span>
           </div>
           <DarkModeToggle />
         </header>

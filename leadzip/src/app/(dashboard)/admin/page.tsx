@@ -345,7 +345,7 @@ export default function AdminPage() {
                 Admin Only
               </span>
             </div>
-            <p className="text-sm text-slate-500">Complete platform management for LeadZip</p>
+            <p className="text-sm text-slate-500">Complete platform management for LeadZipp</p>
           </div>
           <div className="text-xs text-slate-400 bg-white border border-slate-200 px-3 py-2 rounded-lg hidden sm:block">
             <span className="font-medium text-slate-600">Last updated:</span> {new Date().toLocaleString()}

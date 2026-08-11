@@ -18,7 +18,7 @@ async function createContact(apiKey: string, lead: CrmLead): Promise<CrmResult> 
       city: lead.city ?? '',
       state: lead.state ?? '',
       tags: lead.category ? [lead.category, 'leadzip'] : ['leadzip'],
-      source: 'LeadZip',
+      source: 'LeadZipp',
     }),
   })
 

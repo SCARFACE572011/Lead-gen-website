@@ -6,7 +6,7 @@ import { ArrowLeft, ArrowRight, Clock } from 'lucide-react'
 import { getPost, getAllPosts, getAllPostSlugs, formatDate } from '@/lib/blog'
 import { SiteHeader, SiteFooter } from '@/components/marketing/MarketingChrome'
 
-const SITE = 'https://leadzip.vercel.app'
+const SITE = 'https://leadzipp.com'
 
 export function generateStaticParams() {
   return getAllPostSlugs().map((slug) => ({ slug }))
@@ -57,8 +57,8 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
     author: { '@type': 'Organization', name: post.author, url: SITE },
     publisher: {
       '@type': 'Organization',
-      name: 'LeadZip',
-      logo: { '@type': 'ImageObject', url: `${SITE}/og?title=LeadZip` },
+      name: 'LeadZipp',
+      logo: { '@type': 'ImageObject', url: `${SITE}/og?title=LeadZipp` },
     },
     mainEntityOfPage: { '@type': 'WebPage', '@id': `${SITE}/blog/${post.slug}` },
     keywords: post.keywords.join(', '),
@@ -99,7 +99,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
         <div className="mt-12 rounded-2xl border border-signal/30 bg-signal-50 p-6 sm:p-8">
           <h2 className="font-display text-xl font-bold text-ink">Find these leads in your area</h2>
           <p className="mt-2 text-[15px] text-ink-soft">
-            LeadZip turns any ZIP code into a scored list of real local businesses — free to start.
+            LeadZipp turns any ZIP code into a scored list of real local businesses — free to start.
           </p>
           <Link href="/signup" className="mt-4 inline-flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-signal-600 active:scale-95">
             Start free <ArrowRight className="h-4 w-4" />

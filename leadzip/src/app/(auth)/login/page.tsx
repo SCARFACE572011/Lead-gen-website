@@ -102,7 +102,7 @@ export default function LoginPage() {
         <span className="readout text-signal">Sign in</span>
         <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Welcome back</h1>
         <p className="mt-1.5 text-sm text-ink-soft">
-          Sign in to your LeadZip account to continue.
+          Sign in to your LeadZipp account to continue.
         </p>
       </div>
 

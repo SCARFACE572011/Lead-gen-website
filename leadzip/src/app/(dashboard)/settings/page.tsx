@@ -165,7 +165,7 @@ function ProfileTab() {
         </div>
         <div>
           <p className="text-sm font-medium text-[#17130E]">{fullName || 'Your Name'}</p>
-          <p className="text-xs text-slate-400">LeadZip Pro Member</p>
+          <p className="text-xs text-slate-400">LeadZipp Pro Member</p>
         </div>
       </div>
 
@@ -463,7 +463,7 @@ function NotificationsTab() {
     {
       key: 'newFeatures' as const,
       label: 'New features',
-      desc: 'Be the first to know about new LeadZip features',
+      desc: 'Be the first to know about new LeadZipp features',
       icon: <Zap className="w-4 h-4 text-[#FF4D23]" />,
     },
     {
@@ -518,7 +518,7 @@ function ComplianceTab() {
       iconBg: 'bg-amber-100',
       title: 'Your Outreach Responsibility',
       content:
-        'LeadZip provides business contact information from publicly available sources. You are solely responsible for ensuring your outreach complies with all applicable laws. Never send unsolicited bulk emails or calls without proper consent mechanisms in place.',
+        'LeadZipp provides business contact information from publicly available sources. You are solely responsible for ensuring your outreach complies with all applicable laws. Never send unsolicited bulk emails or calls without proper consent mechanisms in place.',
     },
     {
       icon: <Mail className="w-5 h-5 text-[#FF4D23]" />,
@@ -542,7 +542,7 @@ function ComplianceTab() {
       iconBg: 'bg-emerald-100',
       title: 'Our Data Sources',
       content:
-        'All business data in LeadZip is sourced from publicly available business directories, map services, and business registrations. We do not scrape private profiles or purchase consumer data. Contact information shown represents publicly listed business contact details.',
+        'All business data in LeadZipp is sourced from publicly available business directories, map services, and business registrations. We do not scrape private profiles or purchase consumer data. Contact information shown represents publicly listed business contact details.',
     },
   ]
 
@@ -663,7 +663,7 @@ function ApiTab() {
       {/* Generate */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-semibold text-[#17130E] mb-1">API Keys</h2>
-        <p className="text-sm text-slate-500 mb-5">Use API keys to query LeadZip programmatically. Keys are scoped to your account and plan.</p>
+        <p className="text-sm text-slate-500 mb-5">Use API keys to query LeadZipp programmatically. Keys are scoped to your account and plan.</p>
 
         <div className="flex gap-2 mb-2">
           <input
@@ -1172,7 +1172,7 @@ function WhiteLabelTab() {
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
         <h2 className="text-base font-semibold text-[#17130E] mb-1">White Label Exports</h2>
-        <p className="text-sm text-slate-500 mb-6">Add your agency branding to PDF exports. Your logo and colors replace LeadZip branding on all exported reports.</p>
+        <p className="text-sm text-slate-500 mb-6">Add your agency branding to PDF exports. Your logo and colors replace LeadZipp branding on all exported reports.</p>
 
         {/* Agency Name */}
         <div className="mb-5">

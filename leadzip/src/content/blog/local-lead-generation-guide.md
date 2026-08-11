@@ -3,7 +3,7 @@ title: "Local Lead Generation: The Complete 2026 Guide"
 description: "A practical local lead generation guide: where local leads come from, how to build a targeted list by area and industry, qualify them, and win the outreach."
 slug: "local-lead-generation-guide"
 date: "2026-08-11"
-author: "LeadZip Team"
+author: "LeadZipp Team"
 category: "Guides"
 keywords: ["local lead generation", "local leads", "how to find local business leads", "lead scoring", "local outreach", "ZIP code lead generation"]
 readingTime: "8 min read"
@@ -55,7 +55,7 @@ Pick one vertical and go deep: dentists, HVAC contractors, med spas, law firms, 
 
 ### Step 3 — Pull the raw list
 
-For each ZIP + industry combination, gather every matching business with its name, phone, address, website, and review signals. You can do this by hand from Google Maps, or you can pull it in one query. Tools like [LeadZip](/signup) turn a ZIP code into a scored list of real businesses using live Google Places and Yelp data — real names, phones, and addresses, not stale scraped junk.
+For each ZIP + industry combination, gather every matching business with its name, phone, address, website, and review signals. You can do this by hand from Google Maps, or you can pull it in one query. Tools like [LeadZipp](/signup) turn a ZIP code into a scored list of real businesses using live Google Places and Yelp data — real names, phones, and addresses, not stale scraped junk.
 
 ### Step 4 — Enrich with contact details
 
@@ -76,7 +76,7 @@ The strongest local buying signals are visible from the outside:
 - **A claimed but thin Google profile.** Missing hours, no photos, no website link — low effort you can fix fast.
 - **Spending on ads with a poor destination.** They already believe in paying for growth; they just need a better foundation.
 
-Scoring each lead against these signals — instead of eyeballing it — is what makes a list workable. The idea is simple: rank every business 0–100 by how likely it is to need what you sell, so the "no website, weak reviews" prospects float to the top and you work the list in priority order. LeadZip does this scoring automatically; if you want to understand the logic and build your own version, read [how lead scoring works](/blog/lead-scoring-explained).
+Scoring each lead against these signals — instead of eyeballing it — is what makes a list workable. The idea is simple: rank every business 0–100 by how likely it is to need what you sell, so the "no website, weak reviews" prospects float to the top and you work the list in priority order. LeadZipp does this scoring automatically; if you want to understand the logic and build your own version, read [how lead scoring works](/blog/lead-scoring-explained).
 
 Work the 80s and 90s first. That's where your close rate lives.
 
@@ -108,4 +108,4 @@ The fast path is collapsing the first two steps. Instead of spending a morning b
 
 Local lead generation isn't complicated — it's disciplined. Pick a ZIP, pick a vertical, pull every business, score them by how badly they need you, and start at the top with a specific, human message. Do that every week and you'll never stare at an empty pipeline again.
 
-The fastest way to see it work is to run one search on an area you know. Drop in a [ZIP code](/search), watch the scored list come back with real businesses and their weak spots exposed, and pick three to call today. [Start free with LeadZip](/signup) and turn your map into a pipeline this afternoon.
+The fastest way to see it work is to run one search on an area you know. Drop in a [ZIP code](/search), watch the scored list come back with real businesses and their weak spots exposed, and pick three to call today. [Start free with LeadZipp](/signup) and turn your map into a pipeline this afternoon.

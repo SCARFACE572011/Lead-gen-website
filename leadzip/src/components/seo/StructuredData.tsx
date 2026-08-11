@@ -1,14 +1,14 @@
-const SITE_URL = "https://leadzip.vercel.app";
+const SITE_URL = "https://leadzipp.com";
 
-// Branded image produced by the dynamic /og route (carries the LeadZip mark).
-const LOGO_URL = `${SITE_URL}/og?title=LeadZip`;
+// Branded image produced by the dynamic /og route (carries the LeadZipp mark).
+const LOGO_URL = `${SITE_URL}/og?title=LeadZipp`;
 
 // Copy mirrors the homepage FAQ verbatim so the rich result matches on-page content.
 const FAQ: { question: string; answer: string }[] = [
   {
     question: "Where does the lead data come from?",
     answer:
-      "LeadZip pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. Every search runs against current data.",
+      "LeadZipp pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. Every search runs against current data.",
   },
   {
     question: "What makes a lead high-scoring?",
@@ -35,18 +35,18 @@ const FAQ: { question: string; answer: string }[] = [
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
-  name: "LeadZip",
+  name: "LeadZipp",
   url: SITE_URL,
   logo: LOGO_URL,
   description:
-    "LeadZip finds local business leads by ZIP code from live Google Places and Yelp data, then scores, enriches, and exports them.",
+    "LeadZipp finds local business leads by ZIP code from live Google Places and Yelp data, then scores, enriches, and exports them.",
   sameAs: [],
 };
 
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
-  name: "LeadZip",
+  name: "LeadZipp",
   url: SITE_URL,
   potentialAction: {
     "@type": "SearchAction",
@@ -61,7 +61,7 @@ const websiteSchema = {
 const softwareApplicationSchema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
-  name: "LeadZip",
+  name: "LeadZipp",
   applicationCategory: "BusinessApplication",
   operatingSystem: "Web",
   url: SITE_URL,

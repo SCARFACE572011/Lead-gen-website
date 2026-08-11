@@ -1,8 +1,8 @@
 /* TEAM */
 
-  LeadZip — built by a small product team.
-  Contact: hello@leadzip.com
-  Site: https://leadzip.vercel.app
+  LeadZipp — built by a small product team.
+  Contact: hello@leadzipp.com
+  Site: https://leadzipp.com
 
 /* THANKS */
 

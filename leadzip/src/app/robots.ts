@@ -18,7 +18,7 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: 'https://leadzip.vercel.app/sitemap.xml',
-    host: 'https://leadzip.vercel.app',
+    sitemap: 'https://leadzipp.com/sitemap.xml',
+    host: 'https://leadzipp.com',
   }
 }

@@ -3,7 +3,7 @@ title: "Prospecting Local Clients by ZIP Code: A Playbook"
 description: "A territory-based prospecting playbook — how prospecting local clients by ZIP code beats random cold lists, plus a weekly routine and a clean CRM export."
 slug: "prospect-local-clients-by-zip-code"
 date: "2026-08-11"
-author: "LeadZip Team"
+author: "LeadZipp Team"
 category: "Playbooks"
 keywords: ["prospecting local clients by ZIP code", "territory-based prospecting", "ZIP code prospecting", "local lead generation", "sales territory planning", "local client acquisition"]
 readingTime: "8 min read"
@@ -37,7 +37,7 @@ Not every ZIP is worth a week of your life. You're looking for areas with **enou
 3. **Visible digital weakness.** This is the big one. If you sell web design or SEO, your best ZIP is one full of businesses with no website, an unclaimed Google profile, or a handful of thin reviews. That's your entire value proposition sitting on a plate.
 4. **Your own proof nearby.** Already did great work for a landscaper in the 30307? Prospect the 30306 and 30308 next. "We just rebuilt the site for [nearby business]" is a door-opener you can only use in adjacent territory.
 
-The fastest way to test a ZIP is to run it and look at the shape of the results. Drop a ZIP into the [ZIP search](/search) with a business category, and LeadZip returns live Google Places and Yelp businesses — real names, phones, addresses, and websites — each scored 0–100 by how likely they are to need what you sell. A ZIP where half the list scores high (no website, weak reviews) is a green light. A ZIP where everyone already has a slick site and 400 reviews is a signal to move on.
+The fastest way to test a ZIP is to run it and look at the shape of the results. Drop a ZIP into the [ZIP search](/search) with a business category, and LeadZipp returns live Google Places and Yelp businesses — real names, phones, addresses, and websites — each scored 0–100 by how likely they are to need what you sell. A ZIP where half the list scores high (no website, weak reviews) is a green light. A ZIP where everyone already has a slick site and 400 reviews is a signal to move on.
 
 ## Set your radius — and work one area at a time
 
@@ -46,7 +46,7 @@ Radius is where most people either overreach or under-commit. Two rules keep it 
 - **Match radius to how you'll reach them.** Doing phone and email only? You can widen to a 5–10 mile radius because travel doesn't cost you anything. Planning to walk in? Keep it tight — one to three miles — so you're not burning an afternoon in traffic between two prospects.
 - **Size the radius to a week of work, not a year of it.** The point of territory prospecting is exhaustion — you work an area until you've touched every qualified business, then you move. If a radius returns two thousand businesses, it's not a territory, it's a career. Tighten it until the list is something you can genuinely work through in your prospecting blocks.
 
-LeadZip's ZIP + radius search lets you dial this in directly: expand the radius when a single ZIP is too thin, contract it when the list balloons past what you can cover. The goal is a **finite, coverable list** — the psychological difference between "I'm working the 60614" and "I'm working a list" is enormous. One has an end. You can finish it, feel the win, and move on.
+LeadZipp's ZIP + radius search lets you dial this in directly: expand the radius when a single ZIP is too thin, contract it when the list balloons past what you can cover. The goal is a **finite, coverable list** — the psychological difference between "I'm working the 60614" and "I'm working a list" is enormous. One has an end. You can finish it, feel the win, and move on.
 
 Resist the urge to jump ZIPs mid-week because a shinier area caught your eye. The compounding — the credibility, the referrals, the pattern learning — only happens if you stay put long enough to build it.
 
@@ -54,7 +54,7 @@ Resist the urge to jump ZIPs mid-week because a shinier area caught your eye. Th
 
 A coverable list still isn't a call list. Inside any ZIP, some businesses are ready to buy and some are years away. Scoring is how you spend your best hours on your best odds.
 
-LeadZip scores every lead 0–100 on how likely it is to need your services, and the logic is exactly what a smart rep would check by hand — **no website or a broken one, few or weak reviews, an unclaimed or bare-bones profile** all push the score up. A business with a great site and hundreds of five-star reviews scores low, because they don't need you and they know it.
+LeadZipp scores every lead 0–100 on how likely it is to need your services, and the logic is exactly what a smart rep would check by hand — **no website or a broken one, few or weak reviews, an unclaimed or bare-bones profile** all push the score up. A business with a great site and hundreds of five-star reviews scores low, because they don't need you and they know it.
 
 Work your territory in score order:
 
@@ -80,7 +80,7 @@ Then next Monday, you pick the adjacent ZIP and do it again. Because it's next d
 
 A worked territory is only valuable if it doesn't evaporate on Friday. Everything you learned — who you touched, what they use, who's a maybe — needs a home.
 
-LeadZip exports to **CSV or PDF**, or straight into **HubSpot, Salesforce, or Pipedrive**, so a worked ZIP lands in your pipeline with scores and contacts attached instead of getting retyped by hand. From there:
+LeadZipp exports to **CSV or PDF**, or straight into **HubSpot, Salesforce, or Pipedrive**, so a worked ZIP lands in your pipeline with scores and contacts attached instead of getting retyped by hand. From there:
 
 - **Tag deals by ZIP.** Now your CRM is a map. You can see at a glance which territories are worked, which are warm, and which are untouched.
 - **Set follow-up cadences per tier.** High-score no-shows get a quick second touch; mid-scores go into a longer nurture.
@@ -92,4 +92,4 @@ The compounding only works if the record persists. Export every week, and by mon
 
 Pick one ZIP you know — your own neighborhood is a fine start. Run it through the [ZIP search](/search), set a radius you could realistically cover in a week, and look at who scores high. If half the list is businesses with no website and weak reviews, you've just found your first territory.
 
-[Start free with LeadZip](/signup) to pull live, scored leads for any ZIP, find contacts, and export a worked territory straight into your CRM. Check the [pricing](/pricing) when you're ready to scale from one ZIP to a whole city — and then go work the map, one area at a time.
+[Start free with LeadZipp](/signup) to pull live, scored leads for any ZIP, find contacts, and export a worked territory straight into your CRM. Check the [pricing](/pricing) when you're ready to scale from one ZIP to a whole city — and then go work the map, one area at a time.

@@ -3,7 +3,7 @@ title: "Lead Scoring for Local Business: A Practical Guide"
 description: "Lead scoring for local business shows you who's most likely to say yes. Learn the signals that predict a business needs help and how to work the list top-down."
 slug: "lead-scoring-explained"
 date: "2026-08-11"
-author: "LeadZip Team"
+author: "LeadZipp Team"
 category: "Guides"
 keywords: ["lead scoring for local business", "local lead scoring", "lead qualification", "local business leads", "lead scoring signals", "prospecting local clients"]
 readingTime: "8 min read"
@@ -77,11 +77,11 @@ Cap the total at 100. Businesses that trip several signals at once land near the
 
 One caveat worth building in: **weight for fit, not just need.** A business can have every gap on the list and still be a bad lead if it can't afford you or is about to close. Use category and rough size as a sanity filter over the top of your need score, so you're not chasing a struggling one-person shop that needs help but has no budget for it.
 
-## How LeadZip turns these signals into a 0–100 score
+## How LeadZipp turns these signals into a 0–100 score
 
 Doing all of this by hand — opening each listing, checking for a website, counting reviews, eyeballing the rating, judging the site's age — is the tedious part. It's also the part that quietly gets skipped when you're busy, which is when the ranking falls apart.
 
-[LeadZip](/signup) automates it. Run a [ZIP + radius search](/search) and it pulls **live Google Places and Yelp data** for every business in the area — real names, phones, addresses, and websites (or the conspicuous absence of one). It checks each of the signals above automatically and rolls them into a single **0–100 score**. By design, "no website / weak reviews" scores highest, so the businesses most likely to need your services float straight to the top of the list.
+[LeadZipp](/signup) automates it. Run a [ZIP + radius search](/search) and it pulls **live Google Places and Yelp data** for every business in the area — real names, phones, addresses, and websites (or the conspicuous absence of one). It checks each of the signals above automatically and rolls them into a single **0–100 score**. By design, "no website / weak reviews" scores highest, so the businesses most likely to need your services float straight to the top of the list.
 
 Because the data is live rather than a stale purchased file, the score reflects reality today — not a snapshot from a year ago when that café still had five reviews. From there you can see everyone on a **map view**, pull decision-maker emails with the built-in **email finder**, and export the batch to **CSV, PDF, or directly into HubSpot, Salesforce, or Pipedrive** so nothing falls through the cracks.
 
@@ -102,4 +102,4 @@ The quiet payoff: a good score doesn't just tell you *who* to contact. It hands 
 
 ## Try it yourself
 
-Stop working your prospect list alphabetically and start working it by likelihood-to-buy. Punch a ZIP into the [LeadZip search](/search), let the 0–100 score sort the businesses most likely to need you to the top, and start your outreach with the ten names that were always going to say yes. You can pull your first scored list free — see [pricing](/pricing) for what each plan includes — and [sign up here](/signup) to get started in a couple of minutes.
+Stop working your prospect list alphabetically and start working it by likelihood-to-buy. Punch a ZIP into the [LeadZipp search](/search), let the 0–100 score sort the businesses most likely to need you to the top, and start your outreach with the ten names that were always going to say yes. You can pull your first scored list free — see [pricing](/pricing) for what each plan includes — and [sign up here](/signup) to get started in a couple of minutes.

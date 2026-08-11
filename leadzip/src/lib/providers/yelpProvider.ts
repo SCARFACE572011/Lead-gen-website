@@ -3,7 +3,7 @@ import { geocodeZip } from '@/lib/geocode'
 import { calculateLeadScore } from '@/lib/scoring'
 import { formatPhone } from '@/lib/phoneFormatter'
 
-// Yelp category aliases mapped to LeadZip categories
+// Yelp category aliases mapped to LeadZipp categories
 // Full list: https://docs.developer.yelp.com/docs/resources-categories
 const YELP_CATEGORY_MAP: Record<string, string> = {
   'Dentists': 'dentists',

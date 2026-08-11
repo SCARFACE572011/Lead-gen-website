@@ -80,7 +80,7 @@ export function OnboardingModal() {
         {step === 0 && (
           <div className="relative space-y-5 p-6">
             <div>
-              <h2 className="font-display text-xl font-extrabold text-ink">Welcome to LeadZip 👋</h2>
+              <h2 className="font-display text-xl font-extrabold text-ink">Welcome to LeadZipp 👋</h2>
               <p className="mt-1 text-sm text-stone">Let&apos;s find your first batch of leads. Takes 30 seconds.</p>
             </div>
             <div className="space-y-4">

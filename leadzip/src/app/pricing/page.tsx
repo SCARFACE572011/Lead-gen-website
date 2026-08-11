@@ -44,7 +44,7 @@ const PLANS: Plan[] = [
     name: "Free",
     monthlyPrice: 0,
     annualPrice: 0,
-    description: "Perfect for exploring LeadZip before committing.",
+    description: "Perfect for exploring LeadZipp before committing.",
     cta: "Get Started Free",
     ctaHref: "/signup",
     popular: false,
@@ -90,7 +90,7 @@ const PLANS: Plan[] = [
     annualPrice: 40,
     description: "Built for scaling agencies with high-volume lead needs.",
     cta: "Contact Sales",
-    ctaHref: "mailto:hello@leadzip.com",
+    ctaHref: "mailto:hello@leadzipp.com",
     popular: false,
     accentColor: "#0C2B24",
     features: [
@@ -174,7 +174,7 @@ function PlanCard({
     );
   } else if (isAgency) {
     ctaButton = (
-      <a href="mailto:hello@leadzip.com" className="mb-6 block">
+      <a href="mailto:hello@leadzipp.com" className="mb-6 block">
         <Button className="h-11 w-full rounded-full bg-ink text-sm font-semibold text-paper transition-all hover:bg-ink-soft">
           {plan.cta}
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -363,7 +363,7 @@ function PaymentBanner() {
   if (paymentStatus === "success") {
     return (
       <div className="mb-8 rounded-2xl border border-forest/20 bg-lime/20 p-4 text-center font-medium text-forest">
-        Payment successful! Your plan has been upgraded. Welcome to LeadZip Pro.
+        Payment successful! Your plan has been upgraded. Welcome to LeadZipp Pro.
       </div>
     );
   }
@@ -567,7 +567,7 @@ export default function PricingPage() {
       {/* Footer mini */}
       <footer className="border-t border-white/10 bg-forest-900 py-6">
         <p className="text-center text-xs text-white/50">
-          &copy; {new Date().getFullYear()} LeadZip. All rights reserved.
+          &copy; {new Date().getFullYear()} LeadZipp. All rights reserved.
           &nbsp;·&nbsp;
           <Link href="/privacy" className="transition-colors hover:text-white">
             Privacy

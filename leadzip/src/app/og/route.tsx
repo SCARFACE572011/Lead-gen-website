@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
           }}
         />
 
-        {/* Wordmark: orange pin + LeadZip + lime beacon */}
+        {/* Wordmark: orange pin + LeadZipp + lime beacon */}
         <div
           style={{
             display: 'flex',
@@ -112,7 +112,7 @@ export async function GET(request: NextRequest) {
               letterSpacing: '-0.5px',
             }}
           >
-            LeadZip
+            LeadZipp
           </span>
         </div>
 
@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
             ))}
           </div>
           <span style={{ color: 'rgba(251,250,246,0.45)', fontSize: '18px' }}>
-            leadzip.vercel.app
+            leadzipp.com
           </span>
         </div>
       </div>

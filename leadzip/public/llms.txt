@@ -1,12 +1,12 @@
-# LeadZip
+# LeadZipp
 
-LeadZip turns any US ZIP code into a scored list of real local businesses to sell to, complete with phones, websites, and owner emails.
+LeadZipp turns any US ZIP code into a scored list of real local businesses to sell to, complete with phones, websites, and owner emails.
 
 > Type a ZIP code. Get the whole street.
 
 ## What it does
 
-LeadZip maps every local business in a ZIP code or radius using live data from Google Places and Yelp, then scores each result by how likely it is to need your services. You get verified names, addresses, phone numbers, ratings, and websites, plus a one-tap email finder for reaching the decision-maker. Results export to CSV, branded PDF, or directly into your CRM. A search runs against current data in under ten seconds — it is not a static scraped database.
+LeadZipp maps every local business in a ZIP code or radius using live data from Google Places and Yelp, then scores each result by how likely it is to need your services. You get verified names, addresses, phone numbers, ratings, and websites, plus a one-tap email finder for reaching the decision-maker. Results export to CSV, branded PDF, or directly into your CRM. A search runs against current data in under ten seconds — it is not a static scraped database.
 
 ## Who it's for
 
@@ -31,9 +31,9 @@ LeadZip maps every local business in a ZIP code or radius using live data from G
 
 ## Key pages
 
-- [Home](https://leadzip.vercel.app/): Product overview, how it works, features, and pricing.
-- [Pricing](https://leadzip.vercel.app/pricing): Full plan comparison for Starter, Pro, and Agency.
-- [Search](https://leadzip.vercel.app/search): The core app — search a ZIP and trade to generate a scored lead list (requires an account).
-- [API docs](https://leadzip.vercel.app/api-docs): Reference for the LeadZip API and lead data endpoints.
-- [Log in](https://leadzip.vercel.app/login): Sign in to an existing account.
-- [Sign up](https://leadzip.vercel.app/signup): Create a free Starter account, no credit card required.
+- [Home](https://leadzipp.com/): Product overview, how it works, features, and pricing.
+- [Pricing](https://leadzipp.com/pricing): Full plan comparison for Starter, Pro, and Agency.
+- [Search](https://leadzipp.com/search): The core app — search a ZIP and trade to generate a scored lead list (requires an account).
+- [API docs](https://leadzipp.com/api-docs): Reference for the LeadZipp API and lead data endpoints.
+- [Log in](https://leadzipp.com/login): Sign in to an existing account.
+- [Sign up](https://leadzipp.com/signup): Create a free Starter account, no credit card required.

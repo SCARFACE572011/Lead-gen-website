@@ -249,7 +249,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           <div>
             <h3 className="text-sm font-semibold text-amber-900">Compliance Notice</h3>
             <p className="mt-1 text-sm leading-relaxed text-amber-800">
-              LeadZip provides publicly available business data for prospecting purposes.
+              LeadZipp provides publicly available business data for prospecting purposes.
               Always comply with CAN-SPAM, TCPA, and local regulations when contacting leads.
               Do not contact businesses on the National Do Not Call Registry without prior consent.
             </p>

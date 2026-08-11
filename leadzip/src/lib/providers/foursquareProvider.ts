@@ -5,7 +5,7 @@ import { formatPhone } from '@/lib/phoneFormatter'
 
 const FSQ_SEARCH_URL = 'https://api.foursquare.com/v3/places/search'
 
-// Foursquare category IDs mapped to LeadZip categories
+// Foursquare category IDs mapped to LeadZipp categories
 // Full list: https://location.foursquare.com/developer/reference/place-categories
 const FSQ_CATEGORY_IDS: Record<string, string> = {
   'Restaurants':         '13065,13032,13064,13040',  // restaurant, cafe, fast food, bar

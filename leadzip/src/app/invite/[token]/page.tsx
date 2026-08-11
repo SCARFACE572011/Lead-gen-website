@@ -100,7 +100,7 @@ export default function InvitePage() {
               <p className="text-sm text-slate-500">
                 You&apos;ve been invited to join{' '}
                 <span className="font-semibold text-[#17130E]">{invite.workspaceName}</span>{' '}
-                on LeadZip.
+                on LeadZipp.
               </p>
             </div>
 

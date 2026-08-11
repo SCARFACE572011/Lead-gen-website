@@ -3,9 +3,9 @@ import { MapPin } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 
 export const metadata = {
-  title: "Privacy Policy | LeadZip",
-  description: "Learn how LeadZip collects, uses, and protects your personal information.",
-  alternates: { canonical: "https://leadzip.vercel.app/privacy" },
+  title: "Privacy Policy | LeadZipp",
+  description: "Learn how LeadZipp collects, uses, and protects your personal information.",
+  alternates: { canonical: "https://leadzipp.com/privacy" },
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -40,9 +40,9 @@ export default function PrivacyPage() {
               Effective date: <span className="font-medium text-ink">May 12, 2025</span>
             </p>
             <p className="mt-4 text-ink-soft leading-relaxed">
-              LeadZip (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is committed to protecting your
+              LeadZipp (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is committed to protecting your
               privacy. This Privacy Policy explains what information we collect, how we use it, and
-              the choices you have. By using LeadZip, you agree to the practices described in this policy.
+              the choices you have. By using LeadZipp, you agree to the practices described in this policy.
             </p>
           </div>
 
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
           <Section title="2. How We Use Your Information">
             <ul className="list-disc pl-5 space-y-1.5">
               <li>Create and manage your account and authenticate your sessions.</li>
-              <li>Provide, maintain, and improve the LeadZip service.</li>
+              <li>Provide, maintain, and improve the LeadZipp service.</li>
               <li>Process subscription payments and send billing receipts via Stripe.</li>
               <li>Send transactional emails (password resets, account notifications). We do not send marketing emails without your explicit consent.</li>
               <li>Analyze aggregate usage patterns to improve features and performance.</li>
@@ -153,15 +153,15 @@ export default function PrivacyPage() {
               <li>
                 <span className="font-medium text-ink">Access or correction:</span> Log into your
                 account settings or email us at{" "}
-                <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
-                  hello@leadzip.com
+                <a href="mailto:hello@leadzipp.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
+                  hello@leadzipp.com
                 </a>
                 .
               </li>
               <li>
                 <span className="font-medium text-ink">Account deletion:</span> Email us at{" "}
-                <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
-                  hello@leadzip.com
+                <a href="mailto:hello@leadzipp.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
+                  hello@leadzipp.com
                 </a>{" "}
                 with the subject &ldquo;Delete My Account&rdquo; and we will permanently delete your data
                 within 30 days.
@@ -175,7 +175,7 @@ export default function PrivacyPage() {
           </Section>
 
           <Section title="6. Cookies">
-            <p>LeadZip uses a minimal set of cookies:</p>
+            <p>LeadZipp uses a minimal set of cookies:</p>
             <ul className="list-disc pl-5 space-y-1.5 mt-2">
               <li>
                 <span className="font-medium text-ink">Session cookies:</span> Required for
@@ -195,11 +195,11 @@ export default function PrivacyPage() {
 
           <Section title="7. Children's Privacy">
             <p>
-              LeadZip is not intended for children under the age of 13. We do not knowingly collect
+              LeadZipp is not intended for children under the age of 13. We do not knowingly collect
               personal information from children under 13. If you believe a child has provided us with
               personal information, please contact us at{" "}
-              <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
-                hello@leadzip.com
+              <a href="mailto:hello@leadzipp.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
+                hello@leadzipp.com
               </a>{" "}
               and we will promptly delete it.
             </p>
@@ -209,7 +209,7 @@ export default function PrivacyPage() {
             <p>
               We may update this Privacy Policy from time to time. When we do, we will update the
               effective date at the top of this page and, for material changes, notify you by email or
-              by displaying a notice within the app. Continued use of LeadZip after any changes
+              by displaying a notice within the app. Continued use of LeadZipp after any changes
               constitutes your acceptance of the updated policy.
             </p>
           </Section>
@@ -220,14 +220,14 @@ export default function PrivacyPage() {
               please contact us:
             </p>
             <div className="mt-3 rounded-2xl border border-sand bg-paper-2 p-4">
-              <p className="font-semibold text-ink">LeadZip</p>
+              <p className="font-semibold text-ink">LeadZipp</p>
               <p className="mt-1">
                 Email:{" "}
-                <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
-                  hello@leadzip.com
+                <a href="mailto:hello@leadzipp.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
+                  hello@leadzipp.com
                 </a>
               </p>
-              <p className="mt-0.5">Website: leadzip.vercel.app</p>
+              <p className="mt-0.5">Website: leadzipp.com</p>
             </div>
           </Section>
         </div>
@@ -242,7 +242,7 @@ export default function PrivacyPage() {
                 <MapPin className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
               </div>
               <span className="font-display text-base font-extrabold text-white">
-                LeadZip
+                LeadZipp
               </span>
             </Link>
             <nav className="flex flex-wrap items-center justify-center gap-5">
@@ -265,7 +265,7 @@ export default function PrivacyPage() {
           </div>
           <div className="mt-6 border-t border-white/10 pt-6">
             <p className="text-center text-xs leading-relaxed text-white/50">
-              &copy; {new Date().getFullYear()} LeadZip. All rights reserved.
+              &copy; {new Date().getFullYear()} LeadZipp. All rights reserved.
             </p>
           </div>
         </div>

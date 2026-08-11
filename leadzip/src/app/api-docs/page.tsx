@@ -137,7 +137,7 @@ export default function ApiDocsPage() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-3xl font-bold text-[#17130E]">LeadZip API</h1>
+            <h1 className="text-3xl font-bold text-[#17130E]">LeadZipp API</h1>
             <Badge color="bg-emerald-100 text-emerald-700">v1</Badge>
           </div>
           <p className="text-slate-500 text-base">
@@ -199,7 +199,7 @@ export default function ApiDocsPage() {
               { name: 'page', type: 'integer', desc: 'Page number (default: 1)' },
               { name: 'limit', type: 'integer', desc: 'Results per page, max 100 (default: 25)' },
             ]}
-            curl={`curl https://leadzip.com/api/v1/leads \\
+            curl={`curl https://leadzipp.com/api/v1/leads \\
   -H "Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx"`}
             response={`{
   "leads": [
@@ -227,7 +227,7 @@ export default function ApiDocsPage() {
               { name: 'page', type: 'integer', desc: 'Page number (default: 1)' },
               { name: 'limit', type: 'integer', desc: 'Results per page, max 100 (default: 25)' },
             ]}
-            curl={`curl https://leadzip.com/api/v1/history \\
+            curl={`curl https://leadzipp.com/api/v1/history \\
   -H "Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx"`}
             response={`{
   "history": [
@@ -252,7 +252,7 @@ export default function ApiDocsPage() {
               { name: 'location', type: 'string', required: true, desc: 'City, state, or zip code' },
               { name: 'radius', type: 'integer', desc: 'Search radius in miles (default: 10, max: 50)' },
             ]}
-            curl={`curl -X POST https://leadzip.com/api/v1/search \\
+            curl={`curl -X POST https://leadzipp.com/api/v1/search \\
   -H "Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "plumbers", "location": "Austin, TX", "radius": 15}'`}
@@ -310,8 +310,8 @@ export default function ApiDocsPage() {
         <div className="mt-10 pt-6 border-t border-slate-200 text-center">
           <p className="text-sm text-slate-400">
             Need help?{' '}
-            <a href="mailto:support@leadzip.com" className="text-[#FF4D23] hover:underline">
-              support@leadzip.com
+            <a href="mailto:support@leadzipp.com" className="text-[#FF4D23] hover:underline">
+              support@leadzipp.com
             </a>
           </p>
         </div>

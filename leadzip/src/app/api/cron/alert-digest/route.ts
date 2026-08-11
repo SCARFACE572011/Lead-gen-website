@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer'
 import { searchLeadsCombined } from '@/lib/providers/combinedProvider'
 import type { SearchParams } from '@/types/lead'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -107,18 +107,18 @@ export async function GET(request: NextRequest) {
           '',
           `Your saved search "${row.name}" found ${n} new business${n === 1 ? '' : 'es'} since yesterday.`,
           '',
-          `→ View in LeadZip: ${searchUrl}`,
+          `→ View in LeadZipp: ${searchUrl}`,
           '',
           '────',
           businessList,
           '',
           `Manage your saved searches:\n${siteUrl}/saved-searches`,
           '',
-          '— LeadZip',
+          '— LeadZipp',
         ].join('\n')
 
         await transporter.sendMail({
-          from: `"LeadZip" <${process.env.GMAIL_USER}>`,
+          from: `"LeadZipp" <${process.env.GMAIL_USER}>`,
           to: profile.email,
           subject,
           text,

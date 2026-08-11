@@ -3,9 +3,9 @@ import { MapPin } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 
 export const metadata = {
-  title: "Terms of Service | LeadZip",
-  description: "Read the terms and conditions governing your use of LeadZip.",
-  alternates: { canonical: "https://leadzip.vercel.app/terms" },
+  title: "Terms of Service | LeadZipp",
+  description: "Read the terms and conditions governing your use of LeadZipp.",
+  alternates: { canonical: "https://leadzipp.com/terms" },
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -40,16 +40,16 @@ export default function TermsPage() {
               Effective date: <span className="font-medium text-ink">May 12, 2025</span>
             </p>
             <p className="mt-4 text-ink-soft leading-relaxed">
-              Please read these Terms of Service (&ldquo;Terms&rdquo;) carefully before using LeadZip.
+              Please read these Terms of Service (&ldquo;Terms&rdquo;) carefully before using LeadZipp.
               By creating an account or using the service, you agree to be bound by these Terms.
-              If you do not agree, do not use LeadZip.
+              If you do not agree, do not use LeadZipp.
             </p>
           </div>
 
           {/* Sections */}
           <Section title="1. Acceptance of Terms">
             <p>
-              By accessing or using LeadZip (&ldquo;the Service&rdquo;) operated by LeadZip
+              By accessing or using LeadZipp (&ldquo;the Service&rdquo;) operated by LeadZipp
               (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;), you confirm that you are at
               least 18 years old, have the legal authority to enter into this agreement, and agree to
               comply with these Terms and all applicable laws and regulations.
@@ -58,7 +58,7 @@ export default function TermsPage() {
 
           <Section title="2. Description of Service">
             <p>
-              LeadZip is a B2B lead generation platform that allows users to:
+              LeadZipp is a B2B lead generation platform that allows users to:
             </p>
             <ul className="list-disc pl-5 space-y-1.5 mt-2">
               <li>Search for local businesses by ZIP code, category, and radius.</li>
@@ -85,8 +85,8 @@ export default function TermsPage() {
             </ul>
             <p className="mt-3">
               You must notify us immediately at{" "}
-              <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
-                hello@leadzip.com
+              <a href="mailto:hello@leadzipp.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
+                hello@leadzipp.com
               </a>{" "}
               if you suspect unauthorized access to your account. We reserve the right to suspend
               or terminate accounts that violate these Terms.
@@ -94,7 +94,7 @@ export default function TermsPage() {
           </Section>
 
           <Section title="4. Acceptable Use">
-            <p>You agree not to use LeadZip to:</p>
+            <p>You agree not to use LeadZipp to:</p>
             <ul className="list-disc pl-5 space-y-1.5 mt-2">
               <li>
                 Send unsolicited bulk messages (spam) to businesses found through the Service.
@@ -125,13 +125,13 @@ export default function TermsPage() {
             </ul>
             <p className="mt-3">
               You are solely responsible for ensuring that your outreach to businesses complies with
-              all applicable laws, including CAN-SPAM and GDPR. LeadZip provides data access tools;
+              all applicable laws, including CAN-SPAM and GDPR. LeadZipp provides data access tools;
               your use of that data is your legal responsibility.
             </p>
           </Section>
 
           <Section title="5. Subscription Plans & Billing">
-            <p>LeadZip offers the following subscription tiers:</p>
+            <p>LeadZipp offers the following subscription tiers:</p>
             <div className="mt-3 overflow-hidden rounded-2xl border border-sand">
               <table className="w-full text-sm">
                 <thead className="bg-paper-2">
@@ -173,8 +173,8 @@ export default function TermsPage() {
             <p>
               <span className="font-medium text-ink">Refunds:</span> We do not offer refunds for
               partial billing periods. If you believe you were charged in error, contact us at{" "}
-              <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
-                hello@leadzip.com
+              <a href="mailto:hello@leadzipp.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
+                hello@leadzipp.com
               </a>{" "}
               within 7 days of the charge.
             </p>
@@ -191,16 +191,16 @@ export default function TermsPage() {
               <Link href="/privacy" className="text-signal underline underline-offset-2 hover:text-signal-600">
                 Privacy Policy
               </Link>
-              , which is incorporated into these Terms by reference. By using LeadZip, you consent
+              , which is incorporated into these Terms by reference. By using LeadZipp, you consent
               to the data practices described in our Privacy Policy.
             </p>
           </Section>
 
           <Section title="7. Intellectual Property">
             <p>
-              <span className="font-medium text-ink">LeadZip platform:</span> All rights, title,
-              and interest in the LeadZip platform — including the software, design, branding, and
-              underlying technology — are owned exclusively by LeadZip. You may not copy, distribute,
+              <span className="font-medium text-ink">LeadZipp platform:</span> All rights, title,
+              and interest in the LeadZipp platform — including the software, design, branding, and
+              underlying technology — are owned exclusively by LeadZipp. You may not copy, distribute,
               or create derivative works from our platform without express written permission.
             </p>
             <p>
@@ -224,14 +224,14 @@ export default function TermsPage() {
             <p>
               <span className="font-medium text-ink">Outreach compliance:</span> You are solely
               responsible for ensuring that your outreach to businesses complies with CAN-SPAM, GDPR,
-              CCPA, and all other applicable laws. LeadZip is not liable for any legal issues arising
+              CCPA, and all other applicable laws. LeadZipp is not liable for any legal issues arising
               from your outreach activities.
             </p>
           </Section>
 
           <Section title="9. Limitation of Liability">
             <p>
-              To the maximum extent permitted by applicable law, LeadZip shall not be liable for any
+              To the maximum extent permitted by applicable law, LeadZipp shall not be liable for any
               indirect, incidental, special, consequential, or punitive damages, including but not
               limited to loss of profits, data, goodwill, or business opportunities, arising from or
               related to your use of the Service — even if we have been advised of the possibility of
@@ -239,7 +239,7 @@ export default function TermsPage() {
             </p>
             <p>
               Our total aggregate liability to you for any claim arising from these Terms or your use
-              of the Service shall not exceed the greater of (a) the amount you paid to LeadZip in
+              of the Service shall not exceed the greater of (a) the amount you paid to LeadZipp in
               the three months preceding the claim, or (b) $100 USD.
             </p>
           </Section>
@@ -269,14 +269,14 @@ export default function TermsPage() {
               If you have questions about these Terms, please contact us:
             </p>
             <div className="mt-3 rounded-2xl border border-sand bg-paper-2 p-4">
-              <p className="font-semibold text-ink">LeadZip</p>
+              <p className="font-semibold text-ink">LeadZipp</p>
               <p className="mt-1">
                 Email:{" "}
-                <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
-                  hello@leadzip.com
+                <a href="mailto:hello@leadzipp.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
+                  hello@leadzipp.com
                 </a>
               </p>
-              <p className="mt-0.5">Website: leadzip.vercel.app</p>
+              <p className="mt-0.5">Website: leadzipp.com</p>
             </div>
           </Section>
         </div>
@@ -291,7 +291,7 @@ export default function TermsPage() {
                 <MapPin className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
               </div>
               <span className="font-display text-base font-extrabold text-white">
-                LeadZip
+                LeadZipp
               </span>
             </Link>
             <nav className="flex flex-wrap items-center justify-center gap-5">
@@ -314,7 +314,7 @@ export default function TermsPage() {
           </div>
           <div className="mt-6 border-t border-white/10 pt-6">
             <p className="text-center text-xs leading-relaxed text-white/50">
-              &copy; {new Date().getFullYear()} LeadZip. All rights reserved.
+              &copy; {new Date().getFullYear()} LeadZipp. All rights reserved.
             </p>
           </div>
         </div>

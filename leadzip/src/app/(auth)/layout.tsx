@@ -38,7 +38,7 @@ export default function AuthLayout({
             Close more clients.
           </h2>
           <p className="mb-8 text-base leading-relaxed text-[#94A3B8]">
-            LeadZip surfaces scored, ranked local businesses so your team can
+            LeadZipp surfaces scored, ranked local businesses so your team can
             focus on outreach — not research.
           </p>
 
@@ -70,7 +70,7 @@ export default function AuthLayout({
 
         {/* Footer */}
         <p className="text-xs text-[#334155]">
-          &copy; {new Date().getFullYear()} LeadZip &nbsp;·&nbsp;{" "}
+          &copy; {new Date().getFullYear()} LeadZipp &nbsp;·&nbsp;{" "}
           <Link href="/privacy" className="hover:text-[#64748B] transition-colors">
             Privacy
           </Link>

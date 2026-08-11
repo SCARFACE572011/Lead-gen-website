@@ -33,7 +33,7 @@ export async function POST() {
   try {
     const session = await stripe.billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
-      return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'}/settings`,
+      return_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/settings`,
     })
     return NextResponse.json({ url: session.url })
   } catch (err: unknown) {

@@ -42,7 +42,7 @@ function parsePost(slug: string): Post | null {
     title: (d.title as string) ?? slug,
     description: (d.description as string) ?? '',
     date: (d.date as string) ?? '',
-    author: (d.author as string) ?? 'LeadZip Team',
+    author: (d.author as string) ?? 'LeadZipp Team',
     category: (d.category as string) ?? 'Guides',
     keywords: (d.keywords as string[]) ?? [],
     readingTime: (d.readingTime as string) ?? '',

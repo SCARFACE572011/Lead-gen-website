@@ -130,7 +130,7 @@ function SidebarContent({
             <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-card" />
           </span>
           <div className="flex flex-col leading-none">
-            <span className="font-display text-ink font-extrabold text-lg tracking-tight">LeadZip</span>
+            <span className="font-display text-ink font-extrabold text-lg tracking-tight">LeadZipp</span>
           </div>
         </Link>
       </div>

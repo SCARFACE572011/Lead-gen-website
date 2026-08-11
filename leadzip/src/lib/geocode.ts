@@ -1,5 +1,5 @@
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search'
-const USER_AGENT = 'LeadZip/1.0 (+https://leadzip.vercel.app)'
+const USER_AGENT = 'LeadZipp/1.0 (+https://leadzipp.com)'
 
 // State abbreviation → primary area code for unknown ZIPs
 const STATE_AREA_CODES: Record<string, string> = {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { createClient } from '@supabase/supabase-js'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
 
 // Log misconfiguration once per server instance instead of on every request
 let loggedMissingGmailConfig = false
@@ -84,9 +84,9 @@ export async function POST(request: NextRequest) {
     })
 
     await transporter.sendMail({
-      from: `"LeadZip" <${process.env.GMAIL_USER}>`,
+      from: `"LeadZipp" <${process.env.GMAIL_USER}>`,
       to: email,
-      subject: 'Reset your LeadZip password',
+      subject: 'Reset your LeadZipp password',
       html: `
 <!DOCTYPE html>
 <html>
@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
             <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
               <tr>
                 <td style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 12px;">
-                  <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">📍 LeadZip</span>
+                  <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">📍 LeadZipp</span>
                 </td>
               </tr>
             </table>
@@ -114,7 +114,7 @@ export async function POST(request: NextRequest) {
           <td style="padding:36px 32px 28px;">
             <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#17130E;">Reset your password</h1>
             <p style="margin:0 0 24px;font-size:15px;color:#64748B;line-height:1.6;">
-              We received a request to reset the password for your LeadZip account associated with <strong style="color:#17130E;">${safeEmail}</strong>.
+              We received a request to reset the password for your LeadZipp account associated with <strong style="color:#17130E;">${safeEmail}</strong>.
             </p>
             <p style="margin:0 0 28px;font-size:15px;color:#64748B;line-height:1.6;">
               Click the button below to set a new password. This link expires in <strong style="color:#17130E;">60 minutes</strong>.
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
               If you didn't request a password reset, you can safely ignore this email. Your password will not change.
             </p>
             <p style="margin:8px 0 0;font-size:12px;color:#CBD5E1;">
-              © ${new Date().getFullYear()} LeadZip · <a href="${siteUrl}" style="color:#CBD5E1;">leadzip.vercel.app</a>
+              © ${new Date().getFullYear()} LeadZipp · <a href="${siteUrl}" style="color:#CBD5E1;">leadzipp.com</a>
             </p>
           </td>
         </tr>

@@ -133,7 +133,7 @@ export async function POST(request: Request) {
   try {
     const res = await fetch(url, {
       signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LeadZip/1.0)' },
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LeadZipp/1.0)' },
     })
     clearTimeout(timeoutId)
     if (!res.ok) {

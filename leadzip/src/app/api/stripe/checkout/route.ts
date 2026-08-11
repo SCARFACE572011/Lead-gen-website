@@ -67,8 +67,8 @@ export async function POST(request: NextRequest) {
       line_items: [{ price: priceId, quantity: 1 }],
       customer_email: user.email || undefined,
       client_reference_id: user.id,
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'}/dashboard?payment=success&plan=${plan}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzip.vercel.app'}/pricing?payment=cancelled`,
+      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/dashboard?payment=success&plan=${plan}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/pricing?payment=cancelled`,
       metadata: { plan, billing, user_id: user.id },
       allow_promotion_codes: true,
       subscription_data: {

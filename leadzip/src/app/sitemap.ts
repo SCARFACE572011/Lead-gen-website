@@ -2,7 +2,7 @@ import { MetadataRoute } from 'next'
 import { getAllPosts } from '@/lib/blog'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://leadzip.vercel.app'
+  const baseUrl = 'https://leadzipp.com'
   const now = new Date()
 
   const posts: MetadataRoute.Sitemap = getAllPosts().map((p) => ({

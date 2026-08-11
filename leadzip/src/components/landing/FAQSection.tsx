@@ -8,7 +8,7 @@ const FAQS = [
   {
     question: "What data sources do you use?",
     answer:
-      "LeadZip pulls from publicly available business data including Google Places, Yelp, and other open business directories. We only surface information that businesses have voluntarily made public online.",
+      "LeadZipp pulls from publicly available business data including Google Places, Yelp, and other open business directories. We only surface information that businesses have voluntarily made public online.",
   },
   {
     question: "How is the lead score calculated?",
@@ -23,7 +23,7 @@ const FAQS = [
   {
     question: "Is there a free plan?",
     answer:
-      "Yes. The free plan gives you 10 searches per month and lets you save up to 25 leads. It's a great way to evaluate LeadZip before upgrading. No credit card is required to sign up.",
+      "Yes. The free plan gives you 10 searches per month and lets you save up to 25 leads. It's a great way to evaluate LeadZipp before upgrading. No credit card is required to sign up.",
   },
   {
     question: "How do I connect my email for outreach?",
@@ -33,7 +33,7 @@ const FAQS = [
   {
     question: "Is this compliant with privacy laws?",
     answer:
-      "LeadZip surfaces only publicly available business information — not personal consumer data. However, how you use that information for outreach is your responsibility. We strongly recommend complying with CAN-SPAM (US), GDPR (EU), and any other applicable privacy regulations when contacting businesses.",
+      "LeadZipp surfaces only publicly available business information — not personal consumer data. However, how you use that information for outreach is your responsibility. We strongly recommend complying with CAN-SPAM (US), GDPR (EU), and any other applicable privacy regulations when contacting businesses.",
   },
 ];
 

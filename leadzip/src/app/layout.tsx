@@ -33,19 +33,19 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
-const SITE_TITLE = "LeadZip — Type a ZIP code, get the whole street";
+const SITE_TITLE = "LeadZipp — Type a ZIP code, get the whole street";
 const SITE_DESCRIPTION =
-  "Type a ZIP code and pick a trade. LeadZip pulls live business listings from Google Places and Yelp, scores the ones most likely to need you, finds emails, and exports to CSV, PDF, or your CRM.";
+  "Type a ZIP code and pick a trade. LeadZipp pulls live business listings from Google Places and Yelp, scores the ones most likely to need you, finds emails, and exports to CSV, PDF, or your CRM.";
 const OG_IMAGE = "/og?title=Type+a+ZIP+code,+get+the+whole+street&subtitle=Live,+scored+local+business+leads";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://leadzip.vercel.app"),
+  metadataBase: new URL("https://leadzipp.com"),
   title: {
     default: SITE_TITLE,
-    template: "%s — LeadZip",
+    template: "%s — LeadZipp",
   },
   description: SITE_DESCRIPTION,
-  applicationName: "LeadZip",
+  applicationName: "LeadZipp",
   keywords: [
     "lead generation",
     "local business leads",
@@ -60,9 +60,9 @@ export const metadata: Metadata = {
     "CSV lead export",
     "CRM lead export",
   ],
-  authors: [{ name: "LeadZip" }],
-  creator: "LeadZip",
-  publisher: "LeadZip",
+  authors: [{ name: "LeadZipp" }],
+  creator: "LeadZipp",
+  publisher: "LeadZipp",
   category: "business",
   robots: {
     index: true,
@@ -78,15 +78,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    url: "https://leadzip.vercel.app",
-    siteName: "LeadZip",
+    url: "https://leadzipp.com",
+    siteName: "LeadZipp",
     locale: "en_US",
     images: [
       {
         url: OG_IMAGE,
         width: 1200,
         height: 630,
-        alt: "LeadZip — type a ZIP code, get the whole street",
+        alt: "LeadZipp — type a ZIP code, get the whole street",
       },
     ],
     type: "website",
@@ -97,7 +97,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE],
   },
-  alternates: { canonical: "https://leadzip.vercel.app" },
+  alternates: { canonical: "https://leadzipp.com" },
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
   },

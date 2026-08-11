@@ -45,14 +45,14 @@ export default function Navbar() {
             <Link
               href="/"
               className="flex items-center gap-2 group"
-              aria-label="LeadZip home"
+              aria-label="LeadZipp home"
             >
               <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-signal shadow-sm transition-transform duration-200 group-hover:scale-105">
                 <MapPin className="w-4 h-4 text-white" />
                 <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-paper" />
               </span>
               <span className="font-display text-ink font-extrabold text-xl tracking-tight">
-                LeadZip
+                LeadZipp
               </span>
             </Link>
 

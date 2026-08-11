@@ -58,7 +58,7 @@ const PLANS = [
 ]
 
 const FAQS = [
-  { q: 'Where does the lead data come from?', a: 'LeadZip pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. It is not a static scraped database; every search runs against current data.' },
+  { q: 'Where does the lead data come from?', a: 'LeadZipp pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. It is not a static scraped database; every search runs against current data.' },
   { q: 'What makes a lead “high-scoring”?', a: 'We rank each business by how likely it is to need your services. Signals like having no website, few reviews, or a low rating push a business up your list, because those are the owners most open to help.' },
   { q: 'Can I find email addresses?', a: 'Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).' },
   { q: 'How do exports work?', a: 'Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Salesforce, or Pipedrive. Email, phone, score, and every field come along.' },
@@ -76,7 +76,7 @@ export default function Home() {
               <MapPin className="h-4 w-4 text-white" />
               <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-paper" />
             </span>
-            <span className="font-display text-xl font-extrabold tracking-tight">LeadZip</span>
+            <span className="font-display text-xl font-extrabold tracking-tight">LeadZipp</span>
           </Link>
           <div className="hidden items-center gap-8 md:flex">
             <a href="#how" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">How it works</a>
@@ -342,7 +342,7 @@ export default function Home() {
                 <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
                   <MapPin className="h-4 w-4 text-white" />
                 </span>
-                <span className="font-display text-xl font-extrabold text-white">LeadZip</span>
+                <span className="font-display text-xl font-extrabold text-white">LeadZipp</span>
               </div>
               <p className="mt-4 text-sm leading-relaxed">
                 Turn any ZIP code into a map of local businesses that need what you sell.
@@ -376,7 +376,7 @@ export default function Home() {
             </div>
           </div>
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm sm:flex-row">
-            <p>© {new Date().getFullYear()} LeadZip. Built for people who sell to Main Street.</p>
+            <p>© {new Date().getFullYear()} LeadZipp. Built for people who sell to Main Street.</p>
             <p className="readout text-white/40">Real data · Google &amp; Yelp</p>
           </div>
         </div>

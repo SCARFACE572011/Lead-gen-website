@@ -58,7 +58,7 @@ export default function ResetPasswordPage() {
         <span className="readout text-signal">New password</span>
         <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Set new password</h1>
         <p className="mt-1.5 text-sm text-ink-soft">
-          Choose a strong password for your LeadZip account.
+          Choose a strong password for your LeadZipp account.
         </p>
       </div>
 

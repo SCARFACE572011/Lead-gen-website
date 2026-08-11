@@ -69,7 +69,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                 />
               </svg>
             </div>
-            <span className="text-[#17130E] font-bold text-base tracking-tight">LeadZip</span>
+            <span className="text-[#17130E] font-bold text-base tracking-tight">LeadZipp</span>
           </div>
         </header>
 

@@ -3,7 +3,7 @@ title: "How to Find Local Businesses Without a Website"
 description: "Learn how to find local businesses without a website fast: the manual methods, why they're slow, and how a ZIP-code tool builds a scored lead list in seconds."
 slug: "find-local-businesses-without-a-website"
 date: "2026-08-11"
-author: "LeadZip Team"
+author: "LeadZipp Team"
 category: "Playbooks"
 keywords: ["how to find local businesses without a website", "no website leads", "local business prospecting", "web design leads", "find businesses without a website", "local lead generation"]
 readingTime: "7 min read"
@@ -53,7 +53,7 @@ All three methods share the same ceiling: **your time.** Every lead is a manual 
 
 The manual methods are really three separate jobs stitched together: **pull the businesses, check each one for a website, and rank them by how much they need you.** A purpose-built tool does all three at once.
 
-That's the idea behind [LeadZip](/signup). You run a [ZIP search](/search) with a radius, and instead of clicking pins, you get a scored list built from live Google Places and Yelp data — real names, phones, addresses, and website fields.
+That's the idea behind [LeadZipp](/signup). You run a [ZIP search](/search) with a radius, and instead of clicking pins, you get a scored list built from live Google Places and Yelp data — real names, phones, addresses, and website fields.
 
 Here's what changes:
 
@@ -105,4 +105,4 @@ Run this end to end and you'll have a working outreach list in one sitting:
 
 The businesses that need you most are the ones hardest to find by hand — that's exactly why they're still available to pitch. Instead of scrolling Maps pin by pin, run one [ZIP search](/search) and let the score surface the no-website, weak-review leads for you. Grab their contact info, verify in half a minute, and open with something specific.
 
-[Start with LeadZip for free](/signup) and pull your first scored list of local businesses without a website today — see the [pricing](/pricing) when you're ready to work a whole territory.
+[Start with LeadZipp for free](/signup) and pull your first scored list of local businesses without a website today — see the [pricing](/pricing) when you're ready to work a whole territory.

@@ -10,11 +10,11 @@ export const metadata: Metadata = {
   title: 'Blog — Local lead generation playbooks',
   description:
     'Guides and playbooks for finding local business leads: prospecting by ZIP code, finding businesses without a website, lead scoring, and outreach that books clients.',
-  alternates: { canonical: 'https://leadzip.vercel.app/blog' },
+  alternates: { canonical: 'https://leadzipp.com/blog' },
   openGraph: {
-    title: 'LeadZip Blog — Local lead generation playbooks',
+    title: 'LeadZipp Blog — Local lead generation playbooks',
     description: 'Guides for finding and closing local business clients — by ZIP code.',
-    url: 'https://leadzip.vercel.app/blog',
+    url: 'https://leadzipp.com/blog',
     type: 'website',
   },
 }
@@ -30,7 +30,7 @@ export default function BlogIndex() {
       {/* Header */}
       <section className="border-b border-sand bg-paper-2 map-grid">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
-          <span className="readout text-signal">The LeadZip blog</span>
+          <span className="readout text-signal">The LeadZipp blog</span>
           <h1 className="mt-3 max-w-3xl font-display text-4xl font-extrabold leading-[1.02] sm:text-5xl">
             Playbooks for finding local clients.
           </h1>

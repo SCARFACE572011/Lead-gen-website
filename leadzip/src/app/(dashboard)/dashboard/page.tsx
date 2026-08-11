@@ -173,34 +173,37 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     : CHART_FALLBACK
 
   return (
-    <div className="mx-auto max-w-7xl space-y-8">
+    <div className="mx-auto max-w-7xl space-y-7">
       {/* Payment success banner */}
       {paymentSuccess && (
-        <div className="flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-lime/50 bg-lime/15 px-5 py-4">
           <span className="text-lg" aria-hidden="true">🎉</span>
-          <p className="text-sm font-semibold text-emerald-800">
+          <p className="text-sm font-semibold text-forest">
             Welcome to Pro! Your plan is now active.
           </p>
         </div>
       )}
 
       {/* Page header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-900">
-            {greeting}, {firstName}
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Here&apos;s what&apos;s happening with your leads today.
-          </p>
+      <div className="grain relative overflow-hidden rounded-3xl border border-sand bg-card p-6 map-grid sm:p-7">
+        <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span className="readout text-signal">{greeting}</span>
+            <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink sm:text-[2rem]">
+              Welcome back, {firstName}
+            </h1>
+            <p className="mt-1.5 text-sm text-ink-soft">
+              Here&apos;s what&apos;s happening with your leads today.
+            </p>
+          </div>
+          <Link
+            href="/search"
+            className="inline-flex items-center gap-2 self-start rounded-full bg-signal px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-signal-600 active:scale-95 sm:self-auto"
+          >
+            <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+            Search new leads
+          </Link>
         </div>
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-blue-700 hover:shadow-md active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-        >
-          <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-          Search New Leads
-        </Link>
       </div>
 
       {/* Stats row */}
@@ -210,12 +213,12 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* Recent Searches (60%) */}
         <div className="lg:col-span-3">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <h2 className="text-sm font-semibold text-slate-800">Recent Searches</h2>
+          <div className="rounded-2xl border border-sand bg-card">
+            <div className="flex items-center justify-between border-b border-sand px-5 py-4">
+              <h2 className="font-display text-base font-bold text-ink">Recent searches</h2>
               <Link
                 href="/history"
-                className="text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                className="text-xs font-semibold text-signal transition-colors hover:text-signal-600"
               >
                 View all
               </Link>
@@ -228,10 +231,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
         {/* Lead Quality Chart (40%) */}
         <div className="lg:col-span-2">
-          <div className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-5 py-4">
-              <h2 className="text-sm font-semibold text-slate-800">Leads by Category</h2>
-              <p className="mt-0.5 text-xs text-slate-400">Based on recent searches</p>
+          <div className="rounded-2xl border border-sand bg-card">
+            <div className="border-b border-sand px-5 py-4">
+              <h2 className="font-display text-base font-bold text-ink">Leads by category</h2>
+              <p className="readout mt-1 text-stone">Based on recent searches</p>
             </div>
             <div className="px-4 pb-4 pt-3">
               <LeadChart data={CHART_DATA} />
@@ -241,14 +244,14 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       </div>
 
       {/* Compliance / Tips card */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-5">
+      <div className="rounded-2xl border border-sand bg-paper-2 p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-100">
-            <ShieldCheck className="h-5 w-5 text-amber-700" aria-hidden="true" />
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-forest text-lime">
+            <ShieldCheck className="h-5 w-5" aria-hidden="true" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold text-amber-900">Compliance Notice</h3>
-            <p className="mt-1 text-sm leading-relaxed text-amber-800">
+            <h3 className="font-display text-sm font-bold text-ink">Compliance notice</h3>
+            <p className="mt-1 text-sm leading-relaxed text-ink-soft">
               LeadZipp provides publicly available business data for prospecting purposes.
               Always comply with CAN-SPAM, TCPA, and local regulations when contacting leads.
               Do not contact businesses on the National Do Not Call Registry without prior consent.

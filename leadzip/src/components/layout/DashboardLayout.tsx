@@ -26,7 +26,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-paper">
       {/* Sidebar */}
       <Sidebar
         currentPath={activePath}
@@ -39,17 +39,17 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
       {/* Main content area — offset by sidebar width on desktop */}
       <div className="lg:pl-60">
         {/* Mobile top bar */}
-        <header className="lg:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-white border-b border-[#E2E8F0]">
+        <header className="lg:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-card border-b border-sand">
           <button
             ref={hamburgerRef}
             onClick={() => setMobileOpen(true)}
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+            className="w-9 h-9 flex items-center justify-center rounded-lg text-ink-soft hover:bg-paper-2 transition-colors"
             aria-label="Open navigation"
           >
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#17130E] flex items-center justify-center">
+            <span className="relative flex w-6 h-6 items-center justify-center rounded-md bg-signal shadow-sm">
               <svg
                 className="w-3.5 h-3.5 text-white"
                 fill="none"
@@ -68,8 +68,9 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                   d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1 1 15 0Z"
                 />
               </svg>
-            </div>
-            <span className="text-[#17130E] font-bold text-base tracking-tight">LeadZipp</span>
+              <span className="absolute -right-0.5 -top-0.5 h-1.5 w-1.5 rounded-full bg-lime ring-2 ring-card" />
+            </span>
+            <span className="font-display text-ink font-extrabold text-base tracking-tight">LeadZipp</span>
           </div>
         </header>
 
@@ -86,7 +87,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
         position="bottom-right"
         toastOptions={{
           style: {
-            fontFamily: '"Plus Jakarta Sans", sans-serif',
+            fontFamily: 'var(--font-body), "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif',
             fontSize: '14px',
           },
         }}

@@ -65,7 +65,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
       onClick={onChange}
       className={cn(
         'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none',
-        checked ? 'bg-[#FF4D23]' : 'bg-slate-200'
+        checked ? 'bg-signal' : 'bg-sand'
       )}
     >
       <span
@@ -80,9 +80,9 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
 
 function UsageBar({ used, total }: { used: number; total: number | null; color?: string }) {
   const pct = total ? Math.min(100, (used / total) * 100) : 0
-  const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-[#FF4D23]'
+  const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-signal'
   return (
-    <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+    <div className="w-full bg-paper-2 rounded-full h-2 overflow-hidden">
       <div
         className={cn('h-2 rounded-full transition-all duration-500', total === null ? 'w-0' : barColor)}
         style={{ width: total === null ? '0%' : `${pct}%` }}
@@ -155,25 +155,25 @@ function ProfileTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#17130E]">Profile Information</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Update your account details</p>
+        <h2 className="font-display text-lg font-bold text-ink">Profile Information</h2>
+        <p className="text-sm text-stone mt-0.5">Update your account details</p>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF4D23] to-[#17130E] flex items-center justify-center text-white font-bold text-xl">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-signal to-forest flex items-center justify-center text-white font-bold text-xl">
           {fullName.charAt(0) || '?'}
         </div>
         <div>
-          <p className="text-sm font-medium text-[#17130E]">{fullName || 'Your Name'}</p>
-          <p className="text-xs text-slate-400">LeadZipp Pro Member</p>
+          <p className="text-sm font-medium text-ink">{fullName || 'Your Name'}</p>
+          <p className="readout text-stone mt-0.5">LeadZipp Pro Member</p>
         </div>
       </div>
 
       <div className="grid gap-5">
         <div>
-          <label className="block text-sm font-medium text-[#17130E] mb-1.5">
+          <label className="block text-sm font-medium text-ink mb-1.5">
             <span className="flex items-center gap-2">
-              <User className="w-3.5 h-3.5 text-slate-400" />
+              <User className="w-3.5 h-3.5 text-stone" />
               Full Name
             </span>
           </label>
@@ -181,15 +181,15 @@ function ProfileTab() {
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] transition-all"
+            className="w-full px-3 py-2.5 text-sm border border-sand rounded-xl bg-paper focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal transition-all"
             placeholder="Your full name"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#17130E] mb-1.5">
+          <label className="block text-sm font-medium text-ink mb-1.5">
             <span className="flex items-center gap-2">
-              <Mail className="w-3.5 h-3.5 text-slate-400" />
+              <Mail className="w-3.5 h-3.5 text-stone" />
               Email Address
             </span>
           </label>
@@ -198,23 +198,23 @@ function ProfileTab() {
               type="email"
               value={email}
               readOnly
-              className="w-full px-3 py-2.5 pr-28 text-sm border border-slate-200 rounded-xl bg-slate-50 text-slate-500 cursor-not-allowed"
+              className="w-full px-3 py-2.5 pr-28 text-sm border border-sand rounded-xl bg-paper-2 text-stone cursor-not-allowed"
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2 inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
               <Check className="w-3 h-3" />
               Verified
             </span>
           </div>
-          <p className="text-xs text-slate-400 mt-1.5 flex items-center gap-1">
+          <p className="text-xs text-stone mt-1.5 flex items-center gap-1">
             <Lock className="w-3 h-3" />
             Email cannot be changed. Contact support if needed.
           </p>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#17130E] mb-1.5">
+          <label className="block text-sm font-medium text-ink mb-1.5">
             <span className="flex items-center gap-2">
-              <Building2 className="w-3.5 h-3.5 text-slate-400" />
+              <Building2 className="w-3.5 h-3.5 text-stone" />
               Company Name
             </span>
           </label>
@@ -222,7 +222,7 @@ function ProfileTab() {
             type="text"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] transition-all"
+            className="w-full px-3 py-2.5 text-sm border border-sand rounded-xl bg-paper focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal transition-all"
             placeholder="Your company name"
           />
         </div>
@@ -233,10 +233,10 @@ function ProfileTab() {
           onClick={handleSave}
           disabled={saving}
           className={cn(
-            'inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-60',
+            'inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-full transition-all disabled:opacity-60',
             saved
               ? 'bg-emerald-500 text-white'
-              : 'bg-[#17130E] text-white hover:bg-[#FF4D23]'
+              : 'bg-signal text-white hover:bg-signal-600'
           )}
         >
           {saved ? (
@@ -305,29 +305,29 @@ function PlanTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#17130E]">Plan & Usage</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Monitor your usage and manage your subscription</p>
+        <h2 className="font-display text-lg font-bold text-ink">Plan &amp; Usage</h2>
+        <p className="text-sm text-stone mt-0.5">Monitor your usage and manage your subscription</p>
       </div>
 
       {/* Current Plan */}
-      <div className="bg-gradient-to-br from-[#17130E] to-[#FF4D23] rounded-2xl p-6 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-br from-forest to-signal rounded-2xl p-6 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNCI+PHBhdGggZD0iTTAgMTBMMTAgMEgwdjEwem0wIDEwTDIwIDBIMTBMMCAyMHptMCAxMEwzMCAwSDIwTDAgMzB6bTAgMTBMNDAgMEgzMEwwIDQwek0xMCA0MEw0MCAxMEgzMEwxMCA0MHptMTAgMEw0MCAyMEgzMEwyMCA0MHptMTAgMEw0MCAzMEgzMEwzMCA0MHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-100" />
         <div className="relative">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Zap className="w-4 h-4 text-amber-300" />
-                <span className="text-xs font-semibold text-amber-300 uppercase tracking-wider">Current Plan</span>
+                <Zap className="w-4 h-4 text-lime" />
+                <span className="readout text-lime">Current Plan</span>
               </div>
-              <h3 className="text-2xl font-bold">Pro</h3>
-              <p className="text-blue-200 text-sm mt-1">Unlimited searches · 1,000 saved leads</p>
+              <h3 className="font-display text-2xl font-bold">Pro</h3>
+              <p className="text-white/80 text-sm mt-1">Unlimited searches · 1,000 saved leads</p>
             </div>
-            <span className="text-2xl font-bold">$49<span className="text-base font-normal text-blue-300">/mo</span></span>
+            <span className="font-mono text-2xl font-bold">$49<span className="text-base font-normal text-white/70">/mo</span></span>
           </div>
           <div className="mt-4 flex gap-3">
             <a
               href="/pricing"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-full transition-colors"
             >
               Upgrade to Agency
               <ChevronRight className="w-3 h-3" />
@@ -335,7 +335,7 @@ function PlanTab() {
             <button
               onClick={handleManageBilling}
               disabled={billingLoading}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-200 hover:text-white px-3 py-2 rounded-lg transition-colors disabled:opacity-60"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-white/70 hover:text-white px-3 py-2 rounded-full transition-colors disabled:opacity-60"
             >
               {billingLoading ? 'Opening…' : 'Manage Billing'}
               <ExternalLink className="w-3 h-3" />
@@ -349,53 +349,53 @@ function PlanTab() {
 
       {/* Usage Stats */}
       <div className="grid gap-4">
-        <h3 className="text-sm font-semibold text-[#17130E]">Usage This Month</h3>
+        <h3 className="font-display text-sm font-bold text-ink">Usage This Month</h3>
 
-        <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
+        <div className="bg-card border border-sand rounded-2xl p-4 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#FF4D23]" />
-                <span className="text-sm font-medium text-[#17130E]">Searches</span>
+                <BarChart3 className="w-4 h-4 text-signal" />
+                <span className="text-sm font-medium text-ink">Searches</span>
               </div>
               <div className="text-right">
-                <span className="text-sm font-bold text-[#17130E]">12</span>
-                <span className="text-xs text-slate-400"> / Unlimited</span>
+                <span className="font-mono text-sm font-bold text-ink">12</span>
+                <span className="text-xs text-stone"> / Unlimited</span>
               </div>
             </div>
             <UsageBar used={12} total={null} />
-            <p className="text-xs text-slate-400 mt-1.5">Unlimited searches on Pro plan</p>
+            <p className="text-xs text-stone mt-1.5">Unlimited searches on Pro plan</p>
           </div>
 
-          <div className="border-t border-slate-100" />
+          <div className="border-t border-sand" />
 
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Bookmark className="w-4 h-4 text-[#FF4D23]" />
-                <span className="text-sm font-medium text-[#17130E]">Saved Leads</span>
+                <Bookmark className="w-4 h-4 text-signal" />
+                <span className="text-sm font-medium text-ink">Saved Leads</span>
               </div>
               <div className="text-right">
-                <span className="text-sm font-bold text-[#17130E]">23</span>
-                <span className="text-xs text-slate-400"> / 1,000</span>
+                <span className="font-mono text-sm font-bold text-ink">23</span>
+                <span className="text-xs text-stone"> / 1,000</span>
               </div>
             </div>
             <UsageBar used={23} total={1000} />
-            <p className="text-xs text-slate-400 mt-1.5">977 slots remaining</p>
+            <p className="text-xs text-stone mt-1.5">977 slots remaining</p>
           </div>
         </div>
 
         {/* Billing info */}
-        <div className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-          <CreditCard className="w-5 h-5 text-slate-400 shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
+          <CreditCard className="w-5 h-5 text-stone shrink-0 mt-0.5" />
           <div className="flex-1">
-            <p className="text-sm font-medium text-slate-700">Payments powered by Stripe</p>
-            <p className="text-xs text-slate-400 mt-0.5">Click &quot;Manage Billing&quot; above to update payment method, view invoices, or cancel your plan.</p>
+            <p className="text-sm font-medium text-ink-soft">Payments powered by Stripe</p>
+            <p className="text-xs text-stone mt-0.5">Click &quot;Manage Billing&quot; above to update payment method, view invoices, or cancel your plan.</p>
           </div>
           <button
             onClick={handleManageBilling}
             disabled={billingLoading}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#FF4D23] hover:text-[#17130E] transition-colors disabled:opacity-60 shrink-0"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-signal hover:text-signal-600 transition-colors disabled:opacity-60 shrink-0"
           >
             {billingLoading ? 'Opening…' : 'Open Portal'}
             <ExternalLink className="w-3 h-3" />
@@ -446,50 +446,50 @@ function NotificationsTab() {
       key: 'emailLeadsFound' as const,
       label: 'Email when leads found',
       desc: 'Get notified when a search returns new results',
-      icon: <Mail className="w-4 h-4 text-[#FF4D23]" />,
+      icon: <Mail className="w-4 h-4 text-signal" />,
     },
     {
       key: 'weeklyDigest' as const,
       label: 'Weekly digest',
       desc: 'Summary of your pipeline activity every Monday',
-      icon: <BarChart3 className="w-4 h-4 text-[#FF4D23]" />,
+      icon: <BarChart3 className="w-4 h-4 text-signal" />,
     },
     {
       key: 'systemUpdates' as const,
       label: 'System updates',
       desc: 'Maintenance windows and downtime alerts',
-      icon: <AlertCircle className="w-4 h-4 text-[#FF4D23]" />,
+      icon: <AlertCircle className="w-4 h-4 text-signal" />,
     },
     {
       key: 'newFeatures' as const,
       label: 'New features',
       desc: 'Be the first to know about new LeadZipp features',
-      icon: <Zap className="w-4 h-4 text-[#FF4D23]" />,
+      icon: <Zap className="w-4 h-4 text-signal" />,
     },
     {
       key: 'usageAlerts' as const,
       label: 'Usage limit alerts',
       desc: 'Alert when you reach 80% of your plan limits',
-      icon: <Bell className="w-4 h-4 text-[#FF4D23]" />,
+      icon: <Bell className="w-4 h-4 text-signal" />,
     },
   ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#17130E]">Notification Preferences</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Choose how and when you want to be notified</p>
+        <h2 className="font-display text-lg font-bold text-ink">Notification Preferences</h2>
+        <p className="text-sm text-stone mt-0.5">Choose how and when you want to be notified</p>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+      <div className="bg-card border border-sand rounded-2xl divide-y divide-sand overflow-hidden">
         {items.map((item) => (
           <div key={item.key} className="flex items-center gap-4 px-5 py-4">
-            <div className="w-9 h-9 rounded-xl bg-[#FF4D23]/8 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-signal-50 flex items-center justify-center shrink-0">
               {item.icon}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#17130E]">{item.label}</p>
-              <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+              <p className="text-sm font-medium text-ink">{item.label}</p>
+              <p className="text-xs text-stone mt-0.5">{item.desc}</p>
             </div>
             <ToggleSwitch checked={prefs[item.key]} onChange={() => toggle(item.key)} />
           </div>
@@ -499,8 +499,8 @@ function NotificationsTab() {
       <button
         onClick={handleSave}
         className={cn(
-          'inline-flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors',
-          saved ? 'bg-green-600' : 'bg-[#17130E] hover:bg-[#FF4D23]'
+          'inline-flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-full transition-colors',
+          saved ? 'bg-emerald-600' : 'bg-signal hover:bg-signal-600'
         )}
       >
         <Check className="w-4 h-4" />
@@ -521,17 +521,17 @@ function ComplianceTab() {
         'LeadZipp provides business contact information from publicly available sources. You are solely responsible for ensuring your outreach complies with all applicable laws. Never send unsolicited bulk emails or calls without proper consent mechanisms in place.',
     },
     {
-      icon: <Mail className="w-5 h-5 text-[#FF4D23]" />,
-      bg: 'bg-blue-50 border-blue-200',
-      iconBg: 'bg-blue-100',
+      icon: <Mail className="w-5 h-5 text-signal" />,
+      bg: 'bg-signal-50 border-signal/20',
+      iconBg: 'bg-signal/10',
       title: 'CAN-SPAM Compliance',
       content:
         'All commercial email must include your physical address, a working unsubscribe mechanism, and honest subject lines. Honor opt-out requests within 10 business days. Subject lines must accurately reflect email content.',
     },
     {
-      icon: <Info className="w-5 h-5 text-purple-600" />,
-      bg: 'bg-purple-50 border-purple-200',
-      iconBg: 'bg-purple-100',
+      icon: <Info className="w-5 h-5 text-lime" />,
+      bg: 'bg-paper-2 border-sand',
+      iconBg: 'bg-forest',
       title: 'GDPR Considerations',
       content:
         'If you contact businesses in the European Union, you must have a lawful basis for processing their data. Legitimate interest may apply for B2B outreach in some cases. Maintain records of your data processing activities.',
@@ -549,29 +549,29 @@ function ComplianceTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#17130E]">Compliance & Legal</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Important information about responsible lead generation</p>
+        <h2 className="font-display text-lg font-bold text-ink">Compliance &amp; Legal</h2>
+        <p className="text-sm text-stone mt-0.5">Important information about responsible lead generation</p>
       </div>
 
       <div className="grid gap-4">
         {cards.map((card) => (
-          <div key={card.title} className={cn('border rounded-xl p-5', card.bg)}>
+          <div key={card.title} className={cn('border rounded-2xl p-5', card.bg)}>
             <div className="flex items-start gap-4">
               <div className={cn('w-10 h-10 rounded-xl flex items-center justify-center shrink-0', card.iconBg)}>
                 {card.icon}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-[#17130E] mb-1.5">{card.title}</h3>
-                <p className="text-sm text-slate-600 leading-relaxed">{card.content}</p>
+                <h3 className="font-display text-sm font-bold text-ink mb-1.5">{card.title}</h3>
+                <p className="text-sm text-ink-soft leading-relaxed">{card.content}</p>
               </div>
             </div>
           </div>
         ))}
       </div>
 
-      <div className="flex items-start gap-3 bg-slate-50 border border-slate-200 rounded-xl p-4">
-        <AlertCircle className="w-4 h-4 text-slate-500 shrink-0 mt-0.5" />
-        <p className="text-xs text-slate-500 leading-relaxed">
+      <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
+        <AlertCircle className="w-4 h-4 text-stone shrink-0 mt-0.5" />
+        <p className="text-xs text-stone leading-relaxed">
           This information is provided for general guidance only and does not constitute legal advice.
           Consult a qualified attorney for compliance advice specific to your situation and jurisdiction.
         </p>
@@ -646,7 +646,7 @@ function ApiTab() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <p className="text-sm font-semibold text-amber-800 mb-1">Save this key — it won&apos;t be shown again</p>
           <div className="flex items-center gap-2 mt-2">
-            <code className="flex-1 rounded-lg bg-white border border-amber-200 px-3 py-2 text-xs font-mono text-slate-700 truncate">
+            <code className="flex-1 rounded-lg bg-card border border-amber-200 px-3 py-2 text-xs font-mono text-ink-soft truncate">
               {showKey ? newKey : '•'.repeat(40)}
             </code>
             <button onClick={() => setShowKey((v) => !v)} className="p-2 rounded-lg hover:bg-amber-100 text-amber-700">
@@ -661,9 +661,9 @@ function ApiTab() {
       )}
 
       {/* Generate */}
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-[#17130E] mb-1">API Keys</h2>
-        <p className="text-sm text-slate-500 mb-5">Use API keys to query LeadZipp programmatically. Keys are scoped to your account and plan.</p>
+      <div className="bg-card rounded-2xl border border-sand p-6">
+        <h2 className="font-display text-base font-bold text-ink mb-1">API Keys</h2>
+        <p className="text-sm text-stone mb-5">Use API keys to query LeadZipp programmatically. Keys are scoped to your account and plan.</p>
 
         <div className="flex gap-2 mb-2">
           <input
@@ -671,12 +671,12 @@ function ApiTab() {
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
             placeholder="Key name (optional)"
-            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/30 focus:border-[#FF4D23]"
+            className="flex-1 rounded-xl border border-sand bg-paper px-3 py-2 text-sm text-ink placeholder:text-stone focus:outline-none focus:ring-2 focus:ring-signal/30 focus:border-signal"
           />
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="flex items-center gap-2 rounded-lg bg-[#FF4D23] px-4 py-2 text-sm font-medium text-white hover:bg-[#E23A12] disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white hover:bg-signal-600 disabled:opacity-50 transition-colors"
           >
             {generating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Code2 className="h-4 w-4" />}
             Generate key
@@ -686,25 +686,25 @@ function ApiTab() {
         {/* Rate limits info */}
         <div className="flex flex-wrap gap-3 mt-4 mb-6">
           {Object.entries(DAILY_LIMITS).map(([plan, limit]) => (
-            <span key={plan} className="rounded-full bg-slate-100 px-3 py-1 text-xs text-slate-600 font-medium capitalize">
-              {plan}: {limit}
+            <span key={plan} className="rounded-full bg-paper-2 px-3 py-1 text-xs text-ink-soft font-medium capitalize">
+              {plan}: <span className="font-mono">{limit}</span>
             </span>
           ))}
         </div>
 
         {/* Key list */}
         {loading ? (
-          <p className="text-sm text-slate-400">Loading keys…</p>
+          <p className="text-sm text-stone">Loading keys…</p>
         ) : keys.length === 0 ? (
-          <p className="text-sm text-slate-400">No API keys yet. Generate one above.</p>
+          <p className="text-sm text-stone">No API keys yet. Generate one above.</p>
         ) : (
-          <div className="divide-y divide-slate-100 rounded-xl border border-slate-200 overflow-hidden">
+          <div className="divide-y divide-sand rounded-xl border border-sand overflow-hidden">
             {keys.map((k) => (
-              <div key={k.id} className="flex items-center gap-3 px-4 py-3 bg-white">
-                <code className="flex-1 text-xs font-mono text-slate-600">{k.key_prefix}••••••••••••••••••••••••</code>
+              <div key={k.id} className="flex items-center gap-3 px-4 py-3 bg-card">
+                <code className="flex-1 text-xs font-mono text-ink-soft">{k.key_prefix}••••••••••••••••••••••••</code>
                 <div className="text-right min-w-[120px]">
-                  <p className="text-xs font-medium text-slate-700">{k.name}</p>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs font-medium text-ink">{k.name}</p>
+                  <p className="text-xs text-stone">
                     {k.last_used_at
                       ? `Last used ${new Date(k.last_used_at).toLocaleDateString()}`
                       : `Created ${new Date(k.created_at).toLocaleDateString()}`}
@@ -713,7 +713,7 @@ function ApiTab() {
                 <button
                   onClick={() => handleRevoke(k.id)}
                   disabled={revoking === k.id}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
+                  className="p-1.5 rounded-lg text-stone hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
                 >
                   {revoking === k.id ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
                 </button>
@@ -723,8 +723,8 @@ function ApiTab() {
         )}
       </div>
 
-      <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        See the <a href="/api-docs" className="text-[#FF4D23] font-medium hover:underline">API documentation</a> for endpoint reference and code examples.
+      <div className="rounded-xl border border-sand bg-paper-2 px-4 py-3 text-sm text-ink-soft">
+        See the <a href="/api-docs" className="text-signal font-medium hover:underline">API documentation</a> for endpoint reference and code examples.
       </div>
     </div>
   )
@@ -838,20 +838,20 @@ function TeamTab() {
     setPendingInvites(prev => prev.filter(i => i.id !== inviteId))
   }
 
-  if (loading) return <div className="text-sm text-slate-400 py-6 text-center">Loading…</div>
+  if (loading) return <div className="text-sm text-stone py-6 text-center">Loading…</div>
 
   if (userPlan !== 'agency' && !workspaceName) {
     return (
       <div className="space-y-4">
         <div>
-          <h2 className="text-base font-semibold text-[#17130E]">Team Workspaces</h2>
-          <p className="text-sm text-slate-500 mt-0.5">Invite teammates and share your plan across your agency.</p>
+          <h2 className="font-display text-base font-bold text-ink">Team Workspaces</h2>
+          <p className="text-sm text-stone mt-0.5">Invite teammates and share your plan across your agency.</p>
         </div>
-        <div className="border border-slate-200 rounded-xl p-6 text-center space-y-3">
-          <Users className="w-8 h-8 text-slate-300 mx-auto" />
-          <p className="text-sm font-medium text-slate-600">Agency plan required</p>
-          <p className="text-xs text-slate-400">Upgrade to Agency to create a workspace and invite team members.</p>
-          <a href="/pricing" className="inline-block text-sm font-medium text-[#FF4D23] hover:underline">View Pricing →</a>
+        <div className="border border-sand rounded-2xl p-6 text-center space-y-3">
+          <Users className="w-8 h-8 text-stone mx-auto" />
+          <p className="text-sm font-medium text-ink-soft">Agency plan required</p>
+          <p className="text-xs text-stone">Upgrade to Agency to create a workspace and invite team members.</p>
+          <a href="/pricing" className="inline-block text-sm font-medium text-signal hover:underline">View Pricing →</a>
         </div>
       </div>
     )
@@ -860,29 +860,29 @@ function TeamTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-[#17130E]">Team Workspaces</h2>
-        <p className="text-sm text-slate-500 mt-0.5">
+        <h2 className="font-display text-base font-bold text-ink">Team Workspaces</h2>
+        <p className="text-sm text-stone mt-0.5">
           {role === 'member' ? `You're a member of ${workspaceName}.` : 'Manage your team and send invitations.'}
         </p>
       </div>
 
       {/* Create workspace (agency owners without one yet) */}
       {!workspaceName && userPlan === 'agency' && (
-        <div className="border border-dashed border-slate-300 rounded-xl p-5 space-y-3">
-          <p className="text-sm font-medium text-[#17130E]">Create your workspace</p>
-          <p className="text-xs text-slate-500">Name your team — members will see this when they accept your invite.</p>
+        <div className="border border-dashed border-sand rounded-2xl p-5 space-y-3">
+          <p className="text-sm font-medium text-ink">Create your workspace</p>
+          <p className="text-xs text-stone">Name your team — members will see this when they accept your invite.</p>
           <div className="flex gap-2">
             <input
               type="text"
               value={newWorkspaceName}
               onChange={e => setNewWorkspaceName(e.target.value)}
               placeholder="e.g. Apex Marketing Agency"
-              className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23]"
+              className="flex-1 text-sm border border-sand bg-paper rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal"
             />
             <button
               onClick={handleCreateWorkspace}
               disabled={creating || !newWorkspaceName.trim()}
-              className="text-sm font-medium bg-[#FF4D23] text-white px-4 py-2 rounded-lg hover:bg-[#E23A12] transition-colors disabled:opacity-50"
+              className="text-sm font-semibold bg-signal text-white px-4 py-2 rounded-full hover:bg-signal-600 transition-colors disabled:opacity-50"
             >
               {creating ? 'Creating…' : 'Create'}
             </button>
@@ -893,30 +893,30 @@ function TeamTab() {
       {/* Workspace info + invite (owner) */}
       {workspaceName && role === 'owner' && (
         <>
-          <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 flex items-center gap-3">
-            <Users className="w-4 h-4 text-violet-500 flex-shrink-0" />
+          <div className="bg-signal-50 border border-signal/20 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <Users className="w-4 h-4 text-signal flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#17130E]">{workspaceName}</p>
-              <p className="text-xs text-slate-500">{members.length} member{members.length !== 1 ? 's' : ''} · Agency plan</p>
+              <p className="text-sm font-semibold text-ink">{workspaceName}</p>
+              <p className="text-xs text-stone"><span className="font-mono">{members.length}</span> member{members.length !== 1 ? 's' : ''} · Agency plan</p>
             </div>
           </div>
 
           {/* Invite form */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-[#17130E]">Invite a teammate</p>
+            <p className="text-sm font-medium text-ink">Invite a teammate</p>
             <div className="flex gap-2">
               <input
                 type="email"
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 placeholder="teammate@company.com"
-                className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23]"
+                className="flex-1 text-sm border border-sand bg-paper rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal"
                 onKeyDown={e => e.key === 'Enter' && handleInvite()}
               />
               <button
                 onClick={handleInvite}
                 disabled={inviting || !inviteEmail.trim()}
-                className="inline-flex items-center gap-1.5 text-sm font-medium bg-[#FF4D23] text-white px-4 py-2 rounded-lg hover:bg-[#E23A12] transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-sm font-semibold bg-signal text-white px-4 py-2 rounded-full hover:bg-signal-600 transition-colors disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
                 {inviting ? 'Sending…' : 'Send Invite'}
@@ -929,19 +929,19 @@ function TeamTab() {
           {/* Members list */}
           {members.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[#17130E]">Members</p>
+              <p className="text-sm font-medium text-ink">Members</p>
               <div className="space-y-1">
                 {members.map(m => (
-                  <div key={m.user_id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50">
+                  <div key={m.user_id} className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-paper-2">
                     <div>
-                      <p className="text-sm text-[#17130E]">{m.users_profile?.full_name || m.users_profile?.email}</p>
-                      <p className="text-xs text-slate-400">{m.users_profile?.email} · {m.role}</p>
+                      <p className="text-sm text-ink">{m.users_profile?.full_name || m.users_profile?.email}</p>
+                      <p className="text-xs text-stone">{m.users_profile?.email} · {m.role}</p>
                     </div>
                     {m.role !== 'owner' && (
                       <button
                         onClick={() => handleRemove(m.user_id)}
                         disabled={removingId === m.user_id}
-                        className="text-xs text-slate-400 hover:text-red-600 transition-colors p-1 rounded"
+                        className="text-xs text-stone hover:text-red-600 transition-colors p-1 rounded"
                       >
                         <UserMinus className="w-4 h-4" />
                       </button>
@@ -955,17 +955,17 @@ function TeamTab() {
           {/* Pending invites */}
           {pendingInvites.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[#17130E]">Pending invitations</p>
+              <p className="text-sm font-medium text-ink">Pending invitations</p>
               <div className="space-y-1">
                 {pendingInvites.map(inv => (
-                  <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-amber-50 border border-amber-100">
+                  <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-xl bg-amber-50 border border-amber-100">
                     <div>
-                      <p className="text-sm text-[#17130E]">{inv.email}</p>
-                      <p className="text-xs text-slate-400">Expires {new Date(inv.expires_at).toLocaleDateString()}</p>
+                      <p className="text-sm text-ink">{inv.email}</p>
+                      <p className="text-xs text-stone">Expires {new Date(inv.expires_at).toLocaleDateString()}</p>
                     </div>
                     <button
                       onClick={() => handleCancelInvite(inv.id)}
-                      className="text-xs text-slate-400 hover:text-red-600 transition-colors p-1 rounded"
+                      className="text-xs text-stone hover:text-red-600 transition-colors p-1 rounded"
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -979,12 +979,12 @@ function TeamTab() {
 
       {/* Member view */}
       {workspaceName && role === 'member' && (
-        <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-4 space-y-1">
+        <div className="bg-signal-50 border border-signal/20 rounded-2xl px-4 py-4 space-y-1">
           <div className="flex items-center gap-2">
-            <Users className="w-4 h-4 text-violet-500" />
-            <p className="text-sm font-semibold text-[#17130E]">{workspaceName}</p>
+            <Users className="w-4 h-4 text-signal" />
+            <p className="text-sm font-semibold text-ink">{workspaceName}</p>
           </div>
-          <p className="text-xs text-slate-500 pl-6">You have access to all features under this team&apos;s plan.</p>
+          <p className="text-xs text-stone pl-6">You have access to all features under this team&apos;s plan.</p>
         </div>
       )}
     </div>
@@ -1059,12 +1059,12 @@ function IntegrationsTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold text-[#17130E]">CRM Integrations</h2>
-        <p className="text-sm text-slate-500 mt-0.5">Connect your CRM to push saved leads with one click.</p>
+        <h2 className="font-display text-base font-bold text-ink">CRM Integrations</h2>
+        <p className="text-sm text-stone mt-0.5">Connect your CRM to push saved leads with one click.</p>
       </div>
 
       {loading ? (
-        <div className="text-sm text-slate-400 py-6 text-center">Loading…</div>
+        <div className="text-sm text-stone py-6 text-center">Loading…</div>
       ) : (
         <div className="space-y-3">
           {crms.map(crm => {
@@ -1073,17 +1073,17 @@ function IntegrationsTab() {
             const isAdding = adding === crm
 
             return (
-              <div key={crm} className="border border-slate-200 rounded-xl p-4 bg-white">
+              <div key={crm} className="border border-sand rounded-2xl p-4 bg-card">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     {isConnected ? (
                       <CheckCircle2 className="w-5 h-5 text-emerald-500" />
                     ) : (
-                      <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
+                      <div className="w-5 h-5 rounded-full border-2 border-sand" />
                     )}
                     <div>
-                      <p className="text-sm font-semibold text-[#17130E]">{meta.label}</p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-sm font-semibold text-ink">{meta.label}</p>
+                      <p className="text-xs text-stone">
                         {isConnected ? 'Connected' : 'Not connected'}
                       </p>
                     </div>
@@ -1093,7 +1093,7 @@ function IntegrationsTab() {
                       <button
                         onClick={() => handleDisconnect(crm)}
                         disabled={disconnecting === crm}
-                        className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-red-600 border border-slate-200 hover:border-red-200 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 text-xs text-stone hover:text-red-600 border border-sand hover:border-red-200 px-3 py-1.5 rounded-full transition-colors disabled:opacity-50"
                       >
                         <Link2Off className="w-3.5 h-3.5" />
                         {disconnecting === crm ? 'Disconnecting…' : 'Disconnect'}
@@ -1101,7 +1101,7 @@ function IntegrationsTab() {
                     ) : (
                       <button
                         onClick={() => { setAdding(isAdding ? null : crm); setKeyInput(''); setError(null) }}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#FF4D23] border border-[#FF4D23]/30 hover:bg-[#FF4D23]/5 px-3 py-1.5 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-signal border border-signal/30 hover:bg-signal-50 px-3 py-1.5 rounded-full transition-colors"
                       >
                         <Plug className="w-3.5 h-3.5" />
                         Connect
@@ -1111,9 +1111,9 @@ function IntegrationsTab() {
                 </div>
 
                 {isAdding && (
-                  <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
-                    <p className="text-xs text-slate-500">{meta.help}{' '}
-                      <a href={meta.helpUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF4D23] hover:underline">
+                  <div className="mt-4 pt-4 border-t border-sand space-y-3">
+                    <p className="text-xs text-stone">{meta.help}{' '}
+                      <a href={meta.helpUrl} target="_blank" rel="noopener noreferrer" className="text-signal hover:underline">
                         Docs →
                       </a>
                     </p>
@@ -1123,12 +1123,12 @@ function IntegrationsTab() {
                         value={keyInput}
                         onChange={e => setKeyInput(e.target.value)}
                         placeholder={meta.placeholder}
-                        className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] font-mono"
+                        className="flex-1 text-sm border border-sand bg-paper rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal font-mono"
                       />
                       <button
                         onClick={() => handleConnect(crm)}
                         disabled={saving || !keyInput.trim()}
-                        className="text-sm font-medium bg-[#FF4D23] text-white px-4 py-2 rounded-lg hover:bg-[#E23A12] transition-colors disabled:opacity-50"
+                        className="text-sm font-semibold bg-signal text-white px-4 py-2 rounded-full hover:bg-signal-600 transition-colors disabled:opacity-50"
                       >
                         {saving ? 'Validating…' : 'Save'}
                       </button>
@@ -1170,33 +1170,33 @@ function WhiteLabelTab() {
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-[#17130E] mb-1">White Label Exports</h2>
-        <p className="text-sm text-slate-500 mb-6">Add your agency branding to PDF exports. Your logo and colors replace LeadZipp branding on all exported reports.</p>
+      <div className="bg-card rounded-2xl border border-sand p-6">
+        <h2 className="font-display text-base font-bold text-ink mb-1">White Label Exports</h2>
+        <p className="text-sm text-stone mb-6">Add your agency branding to PDF exports. Your logo and colors replace LeadZipp branding on all exported reports.</p>
 
         {/* Agency Name */}
         <div className="mb-5">
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Agency Name</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1.5">Agency Name</label>
           <input
             type="text"
             value={settings.agencyName}
             onChange={(e) => setSettings((prev) => ({ ...prev, agencyName: e.target.value }))}
             placeholder="Acme Lead Agency"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/30 focus:border-[#FF4D23]"
+            className="w-full rounded-xl border border-sand bg-paper px-3 py-2 text-sm text-ink placeholder:text-stone focus:outline-none focus:ring-2 focus:ring-signal/30 focus:border-signal"
           />
         </div>
 
         {/* Logo Upload */}
         <div className="mb-5">
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Agency Logo</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1.5">Agency Logo</label>
           <div className="flex items-center gap-3">
             {settings.logoDataUrl ? (
               <div className="relative flex-shrink-0">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={settings.logoDataUrl} alt="Logo preview" className="h-12 w-12 rounded-lg object-contain border border-slate-200 bg-slate-50 p-1" />
+                <img src={settings.logoDataUrl} alt="Logo preview" className="h-12 w-12 rounded-lg object-contain border border-sand bg-paper-2 p-1" />
                 <button
                   onClick={() => setSettings((prev) => ({ ...prev, logoDataUrl: '' }))}
-                  className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-slate-500 text-white flex items-center justify-center hover:bg-slate-700"
+                  className="absolute -top-1.5 -right-1.5 h-4 w-4 rounded-full bg-ink text-white flex items-center justify-center hover:bg-signal"
                 >
                   <X className="h-2.5 w-2.5" />
                 </button>
@@ -1204,36 +1204,36 @@ function WhiteLabelTab() {
             ) : null}
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm text-slate-600 hover:border-[#FF4D23] hover:text-[#FF4D23] transition-colors"
+              className="flex items-center gap-2 rounded-xl border border-dashed border-sand px-4 py-2.5 text-sm text-ink-soft hover:border-signal hover:text-signal transition-colors"
             >
               <Upload className="h-4 w-4" />
               {settings.logoDataUrl ? 'Replace logo' : 'Upload logo'}
             </button>
             <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />
-            <span className="text-xs text-slate-400">PNG, SVG, or JPG — shown in PDF header</span>
+            <span className="text-xs text-stone">PNG, SVG, or JPG — shown in PDF header</span>
           </div>
         </div>
 
         {/* Accent Color */}
         <div className="mb-6">
-          <label className="block text-sm font-medium text-slate-700 mb-1.5">Accent Color</label>
+          <label className="block text-sm font-medium text-ink-soft mb-1.5">Accent Color</label>
           <div className="flex items-center gap-3">
             <input
               type="color"
               value={settings.accentColor}
               onChange={(e) => setSettings((prev) => ({ ...prev, accentColor: e.target.value }))}
-              className="h-9 w-16 cursor-pointer rounded-lg border border-slate-200 p-0.5"
+              className="h-9 w-16 cursor-pointer rounded-lg border border-sand p-0.5"
             />
-            <span className="text-sm font-mono text-slate-600">{settings.accentColor}</span>
-            <span className="text-xs text-slate-400">Used for table headers and section titles in exports</span>
+            <span className="text-sm font-mono text-ink-soft">{settings.accentColor}</span>
+            <span className="text-xs text-stone">Used for table headers and section titles in exports</span>
           </div>
         </div>
 
         {/* Preview strip */}
         {(settings.agencyName || settings.logoDataUrl) && (
-          <div className="mb-6 rounded-xl border border-slate-100 bg-slate-50 p-4">
-            <p className="text-xs text-slate-400 mb-2 font-medium uppercase tracking-wide">PDF Header Preview</p>
-            <div className="flex items-center gap-3 bg-white rounded-lg border border-slate-100 px-4 py-3">
+          <div className="mb-6 rounded-xl border border-sand bg-paper-2 p-4">
+            <p className="readout text-stone mb-2">PDF Header Preview</p>
+            <div className="flex items-center gap-3 bg-card rounded-lg border border-sand px-4 py-3">
               {settings.logoDataUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={settings.logoDataUrl} alt="" className="h-8 w-8 object-contain flex-shrink-0" />
@@ -1242,7 +1242,7 @@ function WhiteLabelTab() {
                 <p className="text-sm font-bold" style={{ color: settings.accentColor }}>
                   {settings.agencyName || 'Your Agency'}
                 </p>
-                <p className="text-xs text-slate-400">Lead Report — {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
+                <p className="text-xs text-stone">Lead Report — {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
               </div>
             </div>
           </div>
@@ -1251,10 +1251,10 @@ function WhiteLabelTab() {
         <button
           onClick={handleSave}
           className={cn(
-            'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all',
+            'flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition-all',
             saved
               ? 'bg-emerald-50 text-emerald-700'
-              : 'bg-[#FF4D23] text-white hover:bg-[#E23A12]'
+              : 'bg-signal text-white hover:bg-signal-600'
           )}
         >
           {saved ? <><Check className="h-4 w-4" /> Saved</> : 'Save branding'}
@@ -1285,11 +1285,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-paper">
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#17130E]">Settings</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Manage your account, plan, and preferences</p>
+          <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink">Settings</h1>
+          <p className="text-sm text-stone mt-0.5">Manage your account, plan, and preferences</p>
         </div>
 
         <div className="flex gap-6">
@@ -1302,8 +1302,8 @@ export default function SettingsPage() {
                   className={cn(
                     'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
                     activeTab === tab.id
-                      ? 'bg-[#FF4D23] text-white shadow-sm'
-                      : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-signal text-white shadow-sm'
+                      : 'text-ink-soft hover:bg-paper-2 hover:text-ink'
                   )}
                 >
                   {tab.icon}
@@ -1313,7 +1313,7 @@ export default function SettingsPage() {
             </nav>
           </div>
 
-          <div className="flex-1 bg-white border border-slate-200 rounded-xl shadow-sm p-6">
+          <div className="flex-1 bg-card border border-sand rounded-2xl p-6">
             {renderTab()}
           </div>
         </div>

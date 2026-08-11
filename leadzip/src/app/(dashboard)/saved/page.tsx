@@ -51,12 +51,12 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 function ScoreBadge({ score }: { score: number }) {
   const color =
     score >= 80
-      ? 'bg-red-50 text-red-700 border-red-200'
+      ? 'bg-signal-50 text-signal border-signal/20'
       : score >= 50
         ? 'bg-amber-50 text-amber-700 border-amber-200'
-        : 'bg-slate-50 text-slate-600 border-slate-200'
+        : 'bg-paper-2 text-stone border-sand'
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold border', color)}>
+    <span className={cn('inline-flex items-center px-2 py-0.5 rounded-md text-xs font-mono font-semibold border', color)}>
       {score}
     </span>
   )
@@ -87,13 +87,13 @@ function StatusSelect({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute left-0 top-full mt-1 z-20 w-40 bg-white rounded-xl shadow-lg border border-slate-200 py-1 overflow-hidden">
+          <div className="absolute left-0 top-full mt-1 z-20 w-40 bg-card rounded-xl shadow-lg border border-sand py-1 overflow-hidden">
             {statuses.map((s) => (
               <button
                 key={s}
                 className={cn(
-                  'w-full text-left px-3 py-2 text-xs font-medium hover:bg-slate-50 transition-colors',
-                  s === value && 'bg-slate-50'
+                  'w-full text-left px-3 py-2 text-xs font-medium hover:bg-signal-50/60 transition-colors',
+                  s === value && 'bg-paper-2'
                 )}
                 onClick={() => {
                   onChange(s)
@@ -141,32 +141,32 @@ function LeadRow({
   }
 
   return (
-    <tr className={cn('border-b border-slate-100 hover:bg-slate-50/50 transition-colors', selected && 'bg-blue-50/40')}>
+    <tr className={cn('border-b border-sand hover:bg-signal-50/50 transition-colors', selected && 'bg-signal-50')}>
       <td className="pl-4 pr-2 py-3">
         <input
           type="checkbox"
           checked={selected}
           onChange={(e) => onSelect(lead.id, e.target.checked)}
-          className="w-4 h-4 rounded border-slate-300 text-[#FF4D23] accent-[#FF4D23]"
+          className="w-4 h-4 rounded border-sand text-signal accent-signal"
         />
       </td>
       <td className="px-3 py-3">
-        <div className="font-semibold text-[#17130E] text-sm leading-tight">{lead.businessName}</div>
-        <div className="text-xs text-slate-400 mt-0.5">{lead.city}, {lead.state}</div>
+        <div className="font-semibold text-ink text-sm leading-tight">{lead.businessName}</div>
+        <div className="text-xs text-stone mt-0.5">{lead.city}, {lead.state}</div>
       </td>
       <td className="px-3 py-3">
-        <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-md font-medium">
+        <span className="text-xs bg-paper-2 text-ink-soft px-2 py-1 rounded-md font-medium border border-sand">
           {lead.category}
         </span>
       </td>
       <td className="px-3 py-3">
         {lead.phone ? (
-          <a href={`tel:${lead.phone}`} className="inline-flex items-center gap-1 text-xs text-[#FF4D23] hover:underline">
+          <a href={`tel:${lead.phone}`} className="inline-flex items-center gap-1 text-xs font-mono text-signal hover:text-signal-600 hover:underline">
             <Phone className="w-3 h-3" />
             {lead.phone}
           </a>
         ) : (
-          <span className="text-xs text-slate-300">—</span>
+          <span className="text-xs text-stone/50">—</span>
         )}
       </td>
       <td className="px-3 py-3">
@@ -175,13 +175,13 @@ function LeadRow({
             href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-[#FF4D23] hover:underline max-w-[100px] truncate"
+            className="inline-flex items-center gap-1 text-xs text-signal hover:text-signal-600 hover:underline max-w-[100px] truncate"
           >
             <Globe className="w-3 h-3 shrink-0" />
             <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
           </a>
         ) : (
-          <span className="text-xs text-slate-300">No website</span>
+          <span className="text-xs text-stone/50">No website</span>
         )}
       </td>
       <td className="px-3 py-3">
@@ -189,12 +189,12 @@ function LeadRow({
       </td>
       <td className="px-3 py-3">
         {lead.rating ? (
-          <span className="inline-flex items-center gap-1 text-xs text-slate-600">
+          <span className="inline-flex items-center gap-1 text-xs font-mono text-ink-soft">
             <Star className="w-3 h-3 text-amber-400 fill-amber-400" />
             {lead.rating}
           </span>
         ) : (
-          <span className="text-xs text-slate-300">—</span>
+          <span className="text-xs text-stone/50">—</span>
         )}
       </td>
       <td className="px-3 py-3">
@@ -209,20 +209,20 @@ function LeadRow({
             <textarea
               value={noteDraft}
               onChange={(e) => setNoteDraft(e.target.value)}
-              className="w-full text-xs border border-[#FF4D23] rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20"
+              className="w-full text-xs border border-signal rounded-lg px-2 py-1.5 resize-none bg-card focus:outline-none focus:ring-2 focus:ring-signal/20"
               rows={2}
               autoFocus
             />
             <div className="flex gap-1">
               <button
                 onClick={saveNotes}
-                className="inline-flex items-center gap-0.5 text-xs bg-[#FF4D23] text-white px-2 py-1 rounded-md hover:bg-[#17130E] transition-colors"
+                className="inline-flex items-center gap-0.5 text-xs bg-signal text-white px-2 py-1 rounded-md hover:bg-signal-600 transition-colors"
               >
                 <Check className="w-3 h-3" /> Save
               </button>
               <button
                 onClick={cancelNotes}
-                className="inline-flex items-center gap-0.5 text-xs border border-slate-200 text-slate-500 px-2 py-1 rounded-md hover:bg-slate-50 transition-colors"
+                className="inline-flex items-center gap-0.5 text-xs border border-sand text-stone px-2 py-1 rounded-md hover:bg-paper-2 transition-colors"
               >
                 <X className="w-3 h-3" /> Cancel
               </button>
@@ -233,22 +233,22 @@ function LeadRow({
             onClick={() => setEditingNotes(true)}
             className="group flex items-start gap-1 w-full text-left"
           >
-            <span className="text-xs text-slate-500 leading-relaxed flex-1 min-h-[1.5rem]">
-              {lead.notes || <span className="text-slate-300 italic">Add note…</span>}
+            <span className="text-xs text-ink-soft leading-relaxed flex-1 min-h-[1.5rem]">
+              {lead.notes || <span className="text-stone/50 italic">Add note…</span>}
             </span>
-            <Pencil className="w-3 h-3 text-slate-300 group-hover:text-[#FF4D23] shrink-0 mt-0.5 transition-colors" />
+            <Pencil className="w-3 h-3 text-stone/50 group-hover:text-signal shrink-0 mt-0.5 transition-colors" />
           </button>
         )}
       </td>
       <td className="px-3 py-3">
-        <span className="text-xs text-slate-400">
+        <span className="text-xs font-mono text-stone">
           {lead.savedAt ? new Date(lead.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
         </span>
       </td>
       <td className="px-3 py-3 pr-4">
         <button
           onClick={() => onDelete(lead.id)}
-          className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all"
+          className="p-1.5 rounded-lg text-stone hover:text-red-500 hover:bg-red-50 transition-all"
           title="Delete lead"
         >
           <Trash2 className="w-4 h-4" />
@@ -474,22 +474,23 @@ export default function SavedLeadsPage() {
   if (!mounted) return null
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-paper">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-[#17130E]">Saved Leads</h1>
-              <p className="text-sm text-slate-500 mt-0.5">Manage and track your prospect pipeline</p>
+              <span className="readout text-signal">Pipeline</span>
+              <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">Saved Leads</h1>
+              <p className="text-sm text-ink-soft mt-1.5">Manage and track your prospect pipeline</p>
             </div>
-            <span className="bg-[#FF4D23] text-white text-sm font-semibold px-3 py-1 rounded-full">
+            <span className="bg-signal text-white text-sm font-mono font-semibold px-3 py-1 rounded-full self-start">
               {leads.length}
             </span>
           </div>
           <button
             onClick={handleExportAll}
             disabled={leads.length === 0}
-            className="inline-flex items-center gap-2 bg-[#17130E] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#1e293b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-ink text-paper text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-forest transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
             Export All
@@ -497,8 +498,8 @@ export default function SavedLeadsPage() {
         </div>
 
         {someSelected && (
-          <div className="mb-4 flex items-center gap-3 bg-[#FF4D23] text-white px-4 py-3 rounded-xl">
-            <span className="text-sm font-medium">{selectedIds.size} lead{selectedIds.size !== 1 ? 's' : ''} selected</span>
+          <div className="mb-4 flex items-center gap-3 bg-signal text-white px-4 py-3 rounded-2xl">
+            <span className="text-sm font-medium"><span className="font-mono">{selectedIds.size}</span> lead{selectedIds.size !== 1 ? 's' : ''} selected</span>
             <div className="flex-1" />
             <button
               onClick={handleExportSelected}
@@ -517,27 +518,27 @@ export default function SavedLeadsPage() {
                   Push to CRM
                 </button>
                 {crmModal && (
-                  <div className="absolute right-0 top-full mt-1 bg-white rounded-xl shadow-lg border border-slate-200 p-3 z-20 min-w-[220px]">
+                  <div className="absolute right-0 top-full mt-1 bg-card rounded-xl shadow-lg border border-sand p-3 z-20 min-w-[220px]">
                     {pushResult ? (
                       <div className="space-y-2">
-                        <div className={cn('flex items-center gap-2 text-sm font-medium', pushResult.failed === 0 ? 'text-emerald-600' : 'text-amber-600')}>
+                        <div className={cn('flex items-center gap-2 text-sm font-medium', pushResult.failed === 0 ? 'text-forest' : 'text-amber-600')}>
                           {pushResult.failed === 0 ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                          {pushResult.succeeded} pushed{pushResult.failed > 0 ? `, ${pushResult.failed} failed` : ''}
+                          <span className="font-mono">{pushResult.succeeded}</span> pushed{pushResult.failed > 0 ? `, ${pushResult.failed} failed` : ''}
                         </div>
                         {pushResult.errors.slice(0, 3).map((e, i) => (
                           <p key={i} className="text-xs text-red-600 truncate">{e}</p>
                         ))}
-                        <button onClick={() => { setCrmModal(false); setPushResult(null) }} className="text-xs text-slate-500 hover:text-slate-700 mt-1">Close</button>
+                        <button onClick={() => { setCrmModal(false); setPushResult(null) }} className="text-xs text-stone hover:text-ink mt-1">Close</button>
                       </div>
                     ) : (
                       <div className="space-y-1">
-                        <p className="text-xs text-slate-500 mb-2 font-medium">Choose CRM</p>
+                        <p className="readout text-stone mb-2">Choose CRM</p>
                         {connectedCrms.map(crm => (
                           <button
                             key={crm}
                             onClick={() => handlePushToCrm(crm)}
                             disabled={pushingCrm !== null}
-                            className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-slate-50 text-slate-700 disabled:opacity-50 transition-colors"
+                            className="w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-signal-50/60 text-ink-soft disabled:opacity-50 transition-colors"
                           >
                             {pushingCrm === crm ? 'Pushing…' : CRM_LABELS[crm]}
                           </button>
@@ -564,53 +565,53 @@ export default function SavedLeadsPage() {
           </div>
         )}
 
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-3 mb-4 flex flex-wrap gap-3 items-center shadow-sm">
+        <div className="bg-card border border-sand rounded-2xl px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone" />
             <input
               type="text"
               placeholder="Search leads…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23]"
+              className="w-full pl-9 pr-3 py-2 text-sm bg-paper-2 border border-sand rounded-full focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] bg-white text-slate-700"
+            className="text-sm border border-sand rounded-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal bg-card text-ink-soft"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
           <div className="flex items-center gap-2">
-            <SortAsc className="w-4 h-4 text-slate-400" />
+            <SortAsc className="w-4 h-4 text-stone" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] bg-white text-slate-700"
+              className="text-sm border border-sand rounded-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-signal/20 focus:border-signal bg-card text-ink-soft"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>Sort: {o.label}</option>
               ))}
             </select>
           </div>
-          <span className="text-xs text-slate-400 ml-auto">
-            {filtered.length} of {leads.length} leads
+          <span className="text-xs text-stone ml-auto">
+            <span className="font-mono">{filtered.length}</span> of <span className="font-mono">{leads.length}</span> leads
           </span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm">
+          <div className="bg-card border border-sand rounded-2xl">
             <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
-                <BookmarkX className="w-8 h-8 text-slate-400" />
+              <div className="w-16 h-16 rounded-2xl bg-signal-50 flex items-center justify-center mb-4">
+                <BookmarkX className="w-8 h-8 text-signal" />
               </div>
-              <h3 className="text-lg font-semibold text-[#17130E] mb-1">
+              <h3 className="font-display text-lg font-bold text-ink mb-1">
                 {leads.length === 0 ? 'No saved leads yet' : 'No leads match your filters'}
               </h3>
-              <p className="text-sm text-slate-500 max-w-xs">
+              <p className="text-sm text-stone max-w-xs">
                 {leads.length === 0
                   ? 'Search for leads and save them to build your pipeline.'
                   : 'Try adjusting your filters or search query.'}
@@ -618,7 +619,7 @@ export default function SavedLeadsPage() {
               {leads.length === 0 && (
                 <a
                   href="/search"
-                  className="mt-5 inline-flex items-center gap-2 bg-[#FF4D23] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#17130E] transition-colors"
+                  className="mt-5 inline-flex items-center gap-2 bg-signal text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-signal-600 transition-all active:scale-95"
                 >
                   <Search className="w-4 h-4" />
                   Search for Leads
@@ -627,28 +628,28 @@ export default function SavedLeadsPage() {
             </div>
           </div>
         ) : (
-          <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+          <div className="bg-card border border-sand rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
+                  <tr className="border-b border-sand bg-paper-2">
                     <th className="pl-4 pr-2 py-3 text-left">
                       <input
                         type="checkbox"
                         checked={allSelected}
                         onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-300 accent-[#FF4D23]"
+                        className="w-4 h-4 rounded border-sand accent-signal"
                       />
                     </th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Business</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Category</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Phone</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Website</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Score</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Rating</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Notes</th>
-                    <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Saved</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Business</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Category</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Phone</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Website</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Score</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Rating</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Status</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Notes</th>
+                    <th className="px-3 py-3 text-left readout font-semibold text-stone">Saved</th>
                     <th className="px-3 py-3 pr-4"></th>
                   </tr>
                 </thead>

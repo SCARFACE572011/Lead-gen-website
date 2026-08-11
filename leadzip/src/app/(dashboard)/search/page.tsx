@@ -81,21 +81,21 @@ function formatAge(iso: string): string {
 
 function SkeletonCard() {
   return (
-    <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="flex flex-col gap-3 rounded-2xl border border-sand bg-card p-4 shadow-card">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-          <div className="h-3 w-1/3 animate-pulse rounded-full bg-slate-100" />
+          <div className="h-4 w-3/4 animate-pulse rounded bg-sand" />
+          <div className="h-3 w-1/3 animate-pulse rounded-full bg-paper-2" />
         </div>
-        <div className="h-6 w-16 animate-pulse rounded-full bg-slate-100" />
+        <div className="h-6 w-16 animate-pulse rounded-full bg-paper-2" />
       </div>
-      <div className="h-3 w-1/2 animate-pulse rounded bg-slate-100" />
-      <div className="h-3 w-2/3 animate-pulse rounded bg-slate-100" />
-      <div className="h-3 w-1/3 animate-pulse rounded bg-slate-100" />
-      <div className="h-3 w-1/4 animate-pulse rounded bg-red-50" />
-      <div className="mt-1 flex gap-2 border-t border-slate-100 pt-3">
-        <div className="h-7 w-16 animate-pulse rounded-lg bg-slate-100" />
-        <div className="h-7 w-16 animate-pulse rounded-lg bg-slate-100" />
+      <div className="h-3 w-1/2 animate-pulse rounded bg-paper-2" />
+      <div className="h-3 w-2/3 animate-pulse rounded bg-paper-2" />
+      <div className="h-3 w-1/3 animate-pulse rounded bg-paper-2" />
+      <div className="h-3 w-1/4 animate-pulse rounded bg-signal-50" />
+      <div className="mt-1 flex gap-2 border-t border-sand pt-3">
+        <div className="h-7 w-16 animate-pulse rounded-full bg-paper-2" />
+        <div className="h-7 w-16 animate-pulse rounded-full bg-paper-2" />
       </div>
     </div>
   )
@@ -110,14 +110,14 @@ function EmptyState({ hasSearched, errorMessage }: { hasSearched: boolean; error
           <SearchX className={`h-8 w-8 ${isLimit ? 'text-amber-400' : 'text-red-400'}`} aria-hidden="true" />
         </div>
         <div>
-          <p className="text-base font-semibold text-slate-700">
+          <p className="text-base font-semibold font-display text-ink">
             {isLimit ? 'Search limit reached' : 'Search failed'}
           </p>
-          <p className="mt-1 text-sm text-slate-500 max-w-xs">{errorMessage}</p>
+          <p className="mt-1 text-sm text-stone max-w-xs">{errorMessage}</p>
           {isLimit && (
             <a
               href="/settings"
-              className="mt-3 inline-block rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+              className="mt-3 inline-block rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white hover:bg-signal-600 transition-colors"
             >
               Upgrade plan
             </a>
@@ -130,12 +130,12 @@ function EmptyState({ hasSearched, errorMessage }: { hasSearched: boolean; error
   if (!hasSearched) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
-          <SearchX className="h-8 w-8 text-blue-400" aria-hidden="true" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-signal-50">
+          <SearchX className="h-8 w-8 text-signal" aria-hidden="true" />
         </div>
         <div>
-          <p className="text-base font-semibold text-slate-700">Ready to find leads</p>
-          <p className="mt-1 text-sm text-slate-400">
+          <p className="text-base font-semibold font-display text-ink">Ready to find leads</p>
+          <p className="mt-1 text-sm text-stone">
             Enter a ZIP code and click Search Leads to get started
           </p>
         </div>
@@ -145,12 +145,12 @@ function EmptyState({ hasSearched, errorMessage }: { hasSearched: boolean; error
 
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
-      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-slate-100">
-        <SearchX className="h-8 w-8 text-slate-400" aria-hidden="true" />
+      <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-paper-2">
+        <SearchX className="h-8 w-8 text-stone" aria-hidden="true" />
       </div>
       <div>
-        <p className="text-base font-semibold text-slate-700">No leads found</p>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="text-base font-semibold font-display text-ink">No leads found</p>
+        <p className="mt-1 text-sm text-stone">
           Try expanding your radius or changing the category
         </p>
       </div>
@@ -553,8 +553,8 @@ function SearchPageInner() {
     <div className="mx-auto max-w-7xl space-y-6">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Search Leads</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <h1 className="text-2xl font-bold font-display text-ink">Search Leads</h1>
+        <p className="mt-1 text-sm text-stone">
           Find local businesses that need your services
         </p>
       </div>
@@ -580,9 +580,9 @@ function SearchPageInner() {
           <div className="lg:hidden mb-4 flex items-center gap-2">
             <button
               onClick={() => setFilterSheetOpen(true)}
-              className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors min-h-[44px]"
+              className="flex items-center gap-2 rounded-xl border border-sand bg-card px-4 py-2.5 text-sm font-medium text-ink-soft shadow-card hover:bg-paper-2 transition-colors min-h-[44px]"
             >
-              <SlidersHorizontal className="h-4 w-4 text-slate-400" />
+              <SlidersHorizontal className="h-4 w-4 text-signal" />
               Filters
             </button>
           </div>
@@ -597,16 +597,16 @@ function SearchPageInner() {
                 aria-hidden="true"
               />
               {/* Sheet */}
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-white shadow-2xl animate-slide-up max-h-[70vh] overflow-y-auto">
+              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-card shadow-2xl animate-slide-up max-h-[70vh] overflow-y-auto">
                 {/* Drag handle */}
                 <div className="flex justify-center pt-3 pb-1">
-                  <div className="h-1 w-10 rounded-full bg-slate-300" />
+                  <div className="h-1 w-10 rounded-full bg-sand" />
                 </div>
                 <div className="flex items-center justify-between px-4 pb-2">
-                  <h2 className="text-sm font-semibold text-slate-900">Filters</h2>
+                  <h2 className="text-sm font-semibold font-display text-ink">Filters</h2>
                   <button
                     onClick={() => setFilterSheetOpen(false)}
-                    className="rounded-lg p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+                    className="rounded-lg p-1.5 text-stone hover:text-ink hover:bg-paper-2 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
                     aria-label="Close filters"
                   >
                     <X className="h-4 w-4" />
@@ -634,24 +634,24 @@ function SearchPageInner() {
           {(hasSearched || leads.length > 0) && (
             <div className="flex flex-wrap items-center justify-between gap-3">
               {/* Count */}
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-ink-soft">
                 {isLoading ? (
                   searchMode === 'bulk' && bulkProgress ? (
-                    <span className="inline-flex items-center gap-2 text-sm text-slate-500">
-                      <Loader2 className="h-4 w-4 animate-spin shrink-0 text-blue-500" />
+                    <span className="inline-flex items-center gap-2 text-sm text-stone">
+                      <Loader2 className="h-4 w-4 animate-spin shrink-0 text-signal" />
                       Searching {bulkProgress.total} ZIP{bulkProgress.total !== 1 ? 's' : ''}…{' '}
                       ({bulkProgress.done}/{bulkProgress.total} complete)
                     </span>
                   ) : (
-                    <span className="inline-block h-4 w-32 animate-pulse rounded bg-slate-200" />
+                    <span className="inline-block h-4 w-32 animate-pulse rounded bg-sand" />
                   )
                 ) : (
                   <>
-                    <span className="font-semibold text-slate-900 tabular-nums">{totalFound}</span>{' '}
+                    <span className="font-semibold font-mono text-ink tabular-nums">{totalFound}</span>{' '}
                     {searchMode === 'bulk' && searchedZipCount > 1 ? (
                       <>
                         results across{' '}
-                        <span className="font-semibold text-slate-900 tabular-nums">
+                        <span className="font-semibold font-mono text-ink tabular-nums">
                           {searchedZipCount}
                         </span>{' '}
                         ZIP codes
@@ -660,7 +660,7 @@ function SearchPageInner() {
                       <>{totalFound === 1 ? 'lead' : 'leads'} found</>
                     )}
                     {fetchedAt && (
-                      <span className="ml-2 text-slate-400">
+                      <span className="ml-2 text-stone">
                         · fetched {formatAge(fetchedAt)}
                       </span>
                     )}
@@ -678,7 +678,7 @@ function SearchPageInner() {
                 {leads.length > 0 && !isLoading && searchMode === 'single' && lastSearchParams && (
                   <button
                     onClick={() => setSaveModalOpen(true)}
-                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                    className="flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-2 text-xs font-medium text-ink-soft shadow-card transition-colors hover:bg-paper-2"
                     aria-label="Save this search"
                   >
                     <Bell className="h-3.5 w-3.5 shrink-0" />
@@ -691,19 +691,19 @@ function SearchPageInner() {
                   <div className="flex items-center gap-2">
                     {healthCheckProgress ? (
                       <>
-                        <div className="flex items-center gap-1.5 text-xs text-slate-500">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 text-blue-500" />
+                        <div className="flex items-center gap-1.5 text-xs text-stone">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin shrink-0 text-signal" />
                           Checking {healthCheckProgress.done} / {healthCheckProgress.total} websites…
                         </div>
-                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-1.5 w-24 overflow-hidden rounded-full bg-sand">
                           <div
-                            className="h-full rounded-full bg-blue-500 transition-all duration-300"
+                            className="h-full rounded-full bg-signal transition-all duration-300"
                             style={{ width: `${Math.round((healthCheckProgress.done / healthCheckProgress.total) * 100)}%` }}
                           />
                         </div>
                         <button
                           onClick={() => { healthCheckAbortRef.current = true }}
-                          className="text-xs text-slate-400 hover:text-slate-600"
+                          className="text-xs text-stone hover:text-ink-soft"
                         >
                           Cancel
                         </button>
@@ -711,9 +711,9 @@ function SearchPageInner() {
                     ) : (
                       <button
                         onClick={handleBatchHealthCheck}
-                        className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                        className="flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-2 text-xs font-medium text-ink-soft shadow-card transition-colors hover:bg-paper-2"
                       >
-                        <Activity className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        <Activity className="h-3.5 w-3.5 shrink-0 text-forest" />
                         Check all websites
                       </button>
                     )}
@@ -723,7 +723,7 @@ function SearchPageInner() {
                 <div className="relative">
                   <button
                     onClick={() => setSortMenuOpen((o) => !o)}
-                    className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 shadow-sm transition-colors hover:bg-slate-50"
+                    className="flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-2 text-xs font-medium text-ink-soft shadow-card transition-colors hover:bg-paper-2"
                     aria-expanded={sortMenuOpen}
                     aria-haspopup="listbox"
                   >
@@ -741,7 +741,7 @@ function SearchPageInner() {
                       <div
                         role="listbox"
                         aria-label="Sort options"
-                        className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                        className="absolute right-0 top-full z-20 mt-1 w-48 rounded-xl border border-sand bg-card py-1 shadow-lg"
                       >
                         {(Object.entries(SORT_LABELS) as [SortOption, string][]).map(([key, label]) => (
                           <button
@@ -753,8 +753,8 @@ function SearchPageInner() {
                               setSortMenuOpen(false)
                             }}
                             className={cn(
-                              'w-full px-4 py-2 text-left text-sm transition-colors hover:bg-slate-50',
-                              sortOption === key ? 'font-semibold text-blue-600' : 'text-slate-700'
+                              'w-full px-4 py-2 text-left text-sm transition-colors hover:bg-paper-2',
+                              sortOption === key ? 'font-semibold text-signal' : 'text-ink-soft'
                             )}
                           >
                             {label}
@@ -766,16 +766,16 @@ function SearchPageInner() {
                 </div>
 
                 {/* View toggle */}
-                <div className="flex rounded-lg border border-slate-200 bg-white p-0.5 shadow-sm">
+                <div className="flex rounded-full border border-sand bg-card p-0.5 shadow-card">
                   <button
                     onClick={() => setViewMode('card')}
                     aria-label="Card view"
                     aria-pressed={viewMode === 'card'}
                     className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-md transition-all',
+                      'flex h-7 w-7 items-center justify-center rounded-full transition-all',
                       viewMode === 'card'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-600'
+                        ? 'bg-signal text-white shadow-sm'
+                        : 'text-stone hover:text-ink-soft'
                     )}
                   >
                     <LayoutGrid className="h-3.5 w-3.5 shrink-0" />
@@ -785,10 +785,10 @@ function SearchPageInner() {
                     aria-label="Table view"
                     aria-pressed={viewMode === 'table'}
                     className={cn(
-                      'hidden lg:flex h-7 w-7 items-center justify-center rounded-md transition-all',
+                      'hidden lg:flex h-7 w-7 items-center justify-center rounded-full transition-all',
                       viewMode === 'table'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-600'
+                        ? 'bg-signal text-white shadow-sm'
+                        : 'text-stone hover:text-ink-soft'
                     )}
                   >
                     <List className="h-3.5 w-3.5 shrink-0" />
@@ -798,10 +798,10 @@ function SearchPageInner() {
                     aria-label="Map view"
                     aria-pressed={viewMode === 'map'}
                     className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-md transition-all',
+                      'flex h-7 w-7 items-center justify-center rounded-full transition-all',
                       viewMode === 'map'
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-slate-400 hover:text-slate-600'
+                        ? 'bg-signal text-white shadow-sm'
+                        : 'text-stone hover:text-ink-soft'
                     )}
                   >
                     <MapIcon className="h-3.5 w-3.5 shrink-0" />
@@ -817,7 +817,7 @@ function SearchPageInner() {
               'flex items-center justify-between gap-3 rounded-lg border px-4 py-2.5 text-sm',
               dataSource === 'demo'
                 ? 'border-amber-200 bg-amber-50 text-amber-800'
-                : 'border-slate-200 bg-slate-50 text-slate-600'
+                : 'border-sand bg-paper-2 text-ink-soft'
             )}>
               <span>
                 {dataSource === 'demo' ? (
@@ -849,21 +849,21 @@ function SearchPageInner() {
           )}
 
           {isLoading && viewMode === 'table' && (
-            <div className="space-y-2 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="space-y-2 rounded-2xl border border-sand bg-card p-4 shadow-card">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex gap-4">
-                  <div className="h-4 w-4 animate-pulse rounded bg-slate-200" />
-                  <div className="h-4 flex-1 animate-pulse rounded bg-slate-200" />
-                  <div className="h-4 w-24 animate-pulse rounded bg-slate-100" />
-                  <div className="h-4 w-20 animate-pulse rounded bg-slate-100" />
-                  <div className="h-4 w-16 animate-pulse rounded bg-slate-100" />
+                  <div className="h-4 w-4 animate-pulse rounded bg-sand" />
+                  <div className="h-4 flex-1 animate-pulse rounded bg-sand" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-paper-2" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-paper-2" />
+                  <div className="h-4 w-16 animate-pulse rounded bg-paper-2" />
                 </div>
               ))}
             </div>
           )}
 
           {isLoading && viewMode === 'map' && (
-            <div className="h-96 animate-pulse rounded-xl bg-slate-200" />
+            <div className="h-96 animate-pulse rounded-2xl bg-sand" />
           )}
 
           {/* Results */}
@@ -912,28 +912,28 @@ function SearchPageInner() {
           aria-live="polite"
           className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2"
         >
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white px-5 py-3 shadow-xl">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-              <CheckSquare className="h-4 w-4 text-blue-600 shrink-0" />
+          <div className="flex items-center gap-3 rounded-2xl border border-sand bg-card px-5 py-3 shadow-xl">
+            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+              <CheckSquare className="h-4 w-4 text-signal shrink-0" />
               {selectedCount} {selectedCount === 1 ? 'lead' : 'leads'} selected
             </div>
-            <div className="h-4 w-px bg-slate-200" />
+            <div className="h-4 w-px bg-sand" />
             <button
-              className="flex items-center gap-1.5 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-blue-700"
+              className="flex items-center gap-1.5 rounded-full bg-signal px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-signal-600"
               onClick={handleExportSelected}
             >
               <Download className="h-3.5 w-3.5 shrink-0" />
               Export CSV
             </button>
             <button
-              className="flex items-center gap-1.5 rounded-lg bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-orange-600"
+              className="flex items-center gap-1.5 rounded-full bg-forest px-3 py-1.5 text-xs font-semibold text-lime transition-colors hover:bg-forest-700"
               onClick={handleExportHubSpot}
             >
               <Download className="h-3.5 w-3.5 shrink-0" />
               HubSpot
             </button>
             <button
-              className="flex items-center gap-1.5 rounded-lg bg-sky-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-sky-700"
+              className="flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-paper-2"
               onClick={handleExportSalesforce}
             >
               <Download className="h-3.5 w-3.5 shrink-0" />
@@ -942,7 +942,7 @@ function SearchPageInner() {
             <button
               onClick={() => setSelectedIds(new Set())}
               aria-label="Clear selection"
-              className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700"
+              className="flex h-7 w-7 items-center justify-center rounded-full text-stone transition-colors hover:bg-paper-2 hover:text-ink"
             >
               <X className="h-4 w-4 shrink-0" />
             </button>

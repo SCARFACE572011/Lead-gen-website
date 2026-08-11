@@ -36,9 +36,9 @@ function CustomTooltip({
   if (!active || !payload || !payload.length) return null
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-lg">
-      <p className="text-xs font-semibold text-slate-700">{label}</p>
-      <p className="mt-0.5 text-sm font-bold text-blue-600 tabular-nums">
+    <div className="rounded-xl border border-sand bg-card px-3 py-2 shadow-lg">
+      <p className="readout text-stone">{label}</p>
+      <p className="mt-0.5 font-mono text-sm font-bold text-signal tabular-nums">
         {payload[0].value} leads
       </p>
     </div>
@@ -48,7 +48,7 @@ function CustomTooltip({
 export function LeadChart({ data }: LeadChartProps) {
   if (!data || data.length === 0) {
     return (
-      <div className="flex h-48 items-center justify-center text-sm text-slate-400">
+      <div className="flex h-48 items-center justify-center text-sm text-stone">
         No chart data available
       </div>
     )
@@ -62,20 +62,20 @@ export function LeadChart({ data }: LeadChartProps) {
           margin={{ top: 4, right: 4, left: -20, bottom: 0 }}
           barCategoryGap="28%"
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D4" vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: '#94a3b8', fontWeight: 500 }}
+            tick={{ fontSize: 11, fill: '#79705F', fontWeight: 500, fontFamily: 'var(--font-mono), "Space Mono", ui-monospace, monospace' }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: '#94a3b8' }}
+            tick={{ fontSize: 11, fill: '#79705F', fontFamily: 'var(--font-mono), "Space Mono", ui-monospace, monospace' }}
             axisLine={false}
             tickLine={false}
             allowDecimals={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#FFF6F2' }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#FFEDE6' }} />
           <Bar
             dataKey="value"
             fill="#FF4D23"

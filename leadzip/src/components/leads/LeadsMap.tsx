@@ -51,7 +51,8 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
 
       // Lead markers
       leadsWithCoords.forEach((lead) => {
-        const scoreColor = lead.leadScore >= 80 ? '#ef4444' : lead.leadScore >= 50 ? '#f97316' : '#64748b'
+        // Signal palette — hot = live beacon (signal orange), warm = gold, low = muted stone
+        const scoreColor = lead.leadScore >= 80 ? '#FF4D23' : lead.leadScore >= 50 ? '#E7A100' : '#79705F'
 
         const icon = L.divIcon({
           className: '',
@@ -65,13 +66,13 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
         const marker = L.marker([lead.latitude!, lead.longitude!], { icon })
           .addTo(map)
           .bindPopup(`
-            <div style="min-width:180px;font-family:system-ui,sans-serif">
-              <strong style="font-size:13px;display:block;margin-bottom:2px">${lead.businessName}</strong>
-              <span style="color:#64748b;font-size:11px;display:block;margin-bottom:4px">${lead.category}</span>
-              ${addressLine ? `<span style="font-size:11px;display:block;margin-bottom:2px">📍 ${addressLine}</span>` : ''}
-              ${lead.phone ? `<span style="font-size:12px;display:block;margin-bottom:2px">📞 ${lead.phone}</span>` : ''}
-              ${lead.rating ? `<span style="font-size:12px;display:block;margin-bottom:2px">⭐ ${lead.rating} (${lead.reviewCount ?? 0} reviews)</span>` : ''}
-              <span style="font-size:11px;color:#64748b">${lead.distanceMiles?.toFixed(1) ?? '?'} mi away</span>
+            <div style="min-width:180px;font-family:system-ui,sans-serif;color:#17130E">
+              <strong style="font-size:13px;display:block;margin-bottom:2px;color:#17130E">${lead.businessName}</strong>
+              <span style="color:#79705F;font-size:11px;display:block;margin-bottom:4px">${lead.category}</span>
+              ${addressLine ? `<span style="font-size:11px;display:block;margin-bottom:2px;color:#423B32">📍 ${addressLine}</span>` : ''}
+              ${lead.phone ? `<span style="font-size:12px;display:block;margin-bottom:2px;color:#FF4D23;font-weight:600">📞 ${lead.phone}</span>` : ''}
+              ${lead.rating ? `<span style="font-size:12px;display:block;margin-bottom:2px;color:#423B32">⭐ ${lead.rating} (${lead.reviewCount ?? 0} reviews)</span>` : ''}
+              <span style="font-size:11px;color:#79705F">${lead.distanceMiles?.toFixed(1) ?? '?'} mi away</span>
             </div>
           `)
 
@@ -111,7 +112,7 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
       />
       <div
         ref={mapRef}
-        className="w-full rounded-xl border border-white/10 overflow-hidden"
+        className="w-full rounded-2xl border border-sand overflow-hidden"
         style={{ height: '480px' }}
       />
     </>

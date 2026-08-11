@@ -28,7 +28,7 @@ interface LeadCardProps {
 }
 
 function StarRating({ rating, reviewCount }: { rating: number | null; reviewCount: number | null }) {
-  if (rating === null) return <span className="text-xs text-slate-400">No reviews</span>
+  if (rating === null) return <span className="text-xs text-stone">No reviews</span>
 
   const full = Math.floor(rating)
   const partial = rating % 1
@@ -46,17 +46,17 @@ function StarRating({ rating, reviewCount }: { rating: number | null; reviewCoun
                 'h-3.5 w-3.5 shrink-0',
                 filled || isPartial
                   ? 'fill-amber-400 text-amber-400'
-                  : 'fill-slate-200 text-slate-200'
+                  : 'fill-sand text-sand'
               )}
             />
           )
         })}
       </div>
-      <span className="text-xs font-medium text-slate-600 tabular-nums">
+      <span className="text-xs font-medium text-ink-soft font-mono tabular-nums">
         {rating.toFixed(1)}
       </span>
       {reviewCount !== null && (
-        <span className="text-xs text-slate-400 tabular-nums">({reviewCount})</span>
+        <span className="text-xs text-stone font-mono tabular-nums">({reviewCount})</span>
       )}
     </div>
   )
@@ -107,7 +107,7 @@ export function LeadCard({
   const confidenceBadgeClass = {
     verified: 'bg-green-50 text-green-700',
     likely: 'bg-amber-50 text-amber-700',
-    guessed: 'bg-slate-100 text-slate-500',
+    guessed: 'bg-paper-2 text-stone',
   }[emailConfidence]
 
   type HealthState = 'idle' | 'loading' | 'found' | 'unreachable'
@@ -181,11 +181,10 @@ export function LeadCard({
   return (
     <div
       className={cn(
-        'group relative flex flex-col gap-3 rounded-xl border bg-white p-4 transition-all duration-200',
-        'hover:shadow-md hover:-translate-y-0.5',
+        'group relative flex flex-col gap-3 rounded-2xl border bg-card p-4 card-lift',
         isSelected
-          ? 'border-blue-500 ring-2 ring-blue-500/20 shadow-sm'
-          : 'border-slate-200 shadow-sm'
+          ? 'border-signal ring-2 ring-signal/20'
+          : 'border-sand'
       )}
     >
       {/* Selection checkbox */}
@@ -196,7 +195,7 @@ export function LeadCard({
             checked={isSelected}
             onChange={() => onSelect(lead.id)}
             aria-label={`Select ${lead.businessName}`}
-            className="h-4 w-4 cursor-pointer rounded border-slate-300 accent-blue-600"
+            className="h-4 w-4 cursor-pointer rounded border-sand accent-signal"
           />
         </div>
       )}
@@ -205,19 +204,19 @@ export function LeadCard({
       <div className="lg:hidden">
         <div className="flex items-start justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <h3 className="truncate text-sm font-semibold text-slate-900">{lead.businessName}</h3>
+            <h3 className="truncate text-sm font-semibold font-display text-ink">{lead.businessName}</h3>
             <div className="mt-1 flex flex-wrap items-center gap-1.5">
               {lead.rating !== null && (
-                <span className="text-xs text-amber-600 font-medium">★ {lead.rating?.toFixed(1)}</span>
+                <span className="text-xs text-amber-600 font-medium font-mono">★ {lead.rating?.toFixed(1)}</span>
               )}
               {lead.distanceMiles !== null && lead.distanceMiles !== undefined && (
-                <span className="text-xs text-slate-500">· {lead.distanceMiles.toFixed(1)} mi</span>
+                <span className="text-xs text-stone font-mono">· {lead.distanceMiles.toFixed(1)} mi</span>
               )}
               {lead.openNow === true && (
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">Open</span>
+                <span className="rounded-full bg-forest/10 px-2 py-0.5 text-xs font-medium text-forest">Open</span>
               )}
               {lead.openNow === false && (
-                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">Closed</span>
+                <span className="rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-stone">Closed</span>
               )}
             </div>
           </div>
@@ -228,8 +227,8 @@ export function LeadCard({
           <button
             onClick={handleSaveClick}
             className={cn(
-              'flex-1 flex items-center justify-center gap-1.5 rounded-lg px-3 py-2.5 text-xs font-semibold min-h-[44px] transition-all duration-150',
-              isSaved ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+              'flex-1 flex items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-xs font-semibold min-h-[44px] transition-all duration-150',
+              isSaved ? 'bg-signal-50 text-signal-600' : 'bg-ink text-paper hover:bg-ink/90'
             )}
           >
             {isSaved ? <BookmarkCheck className="h-4 w-4 shrink-0" /> : <Bookmark className="h-4 w-4 shrink-0" />}
@@ -238,7 +237,7 @@ export function LeadCard({
           {lead.phone && (
             <a
               href={`tel:${lead.phone.replace(/\D/g, '')}`}
-              className="flex items-center justify-center rounded-lg bg-slate-100 p-2.5 text-slate-600 hover:bg-slate-200 transition-colors min-h-[44px] min-w-[44px]"
+              className="flex items-center justify-center rounded-full bg-paper-2 p-2.5 text-ink-soft hover:bg-sand transition-colors min-h-[44px] min-w-[44px]"
               aria-label={`Call ${lead.businessName}`}
             >
               <Phone className="h-4 w-4" />
@@ -249,7 +248,7 @@ export function LeadCard({
               href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center rounded-lg bg-slate-100 p-2.5 text-slate-600 hover:bg-slate-200 transition-colors min-h-[44px] min-w-[44px]"
+              className="flex items-center justify-center rounded-full bg-paper-2 p-2.5 text-ink-soft hover:bg-sand transition-colors min-h-[44px] min-w-[44px]"
               aria-label={`Visit ${lead.businessName} website`}
             >
               <Globe className="h-4 w-4" />
@@ -264,30 +263,30 @@ export function LeadCard({
       {/* Header */}
       <div className={cn('flex items-start justify-between gap-2', onSelect && 'pl-6')}>
         <div className="flex-1 min-w-0">
-          <h3 className="truncate text-sm font-semibold text-slate-900 leading-snug">
+          <h3 className="truncate text-sm font-semibold font-display text-ink leading-snug">
             {lead.businessName}
           </h3>
           <div className="mt-0.5 flex flex-wrap items-center gap-1.5">
-            <span className="inline-block rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+            <span className="inline-block rounded-full bg-signal-50 px-2 py-0.5 text-xs font-medium text-signal-600">
               {lead.category}
             </span>
             {lead.sourceZip && (
-              <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+              <span className="inline-block rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium font-mono text-stone">
                 {lead.sourceZip}
               </span>
             )}
             {lead.openNow === true && (
-              <span className="inline-block rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-700">
+              <span className="inline-block rounded-full bg-forest/10 px-2 py-0.5 text-xs font-medium text-forest">
                 Open Now
               </span>
             )}
             {lead.openNow === false && (
-              <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500">
+              <span className="inline-block rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-stone">
                 Closed
               </span>
             )}
             {lead.priceLevel != null && lead.priceLevel > 0 && (
-              <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+              <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium font-mono text-amber-700">
                 {'$'.repeat(lead.priceLevel)}
               </span>
             )}
@@ -300,17 +299,17 @@ export function LeadCard({
       <StarRating rating={lead.rating} reviewCount={lead.reviewCount} />
 
       {/* Address & Distance */}
-      <div className="flex items-start gap-1.5 text-xs text-slate-500">
-        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-slate-400" />
+      <div className="flex items-start gap-1.5 text-xs text-stone">
+        <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-signal" />
         <span className="leading-relaxed">
           {lead.address}, {lead.city}, {lead.state} {lead.zipCode}
           {lead.distanceMiles !== null && (
-            <span className="ml-1 font-medium text-slate-600">
+            <span className="ml-1 font-medium font-mono text-ink-soft">
               · {lead.distanceMiles.toFixed(1)} mi
             </span>
           )}
           {lead.nearbyCompetitorCount != null && lead.nearbyCompetitorCount > 0 && (
-            <span className="ml-1 text-slate-400">
+            <span className="ml-1 text-stone">
               · {lead.nearbyCompetitorCount} competitor{lead.nearbyCompetitorCount !== 1 ? 's' : ''} nearby
             </span>
           )}
@@ -323,14 +322,14 @@ export function LeadCard({
           <button
             type="button"
             onClick={() => setHoursOpen(o => !o)}
-            className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+            className="text-xs text-stone hover:text-ink-soft transition-colors"
           >
             {hoursOpen ? '▴ hide hours' : '▾ show hours'}
           </button>
           {hoursOpen && (
-            <div className="mt-1.5 rounded-lg bg-slate-50 p-2 space-y-0.5">
+            <div className="mt-1.5 rounded-lg bg-paper-2 p-2 space-y-0.5">
               {lead.businessHours.map((h, i) => (
-                <p key={i} className="text-xs text-slate-600">{h}</p>
+                <p key={i} className="text-xs text-ink-soft">{h}</p>
               ))}
             </div>
           )}
@@ -341,13 +340,13 @@ export function LeadCard({
       {lead.phone ? (
         <a
           href={`tel:${lead.phone.replace(/\D/g, '')}`}
-          className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors w-fit"
+          className="flex items-center gap-1.5 text-xs font-medium font-mono text-signal hover:text-signal-600 transition-colors w-fit"
         >
           <Phone className="h-3.5 w-3.5 shrink-0" />
           {lead.phone}
         </a>
       ) : (
-        <span className="flex items-center gap-1.5 text-xs text-slate-400">
+        <span className="flex items-center gap-1.5 text-xs text-stone">
           <Phone className="h-3.5 w-3.5 shrink-0" />
           No phone listed
         </span>
@@ -359,13 +358,13 @@ export function LeadCard({
           href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors w-fit"
+          className="flex items-center gap-1.5 text-xs font-medium text-signal hover:text-signal-600 transition-colors w-fit"
         >
           <Globe className="h-3.5 w-3.5 shrink-0" />
           {formatWebsite(lead.website)}
         </a>
       ) : (
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-semibold text-red-700 w-fit">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-signal-50 px-2.5 py-0.5 text-xs font-semibold text-signal-600 w-fit">
           <AlertCircle className="h-3 w-3 shrink-0" />
           No Website — High Opportunity
         </span>
@@ -374,12 +373,12 @@ export function LeadCard({
       {/* Employee count + revenue */}
       {lead.employeeCount != null && (
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-600">
+          <span className="inline-flex items-center gap-1 rounded-full bg-paper-2 px-2.5 py-0.5 text-xs font-medium text-ink-soft">
             <Users className="h-3 w-3 shrink-0" />
-            {lead.employeeCount} emp.
+            <span className="font-mono">{lead.employeeCount}</span> emp.
           </span>
           {lead.revenueEstimate && (
-            <span className="text-xs text-slate-500">{lead.revenueEstimate}</span>
+            <span className="text-xs text-stone">{lead.revenueEstimate}</span>
           )}
         </div>
       )}
@@ -424,15 +423,15 @@ export function LeadCard({
       )}
 
       {/* Actions */}
-      <div className="mt-1 flex items-center gap-2 border-t border-slate-100 pt-3 flex-wrap">
+      <div className="mt-1 flex items-center gap-2 border-t border-sand pt-3 flex-wrap">
         <button
           onClick={() => onSave({ ...lead, notes: noteDraft })}
           aria-label={isSaved ? 'Remove from saved' : 'Save lead'}
           className={cn(
-            'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
+            'flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all duration-150',
             isSaved
-              ? 'bg-blue-50 text-blue-700 hover:bg-blue-100'
-              : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              ? 'bg-signal-50 text-signal-600 hover:bg-signal-50'
+              : 'bg-paper-2 text-ink-soft hover:bg-sand'
           )}
         >
           {isSaved ? (
@@ -446,7 +445,7 @@ export function LeadCard({
         <button
           onClick={() => setNoteOpen(!noteOpen)}
           aria-label="Add note"
-          className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200"
+          className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:bg-sand"
         >
           <MessageSquare className="h-3.5 w-3.5 shrink-0" />
           Note
@@ -458,7 +457,7 @@ export function LeadCard({
               <button
                 onClick={handleFindEmail}
                 aria-label="Find email"
-                className="flex items-center gap-1.5 rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-200"
+                className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:bg-sand"
               >
                 <Mail className="h-3.5 w-3.5 shrink-0" />
                 Find Email
@@ -466,7 +465,7 @@ export function LeadCard({
             )}
 
             {emailState === 'loading' && (
-              <span className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed">
+              <span className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-stone cursor-not-allowed">
                 <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                 Finding…
               </span>
@@ -476,7 +475,7 @@ export function LeadCard({
               <div className="flex items-center gap-1.5">
                 <a
                   href={`mailto:${foundEmail}`}
-                  className="max-w-[160px] truncate text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors"
+                  className="max-w-[160px] truncate text-xs font-medium font-mono text-signal hover:text-signal-600 transition-colors"
                 >
                   {foundEmail}
                 </a>
@@ -487,14 +486,14 @@ export function LeadCard({
             )}
 
             {emailState === 'not_found' && (
-              <span className="text-xs text-slate-400">Not found</span>
+              <span className="text-xs text-stone">Not found</span>
             )}
 
             {healthState === 'idle' && (
               <button
                 onClick={handleCheckHealth}
                 aria-label="Check digital health"
-                className="flex items-center gap-1.5 rounded-lg bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
+                className="flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
               >
                 <Zap className="h-3.5 w-3.5 shrink-0" />
                 Check Health
@@ -502,13 +501,13 @@ export function LeadCard({
             )}
 
             {healthState === 'loading' && (
-              <span className="flex items-center gap-1.5 rounded-lg bg-slate-50 px-2.5 py-1.5 text-xs font-medium text-slate-400 cursor-not-allowed">
+              <span className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-stone cursor-not-allowed">
                 <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
                 Checking…
               </span>
             )}
             {healthState === 'found' && (
-              <span className={cn('text-xs font-bold tabular-nums', healthColor(healthScore).label)}>
+              <span className={cn('text-xs font-bold font-mono tabular-nums', healthColor(healthScore).label)}>
                 {healthScore}/100
               </span>
             )}
@@ -520,23 +519,23 @@ export function LeadCard({
       {hasWebsite && healthState === 'found' && (
         <div className="mt-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={cn('text-sm font-bold tabular-nums', healthColor(healthScore).label)}>
+            <span className={cn('text-sm font-bold font-mono tabular-nums', healthColor(healthScore).label)}>
               {healthScore}/100
             </span>
-            <div className="h-1.5 w-20 rounded-full bg-slate-200 overflow-hidden">
+            <div className="h-1.5 w-20 rounded-full bg-sand overflow-hidden">
               <div
                 className={cn('h-full rounded-full', healthColor(healthScore).bar)}
                 style={{ width: `${healthScore}%` }}
               />
             </div>
             {healthScore <= 30 && (
-              <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-semibold text-orange-700">
+              <span className="rounded-full bg-signal-50 px-2 py-0.5 text-[10px] font-semibold text-signal-600">
                 High opportunity
               </span>
             )}
             <button
               onClick={() => setBreakdownOpen((o) => !o)}
-              className="text-xs text-slate-400 hover:text-slate-600 transition-colors"
+              className="text-xs text-stone hover:text-ink-soft transition-colors"
             >
               {breakdownOpen ? '▴ hide' : '▾ breakdown'}
             </button>
@@ -546,7 +545,7 @@ export function LeadCard({
             <div className="mt-2 space-y-2">
               {/* Website screenshot */}
               {hasWebsite && (
-                <div className="rounded-lg overflow-hidden border border-slate-200 bg-slate-100 h-28 relative">
+                <div className="rounded-lg overflow-hidden border border-sand bg-paper-2 h-28 relative">
                   <img
                     src={`https://api.microlink.io/?url=${encodeURIComponent(lead.website)}&screenshot=true&embed=screenshot.url&type=jpeg&meta=false`}
                     alt={`${lead.businessName} website`}
@@ -556,13 +555,13 @@ export function LeadCard({
                   />
                 </div>
               )}
-              <div className="rounded-lg bg-slate-50 p-2 text-xs">
+              <div className="rounded-lg bg-paper-2 p-2 text-xs">
                 {VISIBLE_SIGNALS.map(({ key, label, pts, caveat }) => (
-                  <div key={key} className="flex items-center justify-between border-b border-slate-100 py-1 last:border-0">
-                    <span className="text-slate-500">
+                  <div key={key} className="flex items-center justify-between border-b border-sand py-1 last:border-0">
+                    <span className="text-ink-soft">
                       {label}
-                      {caveat && <span className="ml-1 italic text-slate-400">({caveat})</span>}
-                      <span className="ml-1 text-slate-300">+{pts}</span>
+                      {caveat && <span className="ml-1 italic text-stone">({caveat})</span>}
+                      <span className="ml-1 font-mono text-stone">+{pts}</span>
                     </span>
                     <span className={healthDetails[key] ? 'font-bold text-green-600' : 'font-bold text-red-500'}>
                       {healthDetails[key] ? '✓' : '✗'}
@@ -576,7 +575,7 @@ export function LeadCard({
       )}
 
       {hasWebsite && healthState === 'unreachable' && (
-        <p className="mt-1 text-xs text-slate-400">⚠ Couldn&apos;t reach site</p>
+        <p className="mt-1 text-xs text-stone">⚠ Couldn&apos;t reach site</p>
       )}
 
       {/* Note area */}
@@ -586,7 +585,7 @@ export function LeadCard({
           onChange={(e) => setNoteDraft(e.target.value)}
           placeholder="Add a note about this lead..."
           rows={2}
-          className="w-full resize-none rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/20"
+          className="w-full resize-none rounded-lg border border-sand bg-paper-2 px-3 py-2 text-xs text-ink-soft placeholder:text-stone focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
         />
       )}
       </div>{/* end full layout */}

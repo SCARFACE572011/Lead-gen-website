@@ -4,7 +4,7 @@ import type { Lead } from '@/types/lead'
 
 const LeadsMap = dynamic(
   () => import('./LeadsMap').then((m) => ({ default: m.LeadsMap })),
-  { ssr: false, loading: () => <div className="w-full h-[480px] rounded-xl bg-white/5 animate-pulse" /> }
+  { ssr: false, loading: () => <div className="w-full h-[480px] rounded-2xl border border-sand bg-paper-2 animate-pulse" /> }
 )
 
 interface Props {

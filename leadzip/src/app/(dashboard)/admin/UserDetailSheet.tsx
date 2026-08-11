@@ -76,14 +76,14 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
       <SheetContent className="w-full sm:max-w-[440px] overflow-y-auto">
         <SheetHeader className="mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF4D23] to-[#17130E] flex items-center justify-center text-white text-lg font-bold shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-signal to-forest flex items-center justify-center text-white text-lg font-bold shrink-0">
               {user.email.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <SheetTitle className="text-left text-base font-bold text-[#17130E] truncate">
+              <SheetTitle className="text-left font-display text-base font-bold text-ink truncate">
                 {user.full_name || user.email}
               </SheetTitle>
-              <p className="text-xs text-slate-500 mt-0.5 truncate">{user.email}</p>
+              <p className="text-xs text-stone mt-0.5 truncate">{user.email}</p>
             </div>
           </div>
         </SheetHeader>
@@ -93,7 +93,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
           <Section title="Profile">
             <Row label="Company" value={user.company_name || '—'} />
             <Row label="Role">
-              <Badge cls={user.role === 'admin' ? 'bg-purple-50 text-purple-700' : 'bg-slate-100 text-slate-600'}>
+              <Badge cls={user.role === 'admin' ? 'bg-signal-50 text-signal-600' : 'bg-paper-2 text-ink-soft'}>
                 {cap(user.role)}
               </Badge>
             </Row>
@@ -123,12 +123,12 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                 {sub.stripe_customer_id && (
                   <Row label="Customer ID">
                     <div className="flex items-center gap-1.5">
-                      <span className="font-mono text-xs text-slate-600 truncate max-w-[140px]">
+                      <span className="font-mono text-xs text-ink-soft truncate max-w-[140px]">
                         {sub.stripe_customer_id}
                       </span>
                       <button
                         onClick={() => copyToClipboard(sub.stripe_customer_id!)}
-                        className="text-slate-400 hover:text-slate-600 transition-colors"
+                        className="text-stone hover:text-ink transition-colors"
                         title="Copy"
                       >
                         {copied
@@ -139,7 +139,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                         href={`https://dashboard.stripe.com/customers/${sub.stripe_customer_id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-400 hover:text-[#FF4D23] transition-colors"
+                        className="text-stone hover:text-signal transition-colors"
                         title="Open in Stripe"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -149,7 +149,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                 )}
               </>
             ) : (
-              <p className="text-sm text-slate-400">No Stripe subscription on record</p>
+              <p className="text-sm text-stone">No Stripe subscription on record</p>
             )}
           </Section>
 
@@ -158,7 +158,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
             <div className="space-y-3 pt-1">
               {/* Change Plan */}
               <div>
-                <label className="text-xs font-medium text-slate-500 mb-1.5 block">Change Plan</label>
+                <label className="text-xs font-medium text-stone mb-1.5 block">Change Plan</label>
                 <Select
                   value={user.plan}
                   onValueChange={(v) => v && handlePlanChange(v)}
@@ -183,7 +183,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                   <button
                     onClick={handleResetUsage}
                     disabled={loadingAction === 'reset'}
-                    className="flex-1 h-9 rounded-lg border border-orange-300 bg-orange-50 text-orange-700 text-sm font-medium hover:bg-orange-100 transition-colors disabled:opacity-50 flex items-center justify-center"
+                    className="flex-1 h-9 rounded-xl border border-amber-300 bg-amber-50 text-amber-700 text-sm font-medium hover:bg-amber-100 transition-colors disabled:opacity-50 flex items-center justify-center"
                   >
                     {loadingAction === 'reset'
                       ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -191,7 +191,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                   </button>
                   <button
                     onClick={() => setResetConfirming(false)}
-                    className="flex-1 h-9 rounded-lg border border-slate-200 text-slate-600 text-sm font-medium hover:bg-slate-50 transition-colors"
+                    className="flex-1 h-9 rounded-xl border border-sand text-ink-soft text-sm font-medium hover:bg-paper-2 transition-colors"
                   >
                     Cancel
                   </button>
@@ -200,7 +200,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                 <button
                   onClick={() => setResetConfirming(true)}
                   disabled={loadingAction !== null}
-                  className="w-full h-9 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                  className="w-full h-9 rounded-xl border border-sand text-ink-soft text-sm font-medium hover:bg-paper-2 transition-colors disabled:opacity-50"
                 >
                   Reset Monthly Usage
                 </button>
@@ -211,7 +211,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                 onClick={handleStatusToggle}
                 disabled={loadingAction === 'status' || isSelf}
                 className={cn(
-                  'w-full h-9 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center',
+                  'w-full h-9 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 flex items-center justify-center',
                   user.status === 'active'
                     ? 'border border-red-200 bg-red-50 text-red-700 hover:bg-red-100'
                     : 'border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
@@ -223,7 +223,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
               </button>
 
               {isSelf && (
-                <p className="text-xs text-slate-400 text-center">Cannot modify your own account</p>
+                <p className="text-xs text-stone text-center">Cannot modify your own account</p>
               )}
             </div>
           </Section>
@@ -238,7 +238,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">{title}</p>
+      <p className="readout text-stone mb-3">{title}</p>
       <div className="space-y-1">{children}</div>
     </div>
   )
@@ -246,9 +246,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function Row({ label, value, children }: { label: string; value?: string; children?: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
-      <span className="text-xs text-slate-500">{label}</span>
-      {children ?? <span className="text-xs font-medium text-[#17130E]">{value}</span>}
+    <div className="flex items-center justify-between py-1.5 border-b border-sand/70 last:border-0">
+      <span className="text-xs text-stone">{label}</span>
+      {children ?? <span className="text-xs font-medium text-ink">{value}</span>}
     </div>
   )
 }
@@ -263,14 +263,14 @@ function UsageStat({ label, used, limit }: { label: string; used: number; limit:
   return (
     <div className="py-1.5">
       <div className="flex justify-between text-xs mb-1.5">
-        <span className="text-slate-500">{label}</span>
-        <span className={cn('font-medium', hot ? 'text-red-600' : 'text-[#17130E]')}>
+        <span className="text-stone">{label}</span>
+        <span className={cn('font-mono font-medium', hot ? 'text-red-600' : 'text-ink')}>
           {used.toLocaleString()} / {limit.toLocaleString()}
         </span>
       </div>
-      <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
+      <div className="h-1.5 bg-paper-2 rounded-full overflow-hidden">
         <div
-          className={cn('h-1.5 rounded-full transition-all', hot ? 'bg-red-400' : 'bg-[#FF4D23]')}
+          className={cn('h-1.5 rounded-full transition-all', hot ? 'bg-red-400' : 'bg-signal')}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -280,9 +280,9 @@ function UsageStat({ label, used, limit }: { label: string; used: number; limit:
 
 function PlanBadge({ plan }: { plan: string }) {
   const s: Record<string, string> = {
-    free:   'bg-slate-100 text-slate-600',
-    pro:    'bg-blue-50 text-blue-700',
-    agency: 'bg-amber-50 text-amber-700',
+    free:   'bg-paper-2 text-ink-soft',
+    pro:    'bg-signal-50 text-signal-600',
+    agency: 'bg-forest text-lime',
   }
   return <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', s[plan] ?? s.free)}>{cap(plan)}</span>
 }
@@ -290,14 +290,14 @@ function PlanBadge({ plan }: { plan: string }) {
 function StripeBadge({ status }: { status: string }) {
   const s: Record<string, string> = {
     active:    'bg-emerald-50 text-emerald-700',
-    trialing:  'bg-blue-50 text-blue-700',
+    trialing:  'bg-signal-50 text-signal-600',
     past_due:  'bg-orange-50 text-orange-700',
     cancelled: 'bg-red-50 text-red-700',
     canceled:  'bg-red-50 text-red-700',
     unpaid:    'bg-red-50 text-red-700',
   }
   return (
-    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', s[status] ?? 'bg-slate-100 text-slate-600')}>
+    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', s[status] ?? 'bg-paper-2 text-ink-soft')}>
       {cap(status)}
     </span>
   )

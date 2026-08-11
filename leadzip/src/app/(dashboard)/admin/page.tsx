@@ -46,13 +46,13 @@ function fmtShortDate(d: string) {
 }
 
 const PLAN_COLOR: Record<string, string> = {
-  free:   'bg-slate-100 text-slate-600',
-  pro:    'bg-blue-50 text-blue-700',
-  agency: 'bg-amber-50 text-amber-700',
+  free:   'bg-paper-2 text-ink-soft',
+  pro:    'bg-signal-50 text-signal-600',
+  agency: 'bg-forest text-lime',
 }
 const STRIPE_COLOR: Record<string, string> = {
   active:    'bg-emerald-50 text-emerald-700',
-  trialing:  'bg-blue-50 text-blue-700',
+  trialing:  'bg-signal-50 text-signal-600',
   past_due:  'bg-orange-50 text-orange-700',
   cancelled: 'bg-red-50 text-red-700',
   canceled:  'bg-red-50 text-red-700',
@@ -82,7 +82,7 @@ function StatusBadge({ status }: { status: string }) {
 
 function StripeBadge({ status }: { status: string }) {
   return (
-    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', STRIPE_COLOR[status] ?? 'bg-slate-100 text-slate-600')}>
+    <span className={cn('text-xs font-semibold px-2 py-0.5 rounded-full', STRIPE_COLOR[status] ?? 'bg-paper-2 text-ink-soft')}>
       {cap(status)}
     </span>
   )
@@ -98,35 +98,35 @@ interface StatCardProps {
 }
 function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProps) {
   return (
-    <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
+    <div className="bg-card border border-sand rounded-2xl p-5 card-lift">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl bg-[#FF4D23]/10 flex items-center justify-center">
+        <div className="w-11 h-11 rounded-xl bg-forest text-lime flex items-center justify-center">
           {icon}
         </div>
         {trend && (
           <span className={cn(
             'inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full',
-            trendUp !== false ? 'text-emerald-700 bg-emerald-50' : 'text-red-700 bg-red-50'
+            trendUp !== false ? 'text-signal-600 bg-signal-50' : 'text-red-700 bg-red-50'
           )}>
             <TrendingUp className="w-3 h-3" />
             {trend}
           </span>
         )}
       </div>
-      <div className="text-2xl font-bold text-[#17130E] mb-0.5">
+      <div className="font-mono text-2xl font-bold text-ink mb-0.5">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </div>
-      <div className="text-sm font-medium text-[#17130E]">{title}</div>
-      <div className="text-xs text-slate-500 mt-0.5">{subtitle}</div>
+      <div className="text-sm font-semibold text-ink">{title}</div>
+      <div className="text-xs text-stone mt-0.5">{subtitle}</div>
     </div>
   )
 }
 
 function SortIcon({ col, sort, order }: { col: string; sort: string; order: string }) {
-  if (sort !== col) return <ChevronUp className="w-3 h-3 text-slate-300 inline ml-0.5" />
+  if (sort !== col) return <ChevronUp className="w-3 h-3 text-stone/50 inline ml-0.5" />
   return order === 'asc'
-    ? <ChevronUp className="w-3 h-3 text-[#FF4D23] inline ml-0.5" />
-    : <ChevronDown className="w-3 h-3 text-[#FF4D23] inline ml-0.5" />
+    ? <ChevronUp className="w-3 h-3 text-signal inline ml-0.5" />
+    : <ChevronDown className="w-3 h-3 text-signal inline ml-0.5" />
 }
 
 // ── main page ────────────────────────────────────────────────────────────────
@@ -302,20 +302,20 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[#FF4D23]" />
+        <Loader2 className="w-6 h-6 animate-spin text-signal" />
       </div>
     )
   }
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center">
-        <div className="bg-white border border-red-200 rounded-2xl p-10 max-w-sm text-center shadow-sm">
+      <div className="min-h-screen bg-paper flex items-center justify-center">
+        <div className="bg-card border border-red-200 rounded-2xl p-10 max-w-sm text-center shadow-sm">
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <ShieldAlert className="w-8 h-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-[#17130E] mb-2">Access Denied</h2>
-          <p className="text-sm text-slate-500">Admin access only.</p>
+          <h2 className="font-display text-xl font-bold text-ink mb-2">Access Denied</h2>
+          <p className="text-sm text-stone">Admin access only.</p>
         </div>
       </div>
     )
@@ -326,62 +326,62 @@ export default function AdminPage() {
   const activeSubs = stats?.activeSubs ?? 0
 
   const planBreakdown = [
-    { plan: 'Free',   users: planCounts.free   ?? 0, color: 'bg-slate-400',  hex: '#94a3b8' },
-    { plan: 'Pro',    users: planCounts.pro    ?? 0, color: 'bg-[#FF4D23]', hex: '#FF4D23' },
-    { plan: 'Agency', users: planCounts.agency ?? 0, color: 'bg-[#17130E]', hex: '#17130E' },
+    { plan: 'Free',   users: planCounts.free   ?? 0, color: 'bg-stone',     hex: '#79705F' },
+    { plan: 'Pro',    users: planCounts.pro    ?? 0, color: 'bg-signal',    hex: '#FF4D23' },
+    { plan: 'Agency', users: planCounts.agency ?? 0, color: 'bg-forest',    hex: '#0C2B24' },
   ]
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
+    <div className="min-h-screen bg-paper">
       <div className="max-w-[1400px] mx-auto px-6 py-8">
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-[#17130E]">Owner Portal</h1>
+              <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink">Owner Portal</h1>
               <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold px-2.5 py-1 rounded-full">
                 <ShieldAlert className="w-3 h-3" />
                 Admin Only
               </span>
             </div>
-            <p className="text-sm text-slate-500">Complete platform management for LeadZipp</p>
+            <p className="text-sm text-stone">Complete platform management for LeadZipp</p>
           </div>
-          <div className="text-xs text-slate-400 bg-white border border-slate-200 px-3 py-2 rounded-lg hidden sm:block">
-            <span className="font-medium text-slate-600">Last updated:</span> {new Date().toLocaleString()}
+          <div className="text-xs text-stone bg-card border border-sand px-3 py-2 rounded-lg hidden sm:block">
+            <span className="font-medium text-ink-soft">Last updated:</span> {new Date().toLocaleString()}
           </div>
         </div>
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList className="mb-6 bg-white border border-slate-200 p-1 h-auto rounded-xl">
-            <TabsTrigger value="overview"   className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
-            <TabsTrigger value="users"      className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Users</TabsTrigger>
-            <TabsTrigger value="billing"    className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Billing</TabsTrigger>
-            <TabsTrigger value="analytics"  className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Analytics</TabsTrigger>
+          <TabsList className="mb-6 bg-card border border-sand p-1 h-auto rounded-full">
+            <TabsTrigger value="overview"   className="px-5 py-2 text-sm font-medium rounded-full data-[state=active]:bg-signal data-[state=active]:text-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
+            <TabsTrigger value="users"      className="px-5 py-2 text-sm font-medium rounded-full data-[state=active]:bg-signal data-[state=active]:text-white data-[state=active]:shadow-sm">Users</TabsTrigger>
+            <TabsTrigger value="billing"    className="px-5 py-2 text-sm font-medium rounded-full data-[state=active]:bg-signal data-[state=active]:text-white data-[state=active]:shadow-sm">Billing</TabsTrigger>
+            <TabsTrigger value="analytics"  className="px-5 py-2 text-sm font-medium rounded-full data-[state=active]:bg-signal data-[state=active]:text-white data-[state=active]:shadow-sm">Analytics</TabsTrigger>
           </TabsList>
 
           {/* ── OVERVIEW ── */}
           <TabsContent value="overview">
             {/* Stat cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatCard title="Total Users"          value={totalUsers}              subtitle="Registered accounts"    icon={<Users      className="w-5 h-5 text-[#FF4D23]" />} />
-              <StatCard title="Active Subscribers"   value={activeSubs}              subtitle="Pro + Agency plans"     icon={<UserCheck   className="w-5 h-5 text-[#FF4D23]" />} />
-              <StatCard title="Est. Monthly Revenue" value={`$${(stats?.mrr ?? 0).toLocaleString()}`} subtitle="MRR from paid plans" icon={<DollarSign  className="w-5 h-5 text-[#FF4D23]" />} />
-              <StatCard title="Total Searches"       value={stats?.totalSearches ?? 0} subtitle="All-time"            icon={<Search     className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="Total Users"          value={totalUsers}              subtitle="Registered accounts"    icon={<Users      className="w-5 h-5 text-lime" />} />
+              <StatCard title="Active Subscribers"   value={activeSubs}              subtitle="Pro + Agency plans"     icon={<UserCheck   className="w-5 h-5 text-lime" />} />
+              <StatCard title="Est. Monthly Revenue" value={`$${(stats?.mrr ?? 0).toLocaleString()}`} subtitle="MRR from paid plans" icon={<DollarSign  className="w-5 h-5 text-lime" />} />
+              <StatCard title="Total Searches"       value={stats?.totalSearches ?? 0} subtitle="All-time"            icon={<Search     className="w-5 h-5 text-lime" />} />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
               {/* Search analytics chart */}
-              <div className="xl:col-span-2 bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+              <div className="xl:col-span-2 bg-card border border-sand rounded-2xl overflow-hidden">
                 <SearchAnalyticsChart zipData={stats?.zipData ?? []} categoryData={stats?.categoryData ?? []} />
               </div>
 
               {/* Subscription breakdown */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#17130E]">Subscription Breakdown</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Plan distribution</p>
+              <div className="bg-card border border-sand rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-sand">
+                  <h2 className="font-display text-base font-bold text-ink">Subscription Breakdown</h2>
+                  <p className="text-xs text-stone mt-0.5">Plan distribution</p>
                 </div>
                 <div className="p-5 space-y-4">
                   {planBreakdown.map((s) => {
@@ -391,37 +391,37 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-2">
                             <div className={cn('w-2.5 h-2.5 rounded-full', s.color)} />
-                            <span className="text-sm font-medium text-[#17130E]">{s.plan}</span>
+                            <span className="text-sm font-medium text-ink">{s.plan}</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-bold text-[#17130E]">{s.users}</span>
-                            <span className="text-xs text-slate-400 ml-1">({pct}%)</span>
+                            <span className="font-mono text-sm font-bold text-ink">{s.users}</span>
+                            <span className="font-mono text-xs text-stone ml-1">({pct}%)</span>
                           </div>
                         </div>
-                        <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-paper-2 rounded-full overflow-hidden">
                           <div className={cn('h-2 rounded-full', s.color)} style={{ width: `${pct}%` }} />
                         </div>
                       </div>
                     )
                   })}
-                  <div className="border-t border-slate-100 pt-4 space-y-2">
-                    <div className="flex justify-between text-xs text-slate-500">
+                  <div className="border-t border-sand pt-4 space-y-2">
+                    <div className="flex justify-between text-xs text-stone">
                       <span>Monthly Revenue</span>
-                      <span className="font-semibold text-[#17130E]">${(stats?.mrr ?? 0).toLocaleString()}</span>
+                      <span className="font-mono font-semibold text-ink">${(stats?.mrr ?? 0).toLocaleString()}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-stone">
                       <span>Paid Subscribers</span>
-                      <span className="font-semibold text-[#17130E]">{activeSubs}</span>
+                      <span className="font-mono font-semibold text-ink">{activeSubs}</span>
                     </div>
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-stone">
                       <span>Conversion Rate</span>
-                      <span className="font-semibold text-emerald-600">
+                      <span className="font-mono font-semibold text-emerald-600">
                         {totalUsers > 0 ? ((activeSubs / totalUsers) * 100).toFixed(1) : '0.0'}%
                       </span>
                     </div>
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-stone">
                       <span>Saved Leads</span>
-                      <span className="font-semibold text-[#17130E]">{(stats?.savedLeads ?? 0).toLocaleString()}</span>
+                      <span className="font-mono font-semibold text-ink">{(stats?.savedLeads ?? 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -434,16 +434,16 @@ export default function AdminPage() {
             {/* Toolbar */}
             <div className="flex flex-col sm:flex-row gap-3 mb-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone" />
                 <input
                   value={searchInput}
                   onChange={e => handleSearchInput(e.target.value)}
                   placeholder="Search by email or name…"
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-[#17130E] placeholder:text-slate-400 outline-none focus:border-[#FF4D23] focus:ring-2 focus:ring-[#FF4D23]/10"
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-sand rounded-xl bg-card text-ink placeholder:text-stone outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 />
               </div>
               <Select value={usersQuery.plan || 'all'} onValueChange={v => updateUsersQuery(q => ({ ...q, plan: v === 'all' ? '' : (v ?? ''), page: 1 }))}>
-                <SelectTrigger className="w-full sm:w-36 h-[42px] text-sm border-slate-200">
+                <SelectTrigger className="w-full sm:w-36 h-[42px] text-sm border-sand">
                   <SelectValue placeholder="All Plans" />
                 </SelectTrigger>
                 <SelectContent>
@@ -454,7 +454,7 @@ export default function AdminPage() {
                 </SelectContent>
               </Select>
               <Select value={usersQuery.status || 'all'} onValueChange={v => updateUsersQuery(q => ({ ...q, status: v === 'all' ? '' : (v ?? ''), page: 1 }))}>
-                <SelectTrigger className="w-full sm:w-36 h-[42px] text-sm border-slate-200">
+                <SelectTrigger className="w-full sm:w-36 h-[42px] text-sm border-sand">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -465,7 +465,7 @@ export default function AdminPage() {
               </Select>
               <button
                 onClick={() => fetchUsers(usersQuery)}
-                className="h-[42px] px-4 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-2 text-sm font-medium shrink-0"
+                className="h-[42px] px-4 rounded-full border border-sand bg-card text-ink-soft hover:bg-paper-2 transition-colors flex items-center gap-2 text-sm font-medium shrink-0"
               >
                 <RefreshCw className="w-4 h-4" />
                 <span className="hidden sm:inline">Refresh</span>
@@ -473,69 +473,69 @@ export default function AdminPage() {
             </div>
 
             {/* Table */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
+            <div className="bg-card border border-sand rounded-2xl overflow-hidden">
               {usersLoading ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 animate-spin text-[#FF4D23]" />
+                  <Loader2 className="w-5 h-5 animate-spin text-signal" />
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                          <button onClick={() => handleSort('email')} className="flex items-center gap-0.5 hover:text-slate-700">
+                      <tr className="border-b border-sand bg-paper-2">
+                        <th className="px-4 py-3 text-left readout text-stone">
+                          <button onClick={() => handleSort('email')} className="flex items-center gap-0.5 hover:text-ink">
                             User <SortIcon col="email" sort={usersQuery.sort} order={usersQuery.order} />
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                          <button onClick={() => handleSort('plan')} className="flex items-center gap-0.5 hover:text-slate-700">
+                        <th className="px-4 py-3 text-left readout text-stone">
+                          <button onClick={() => handleSort('plan')} className="flex items-center gap-0.5 hover:text-ink">
                             Plan <SortIcon col="plan" sort={usersQuery.sort} order={usersQuery.order} />
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Searches/mo</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Saved Leads</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">
-                          <button onClick={() => handleSort('created_at')} className="flex items-center gap-0.5 hover:text-slate-700">
+                        <th className="px-4 py-3 text-left readout text-stone">Status</th>
+                        <th className="px-4 py-3 text-left readout text-stone">Searches/mo</th>
+                        <th className="px-4 py-3 text-left readout text-stone">Saved Leads</th>
+                        <th className="px-4 py-3 text-left readout text-stone">
+                          <button onClick={() => handleSort('created_at')} className="flex items-center gap-0.5 hover:text-ink">
                             Joined <SortIcon col="created_at" sort={usersQuery.sort} order={usersQuery.order} />
                           </button>
                         </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold text-slate-500 uppercase tracking-wide">Actions</th>
+                        <th className="px-4 py-3 text-right readout text-stone">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(users?.users ?? []).length === 0 ? (
                         <tr>
-                          <td colSpan={7} className="px-4 py-10 text-center text-sm text-slate-400">
+                          <td colSpan={7} className="px-4 py-10 text-center text-sm text-stone">
                             {usersLoadedOnce ? 'No users match your filters' : 'Loading…'}
                           </td>
                         </tr>
                       ) : (
                         (users?.users ?? []).map((user) => (
-                          <tr key={user.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                          <tr key={user.id} className="border-b border-sand/60 hover:bg-paper-2/60 transition-colors">
                             <td className="px-4 py-3.5">
                               <div className="flex items-center gap-2.5">
                                 <div className={cn(
                                   'w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0',
-                                  user.status === 'deactivated' ? 'bg-slate-400' : 'bg-gradient-to-br from-[#FF4D23] to-[#17130E]'
+                                  user.status === 'deactivated' ? 'bg-stone' : 'bg-gradient-to-br from-signal to-forest'
                                 )}>
                                   {user.email.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-sm font-medium text-[#17130E] truncate max-w-[180px]">{user.email}</div>
+                                  <div className="text-sm font-medium text-ink truncate max-w-[180px]">{user.email}</div>
                                   {user.full_name && (
-                                    <div className="text-xs text-slate-500 truncate max-w-[180px]">{user.full_name}</div>
+                                    <div className="text-xs text-stone truncate max-w-[180px]">{user.full_name}</div>
                                   )}
                                 </div>
                               </div>
                             </td>
                             <td className="px-4 py-3.5"><PlanBadge plan={user.plan} /></td>
                             <td className="px-4 py-3.5"><StatusBadge status={user.status} /></td>
-                            <td className="px-4 py-3.5 text-sm text-slate-700">{user.usage?.searches_this_month ?? 0}</td>
-                            <td className="px-4 py-3.5 text-sm text-slate-700">{user.usage?.saved_leads_count ?? 0}</td>
+                            <td className="px-4 py-3.5 font-mono text-sm text-ink-soft">{user.usage?.searches_this_month ?? 0}</td>
+                            <td className="px-4 py-3.5 font-mono text-sm text-ink-soft">{user.usage?.saved_leads_count ?? 0}</td>
                             <td className="px-4 py-3.5">
-                              <div className="flex items-center gap-1.5 text-xs text-slate-500">
+                              <div className="flex items-center gap-1.5 text-xs text-stone">
                                 <Calendar className="w-3 h-3" />
                                 {fmtDate(user.created_at)}
                               </div>
@@ -543,7 +543,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3.5 text-right">
                               <button
                                 onClick={() => setSelectedUser(user)}
-                                className="text-xs font-medium text-[#FF4D23] hover:text-[#E23A12] border border-[#FF4D23]/20 hover:border-[#FF4D23]/40 bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
+                                className="text-xs font-semibold text-signal hover:text-signal-600 border border-signal/20 hover:border-signal/40 bg-signal-50/60 hover:bg-signal-50 px-3 py-1.5 rounded-full transition-all"
                               >
                                 View
                               </button>
@@ -558,25 +558,25 @@ export default function AdminPage() {
 
               {/* Pagination */}
               {(users?.totalPages ?? 0) > 1 && (
-                <div className="px-4 py-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
-                  <span className="text-xs text-slate-500">
+                <div className="px-4 py-3 border-t border-sand bg-paper-2 flex items-center justify-between">
+                  <span className="text-xs text-stone">
                     {users?.total} users total
                   </span>
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => updateUsersQuery(q => ({ ...q, page: q.page - 1 }))}
                       disabled={(users?.page ?? 1) <= 1}
-                      className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                      className="w-8 h-8 rounded-lg border border-sand bg-card flex items-center justify-center text-ink-soft hover:bg-paper-2 disabled:opacity-40 transition-colors"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-xs text-slate-600 font-medium px-2">
+                    <span className="font-mono text-xs text-ink-soft font-medium px-2">
                       {users?.page} / {users?.totalPages}
                     </span>
                     <button
                       onClick={() => updateUsersQuery(q => ({ ...q, page: q.page + 1 }))}
                       disabled={(users?.page ?? 1) >= (users?.totalPages ?? 1)}
-                      className="w-8 h-8 rounded-lg border border-slate-200 bg-white flex items-center justify-center text-slate-600 hover:bg-slate-50 disabled:opacity-40 transition-colors"
+                      className="w-8 h-8 rounded-lg border border-sand bg-card flex items-center justify-center text-ink-soft hover:bg-paper-2 disabled:opacity-40 transition-colors"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </button>
@@ -585,8 +585,8 @@ export default function AdminPage() {
               )}
 
               {!((users?.totalPages ?? 0) > 1) && usersLoadedOnce && (
-                <div className="px-4 py-2 border-t border-slate-100 bg-slate-50">
-                  <span className="text-xs text-slate-400">{users?.total ?? 0} users</span>
+                <div className="px-4 py-2 border-t border-sand bg-paper-2">
+                  <span className="text-xs text-stone">{users?.total ?? 0} users</span>
                 </div>
               )}
             </div>
@@ -605,25 +605,25 @@ export default function AdminPage() {
           <TabsContent value="billing">
             {/* Summary cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatCard title="Monthly Revenue"   value={`$${(billing?.summary.mrr ?? 0).toLocaleString()}`}      subtitle="Est. MRR"           icon={<DollarSign  className="w-5 h-5 text-[#FF4D23]" />} />
-              <StatCard title="Total Subscribers" value={billing?.summary.totalSubscribers ?? 0}                  subtitle="Pro + Agency active" icon={<CreditCard  className="w-5 h-5 text-[#FF4D23]" />} />
-              <StatCard title="New This Month"    value={billing?.summary.newThisMonth ?? 0}                      subtitle="New paid subscribers" icon={<TrendingUp  className="w-5 h-5 text-[#FF4D23]" />} />
-              <StatCard title="Churned This Month" value={billing?.summary.churnedThisMonth ?? 0}                 subtitle="Cancellations"       icon={<Bookmark   className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="Monthly Revenue"   value={`$${(billing?.summary.mrr ?? 0).toLocaleString()}`}      subtitle="Est. MRR"           icon={<DollarSign  className="w-5 h-5 text-lime" />} />
+              <StatCard title="Total Subscribers" value={billing?.summary.totalSubscribers ?? 0}                  subtitle="Pro + Agency active" icon={<CreditCard  className="w-5 h-5 text-lime" />} />
+              <StatCard title="New This Month"    value={billing?.summary.newThisMonth ?? 0}                      subtitle="New paid subscribers" icon={<TrendingUp  className="w-5 h-5 text-lime" />} />
+              <StatCard title="Churned This Month" value={billing?.summary.churnedThisMonth ?? 0}                 subtitle="Cancellations"       icon={<Bookmark   className="w-5 h-5 text-lime" />} />
             </div>
 
             {/* Subscriptions table */}
-            <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+            <div className="bg-card border border-sand rounded-2xl overflow-hidden">
+              <div className="px-5 py-4 border-b border-sand flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-[#17130E]">All Subscriptions</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Conversion rate: <span className="font-semibold text-emerald-600">{billing?.summary.conversionRate ?? 0}%</span>
+                  <h2 className="font-display text-base font-bold text-ink">All Subscriptions</h2>
+                  <p className="text-xs text-stone mt-0.5">
+                    Conversion rate: <span className="font-mono font-semibold text-emerald-600">{billing?.summary.conversionRate ?? 0}%</span>
                     {' '}· Pro: {billing?.summary.proCount ?? 0} · Agency: {billing?.summary.agencyCount ?? 0}
                   </p>
                 </div>
                 <button
                   onClick={fetchBilling}
-                  className="h-9 px-3 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 transition-colors flex items-center gap-1.5 text-sm"
+                  className="h-9 px-3 rounded-full border border-sand bg-card text-ink-soft hover:bg-paper-2 transition-colors flex items-center gap-1.5 text-sm"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
                   Refresh
@@ -632,25 +632,25 @@ export default function AdminPage() {
 
               {billingLoading ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 animate-spin text-[#FF4D23]" />
+                  <Loader2 className="w-5 h-5 animate-spin text-signal" />
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">User</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Plan</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Stripe Status</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Billing Period</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Customer ID</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Since</th>
+                      <tr className="border-b border-sand bg-paper-2">
+                        <th className="px-4 py-3 text-left readout text-stone">User</th>
+                        <th className="px-4 py-3 text-left readout text-stone">Plan</th>
+                        <th className="px-4 py-3 text-left readout text-stone">Stripe Status</th>
+                        <th className="px-4 py-3 text-left readout text-stone">Billing Period</th>
+                        <th className="px-4 py-3 text-left readout text-stone">Customer ID</th>
+                        <th className="px-4 py-3 text-left readout text-stone">Since</th>
                       </tr>
                     </thead>
                     <tbody>
                       {(billing?.subscriptions ?? []).length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-4 py-10 text-center text-sm text-slate-400">
+                          <td colSpan={6} className="px-4 py-10 text-center text-sm text-stone">
                             {billingLoadedOnce ? 'No subscriptions yet' : 'Loading…'}
                           </td>
                         </tr>
@@ -660,30 +660,30 @@ export default function AdminPage() {
                             ? `${fmtShortDate(s.currentPeriodStart)} – ${fmtShortDate(s.currentPeriodEnd)}`
                             : '—'
                           return (
-                            <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
+                            <tr key={s.id} className="border-b border-sand/60 hover:bg-paper-2/60 transition-colors">
                               <td className="px-4 py-3.5">
-                                <div className="text-sm font-medium text-[#17130E] truncate max-w-[180px]">{s.email}</div>
-                                {s.fullName && <div className="text-xs text-slate-500">{s.fullName}</div>}
+                                <div className="text-sm font-medium text-ink truncate max-w-[180px]">{s.email}</div>
+                                {s.fullName && <div className="text-xs text-stone">{s.fullName}</div>}
                               </td>
                               <td className="px-4 py-3.5"><PlanBadge plan={s.plan} /></td>
                               <td className="px-4 py-3.5"><StripeBadge status={s.status} /></td>
-                              <td className="px-4 py-3.5 text-xs text-slate-600">{period}</td>
+                              <td className="px-4 py-3.5 text-xs text-ink-soft">{period}</td>
                               <td className="px-4 py-3.5">
                                 {s.stripeCustomerId ? (
                                   <div className="flex items-center gap-1.5">
-                                    <span className="font-mono text-xs text-slate-500 truncate max-w-[100px]">{s.stripeCustomerId}</span>
-                                    <button onClick={() => copyId(s.stripeCustomerId!)} className="text-slate-400 hover:text-slate-600 transition-colors" title="Copy">
+                                    <span className="font-mono text-xs text-stone truncate max-w-[100px]">{s.stripeCustomerId}</span>
+                                    <button onClick={() => copyId(s.stripeCustomerId!)} className="text-stone hover:text-ink transition-colors" title="Copy">
                                       {copiedId === s.stripeCustomerId
                                         ? <CheckCircle className="w-3 h-3 text-emerald-500" />
                                         : <Copy className="w-3 h-3" />}
                                     </button>
-                                    <a href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#FF4D23] transition-colors">
+                                    <a href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`} target="_blank" rel="noopener noreferrer" className="text-stone hover:text-signal transition-colors">
                                       <ExternalLink className="w-3 h-3" />
                                     </a>
                                   </div>
-                                ) : <span className="text-xs text-slate-300">—</span>}
+                                ) : <span className="text-xs text-stone/60">—</span>}
                               </td>
-                              <td className="px-4 py-3.5 text-xs text-slate-500">{fmtDate(s.createdAt)}</td>
+                              <td className="px-4 py-3.5 text-xs text-stone">{fmtDate(s.createdAt)}</td>
                             </tr>
                           )
                         })
@@ -699,10 +699,10 @@ export default function AdminPage() {
           <TabsContent value="analytics">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
               {/* Signups trend */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#17130E]">New Signups</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Last 30 days</p>
+              <div className="bg-card border border-sand rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-sand">
+                  <h2 className="font-display text-base font-bold text-ink">New Signups</h2>
+                  <p className="text-xs text-stone mt-0.5">Last 30 days</p>
                 </div>
                 <div className="p-5">
                   <TrendChart data={stats?.signupTrend ?? []} color="#FF4D23" label="Signups" />
@@ -710,23 +710,23 @@ export default function AdminPage() {
               </div>
 
               {/* Search volume trend */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#17130E]">Search Volume</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">Last 30 days</p>
+              <div className="bg-card border border-sand rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-sand">
+                  <h2 className="font-display text-base font-bold text-ink">Search Volume</h2>
+                  <p className="text-xs text-stone mt-0.5">Last 30 days</p>
                 </div>
                 <div className="p-5">
-                  <TrendChart data={stats?.searchTrend ?? []} color="#17130E" label="Searches" />
+                  <TrendChart data={stats?.searchTrend ?? []} color="#0C2B24" label="Searches" />
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Plan distribution pie */}
-              <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
-                <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#17130E]">Plan Distribution</h2>
-                  <p className="text-xs text-slate-500 mt-0.5">{totalUsers} total users</p>
+              <div className="bg-card border border-sand rounded-2xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-sand">
+                  <h2 className="font-display text-base font-bold text-ink">Plan Distribution</h2>
+                  <p className="text-xs text-stone mt-0.5"><span className="font-mono">{totalUsers}</span> total users</p>
                 </div>
                 <div className="p-5">
                   <ResponsiveContainer width="100%" height={220}>
@@ -747,7 +747,7 @@ export default function AdminPage() {
                       </Pie>
                       <Tooltip
                         formatter={(v) => [`${v} users`]}
-                        contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+                        contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #E7E1D4' }}
                       />
                     </PieChart>
                   </ResponsiveContainer>
@@ -755,7 +755,7 @@ export default function AdminPage() {
                     {planBreakdown.map(p => (
                       <div key={p.plan} className="flex items-center gap-1.5">
                         <div className={cn('w-2.5 h-2.5 rounded-full', p.color)} />
-                        <span className="text-xs text-slate-600">{p.plan}</span>
+                        <span className="text-xs text-ink-soft">{p.plan}</span>
                       </div>
                     ))}
                   </div>
@@ -778,21 +778,21 @@ export default function AdminPage() {
 
 function TrendChart({ data, color, label }: { data: TrendPoint[]; color: string; label: string }) {
   if (data.length === 0) {
-    return <div className="h-[200px] flex items-center justify-center text-sm text-slate-400">No data yet</div>
+    return <div className="h-[200px] flex items-center justify-center text-sm text-stone">No data yet</div>
   }
   return (
     <ResponsiveContainer width="100%" height={200}>
       <LineChart data={data} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+        <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D4" />
         <XAxis
           dataKey="date"
-          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          tick={{ fontSize: 10, fill: '#79705F' }}
           interval={4}
           tickFormatter={(d) => fmtShortDate(d)}
         />
-        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} allowDecimals={false} />
+        <YAxis tick={{ fontSize: 10, fill: '#79705F' }} allowDecimals={false} />
         <Tooltip
-          contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }}
+          contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #E7E1D4' }}
           labelFormatter={(d) => fmtShortDate(d)}
           formatter={(v) => [`${v}`, label]}
         />
@@ -812,18 +812,18 @@ function SearchAnalyticsChart({
   const [activeChart, setActiveChart] = useState<'zip' | 'category'>('zip')
   return (
     <div>
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-[#17130E]">Search Analytics</h2>
-        <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
+      <div className="px-5 py-4 border-b border-sand flex items-center justify-between">
+        <h2 className="font-display text-base font-bold text-ink">Search Analytics</h2>
+        <div className="flex gap-1 bg-paper-2 p-1 rounded-full">
           <button
             onClick={() => setActiveChart('zip')}
-            className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', activeChart === 'zip' ? 'bg-white text-[#17130E] shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+            className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all', activeChart === 'zip' ? 'bg-card text-ink shadow-sm' : 'text-stone hover:text-ink')}
           >
             <MapPin className="w-3 h-3 inline mr-1" />ZIP Codes
           </button>
           <button
             onClick={() => setActiveChart('category')}
-            className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', activeChart === 'category' ? 'bg-white text-[#17130E] shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+            className={cn('px-3 py-1.5 rounded-full text-xs font-medium transition-all', activeChart === 'category' ? 'bg-card text-ink shadow-sm' : 'text-stone hover:text-ink')}
           >
             <Tag className="w-3 h-3 inline mr-1" />Categories
           </button>
@@ -832,16 +832,16 @@ function SearchAnalyticsChart({
       <div className="p-5">
         {activeChart === 'zip' ? (
           <>
-            <p className="text-xs text-slate-500 mb-4">Most searched ZIP codes</p>
+            <p className="text-xs text-stone mb-4">Most searched ZIP codes</p>
             {zipData.length === 0 ? (
-              <div className="h-[260px] flex items-center justify-center text-sm text-slate-400">No data yet</div>
+              <div className="h-[260px] flex items-center justify-center text-sm text-stone">No data yet</div>
             ) : (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={zipData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="zip" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} formatter={(v) => [`${v} searches`, 'Volume']} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D4" />
+                  <XAxis dataKey="zip" tick={{ fontSize: 11, fill: '#79705F' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#79705F' }} />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #E7E1D4' }} formatter={(v) => [`${v} searches`, 'Volume']} />
                   <Bar dataKey="searches" fill="#FF4D23" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -849,17 +849,17 @@ function SearchAnalyticsChart({
           </>
         ) : (
           <>
-            <p className="text-xs text-slate-500 mb-4">Most searched business categories</p>
+            <p className="text-xs text-stone mb-4">Most searched business categories</p>
             {categoryData.length === 0 ? (
-              <div className="h-[260px] flex items-center justify-center text-sm text-slate-400">No data yet</div>
+              <div className="h-[260px] flex items-center justify-center text-sm text-stone">No data yet</div>
             ) : (
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 10, left: 60, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                  <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#94a3b8' }} width={80} />
-                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} formatter={(v) => [`${v} searches`, 'Volume']} />
-                  <Bar dataKey="searches" fill="#17130E" radius={[0, 4, 4, 0]} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D4" horizontal={false} />
+                  <XAxis type="number" tick={{ fontSize: 11, fill: '#79705F' }} />
+                  <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#79705F' }} width={80} />
+                  <Tooltip contentStyle={{ fontSize: 12, borderRadius: 12, border: '1px solid #E7E1D4' }} formatter={(v) => [`${v} searches`, 'Volume']} />
+                  <Bar dataKey="searches" fill="#0C2B24" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}

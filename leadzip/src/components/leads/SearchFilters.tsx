@@ -91,12 +91,12 @@ const PRESETS: Preset[] = [
 ]
 
 const inputClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all'
+  'w-full rounded-xl border border-sand bg-card px-3 py-2 text-sm text-ink placeholder:text-stone focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20 transition-all'
 
 const selectClass =
-  'w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer'
+  'w-full rounded-xl border border-sand bg-card px-3 py-2 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20 transition-all appearance-none cursor-pointer'
 
-const labelClass = 'block text-xs font-semibold uppercase tracking-wide text-slate-500 mb-1.5'
+const labelClass = 'block readout text-stone mb-1.5'
 
 interface ToggleProps {
   checked: boolean
@@ -107,15 +107,15 @@ interface ToggleProps {
 function Toggle({ checked, onChange, label }: ToggleProps) {
   return (
     <label className="flex cursor-pointer items-center justify-between gap-3 select-none">
-      <span className="text-sm text-slate-700">{label}</span>
+      <span className="text-sm text-ink-soft">{label}</span>
       <button
         type="button"
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
         className={cn(
-          'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500',
-          checked ? 'bg-blue-600' : 'bg-slate-200'
+          'relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-signal',
+          checked ? 'bg-signal' : 'bg-sand'
         )}
       >
         <span
@@ -220,25 +220,25 @@ export function SearchFilters({
 
   return (
     <form onSubmit={handleSubmit} noValidate>
-      <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+      <div className="rounded-2xl border border-sand bg-card shadow-card overflow-hidden">
         {/* Header */}
-        <div className="flex items-center gap-2 border-b border-slate-100 px-4 py-3">
-          <SlidersHorizontal className="h-4 w-4 text-blue-600 shrink-0" />
-          <span className="text-sm font-semibold text-slate-800">Search Filters</span>
-          <div className="ml-auto flex items-center rounded-lg border border-slate-200 bg-slate-50 p-0.5">
-            <button type="button" onClick={() => onSearchModeChange('single')} className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', searchMode === 'single' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
+        <div className="flex items-center gap-2 border-b border-sand px-4 py-3">
+          <SlidersHorizontal className="h-4 w-4 text-signal shrink-0" />
+          <span className="text-sm font-semibold font-display text-ink">Search Filters</span>
+          <div className="ml-auto flex items-center rounded-lg border border-sand bg-paper-2 p-0.5">
+            <button type="button" onClick={() => onSearchModeChange('single')} className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', searchMode === 'single' ? 'bg-card text-ink shadow-sm' : 'text-stone hover:text-ink')}>
               Single ZIP
             </button>
-            <button type="button" onClick={() => onSearchModeChange('bulk')} className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', searchMode === 'bulk' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-700')}>
+            <button type="button" onClick={() => onSearchModeChange('bulk')} className={cn('rounded-md px-2.5 py-1 text-xs font-medium transition-all', searchMode === 'bulk' ? 'bg-card text-ink shadow-sm' : 'text-stone hover:text-ink')}>
               Bulk Search
             </button>
           </div>
         </div>
 
         {/* Use-case presets */}
-        <div className="px-4 pt-3 pb-2 border-b border-slate-100">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400 mb-2 flex items-center gap-1">
-            <Zap className="w-3 h-3" /> Quick Presets
+        <div className="px-4 pt-3 pb-2 border-b border-sand">
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-stone mb-2 flex items-center gap-1">
+            <Zap className="w-3 h-3 text-signal" /> Quick Presets
           </p>
           <div className="flex flex-wrap gap-1.5">
             {PRESETS.map((preset) => (
@@ -250,8 +250,8 @@ export function SearchFilters({
                 className={cn(
                   'text-xs px-2.5 py-1 rounded-full border font-medium transition-all',
                   activePreset === preset.id
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600 bg-white'
+                    ? 'bg-signal border-signal text-white'
+                    : 'border-sand text-ink-soft hover:border-signal hover:text-signal bg-card'
                 )}
               >
                 {preset.label}
@@ -264,30 +264,30 @@ export function SearchFilters({
           {/* ZIP input */}
           {searchMode === 'single' ? (
             <div>
-              <label htmlFor="zipCode" className={labelClass}>ZIP Code <span className="text-red-500">*</span></label>
-              <input id="zipCode" type="text" inputMode="numeric" value={zipCode} onChange={(e) => { setZipCode(e.target.value); if (zipError) setZipError('') }} placeholder="e.g. 90210" maxLength={10} className={cn(inputClass, zipError && 'border-red-400 ring-2 ring-red-400/20')} />
+              <label htmlFor="zipCode" className={labelClass}>ZIP Code <span className="text-signal">*</span></label>
+              <input id="zipCode" type="text" inputMode="numeric" value={zipCode} onChange={(e) => { setZipCode(e.target.value); if (zipError) setZipError('') }} placeholder="e.g. 90210" maxLength={10} className={cn(inputClass, 'font-mono tracking-wider', zipError && 'border-red-400 ring-2 ring-red-400/20')} />
               {zipError && <p role="alert" className="mt-1 text-xs text-red-600">{zipError}</p>}
             </div>
           ) : (
             <div>
-              <label className={labelClass}>ZIP Codes <span className="text-red-500">*</span></label>
-              <div className={cn('flex min-h-[72px] flex-wrap gap-1.5 rounded-lg border bg-white p-2 cursor-text focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20', bulkZipError ? 'border-red-400' : 'border-slate-200')} onClick={() => (document.getElementById('bulkZipInput') as HTMLInputElement)?.focus()}>
+              <label className={labelClass}>ZIP Codes <span className="text-signal">*</span></label>
+              <div className={cn('flex min-h-[72px] flex-wrap gap-1.5 rounded-xl border bg-card p-2 cursor-text focus-within:border-signal focus-within:ring-2 focus-within:ring-signal/20', bulkZipError ? 'border-red-400' : 'border-sand')} onClick={() => (document.getElementById('bulkZipInput') as HTMLInputElement)?.focus()}>
                 {bulkZips.map((zip) => (
-                  <span key={zip} className="inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                  <span key={zip} className="inline-flex items-center gap-1 rounded-full bg-signal-50 px-2 py-0.5 text-xs font-medium font-mono text-signal-600">
                     {zip}
                     <button type="button" onClick={() => removeBulkZip(zip)}><X className="h-3 w-3" /></button>
                   </span>
                 ))}
-                <input id="bulkZipInput" type="text" inputMode="numeric" value={bulkInput} onChange={(e) => { setBulkInput(e.target.value.replace(/[^\d]/g, '').slice(0, 5)); if (bulkZipError) setBulkZipError('') }} onKeyDown={handleBulkKeyDown} onBlur={() => { if (bulkInput.length === 5) addBulkZip() }} placeholder={bulkZips.length === 0 ? 'Type a ZIP, press Enter' : ''} className="flex-1 min-w-[140px] border-none bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400" />
+                <input id="bulkZipInput" type="text" inputMode="numeric" value={bulkInput} onChange={(e) => { setBulkInput(e.target.value.replace(/[^\d]/g, '').slice(0, 5)); if (bulkZipError) setBulkZipError('') }} onKeyDown={handleBulkKeyDown} onBlur={() => { if (bulkInput.length === 5) addBulkZip() }} placeholder={bulkZips.length === 0 ? 'Type a ZIP, press Enter' : ''} className="flex-1 min-w-[140px] border-none bg-transparent text-sm font-mono text-ink outline-none placeholder:text-stone placeholder:font-sans" />
               </div>
-              <p className="mt-1 text-xs text-slate-400">{bulkZips.length} / {maxBulkZips} ZIPs — same filters apply to all</p>
+              <p className="mt-1 text-xs text-stone font-mono">{bulkZips.length} / {maxBulkZips} ZIPs — same filters apply to all</p>
               {bulkZipError && <p role="alert" className="mt-1 text-xs text-red-600">{bulkZipError}</p>}
             </div>
           )}
 
           {/* City */}
           <div>
-            <label htmlFor="city" className={labelClass}>City / State <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
+            <label htmlFor="city" className={labelClass}>City / State <span className="text-stone font-normal normal-case">(optional)</span></label>
             <input id="city" type="text" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Los Angeles, CA" className={inputClass} />
           </div>
 
@@ -316,7 +316,7 @@ export function SearchFilters({
 
           {/* Keyword */}
           <div>
-            <label htmlFor="keyword" className={labelClass}>Keyword <span className="text-slate-400 font-normal normal-case">(optional)</span></label>
+            <label htmlFor="keyword" className={labelClass}>Keyword <span className="text-stone font-normal normal-case">(optional)</span></label>
             <input id="keyword" type="text" value={keyword} onChange={(e) => setKeyword(e.target.value)} placeholder="e.g. pizza, roofing..." className={inputClass} />
           </div>
 
@@ -342,7 +342,7 @@ export function SearchFilters({
             </div>
           </div>
 
-          <div className="border-t border-slate-100" />
+          <div className="border-t border-sand" />
 
           {/* Filters */}
           <div className="space-y-3">
@@ -350,8 +350,8 @@ export function SearchFilters({
 
             {/* Website 3-way filter */}
             <div>
-              <p className="text-sm text-slate-700 mb-1.5">Website</p>
-              <div className="flex rounded-lg border border-slate-200 overflow-hidden text-xs font-medium">
+              <p className="text-sm text-ink-soft mb-1.5">Website</p>
+              <div className="flex rounded-xl border border-sand overflow-hidden text-xs font-medium">
                 {(['any', 'has', 'none'] as WebsiteFilter[]).map((opt) => (
                   <button
                     key={opt}
@@ -359,7 +359,7 @@ export function SearchFilters({
                     onClick={() => { setWebsiteFilter(opt); setActivePreset(null) }}
                     className={cn(
                       'flex-1 py-1.5 transition-colors',
-                      websiteFilter === opt ? 'bg-blue-600 text-white' : 'text-slate-500 hover:bg-slate-50'
+                      websiteFilter === opt ? 'bg-signal text-white' : 'text-stone hover:bg-paper-2'
                     )}
                   >
                     {opt === 'any' ? 'Any' : opt === 'has' ? 'Has Website' : 'No Website'}
@@ -374,8 +374,8 @@ export function SearchFilters({
         </div>
 
         {/* Submit */}
-        <div className="border-t border-slate-100 px-4 py-4">
-          <button type="submit" disabled={isLoading} className={cn('flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60')}>
+        <div className="border-t border-sand px-4 py-4">
+          <button type="submit" disabled={isLoading} className={cn('flex w-full items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white transition-all duration-200 bg-signal hover:bg-signal-600 active:bg-signal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60')}>
             {isLoading ? (<><Loader2 className="h-4 w-4 animate-spin shrink-0" />Searching...</>) : (<><Search className="h-4 w-4 shrink-0" />{searchMode === 'bulk' ? `Search ${bulkZips.length > 0 ? bulkZips.length + ' ' : ''}ZIP${bulkZips.length !== 1 ? 's' : ''}` : 'Search Leads'}</>)}
           </button>
         </div>
@@ -387,7 +387,7 @@ export function SearchFilters({
 function ChevronIcon() {
   return (
     <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
-      <svg className="h-4 w-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg className="h-4 w-4 text-stone" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
       </svg>
     </div>

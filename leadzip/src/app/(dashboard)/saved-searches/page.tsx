@@ -94,12 +94,13 @@ export default function SavedSearchesPage() {
     return (
       <div className="mx-auto max-w-4xl space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Saved Searches</h1>
-          <p className="mt-1 text-sm text-slate-500">Get daily email alerts when new businesses match your search</p>
+          <span className="readout text-signal">Alerts</span>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">Saved Searches</h1>
+          <p className="mt-1.5 text-sm text-ink-soft">Get daily email alerts when new businesses match your search</p>
         </div>
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-14 animate-pulse rounded-xl bg-slate-100" />
+            <div key={i} className="h-14 animate-pulse rounded-2xl bg-paper-2" />
           ))}
         </div>
       </div>
@@ -109,52 +110,53 @@ export default function SavedSearchesPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Saved Searches</h1>
-        <p className="mt-1 text-sm text-slate-500">
+        <span className="readout text-signal">Alerts</span>
+        <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">Saved Searches</h1>
+        <p className="mt-1.5 text-sm text-ink-soft">
           Get daily email alerts when new businesses match your search
         </p>
       </div>
 
       {searches.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-slate-200 bg-white py-20 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
-            <Bell className="h-7 w-7 text-blue-400" aria-hidden="true" />
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-sand bg-card py-20 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-signal-50">
+            <Bell className="h-7 w-7 text-signal" aria-hidden="true" />
           </div>
           <div>
-            <p className="text-base font-semibold text-slate-700">No saved searches yet</p>
-            <p className="mt-1 text-sm text-slate-400 max-w-xs">
+            <p className="font-display text-base font-bold text-ink">No saved searches yet</p>
+            <p className="mt-1 text-sm text-stone max-w-xs">
               Run a search and click &ldquo;Save search&rdquo; to get started
             </p>
           </div>
           <a
             href="/search"
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
+            className="inline-flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-signal-600 active:scale-95"
           >
             <Search className="h-4 w-4 shrink-0" />
             Search Leads
           </a>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div className="overflow-hidden rounded-2xl border border-sand bg-card">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-slate-100 text-left">
-                <th className="px-4 py-3 font-medium text-slate-500">Name</th>
-                <th className="hidden px-4 py-3 font-medium text-slate-500 sm:table-cell">Location</th>
-                <th className="hidden px-4 py-3 font-medium text-slate-500 md:table-cell">Category</th>
-                <th className="px-4 py-3 text-center font-medium text-slate-500">Alerts</th>
-                <th className="hidden px-4 py-3 font-medium text-slate-500 lg:table-cell">Last run</th>
+              <tr className="border-b border-sand bg-paper-2 text-left">
+                <th className="px-4 py-3 readout font-medium text-stone">Name</th>
+                <th className="hidden px-4 py-3 readout font-medium text-stone sm:table-cell">Location</th>
+                <th className="hidden px-4 py-3 readout font-medium text-stone md:table-cell">Category</th>
+                <th className="px-4 py-3 text-center readout font-medium text-stone">Alerts</th>
+                <th className="hidden px-4 py-3 readout font-medium text-stone lg:table-cell">Last run</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-sand">
               {searches.map((search) => (
-                <tr key={search.id} className="transition-colors hover:bg-slate-50">
-                  <td className="px-4 py-3 font-medium text-slate-900">{search.name}</td>
-                  <td className="hidden px-4 py-3 text-slate-500 sm:table-cell">
-                    {search.zip} · {search.radius} mi
+                <tr key={search.id} className="transition-colors hover:bg-signal-50/50">
+                  <td className="px-4 py-3 font-semibold text-ink">{search.name}</td>
+                  <td className="hidden px-4 py-3 text-ink-soft sm:table-cell">
+                    <span className="font-mono">{search.zip}</span> · {search.radius} mi
                   </td>
-                  <td className="hidden px-4 py-3 capitalize text-slate-500 md:table-cell">
+                  <td className="hidden px-4 py-3 capitalize text-ink-soft md:table-cell">
                     {search.category}
                   </td>
                   <td className="px-4 py-3 text-center">
@@ -164,7 +166,7 @@ export default function SavedSearchesPage() {
                         disabled={togglingId === search.id}
                         aria-label={search.alertEnabled ? 'Disable alert' : 'Enable alert'}
                         className={`inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-50 ${
-                          search.alertEnabled ? 'bg-blue-600' : 'bg-slate-200'
+                          search.alertEnabled ? 'bg-signal' : 'bg-sand'
                         }`}
                       >
                         <span
@@ -178,17 +180,17 @@ export default function SavedSearchesPage() {
                         <button
                           disabled
                           aria-label="Upgrade to enable alerts"
-                          className="inline-flex h-6 w-11 cursor-not-allowed items-center rounded-full bg-slate-200 opacity-50"
+                          className="inline-flex h-6 w-11 cursor-not-allowed items-center rounded-full bg-sand opacity-60"
                         >
                           <span className="inline-block h-4 w-4 translate-x-1 transform rounded-full bg-white shadow" />
                         </button>
-                        <div className="absolute bottom-full left-1/2 z-10 mb-1 hidden w-40 -translate-x-1/2 rounded-lg bg-slate-800 px-2 py-1.5 text-center text-xs text-white shadow-lg group-hover:block">
+                        <div className="absolute bottom-full left-1/2 z-10 mb-1 hidden w-40 -translate-x-1/2 rounded-lg bg-ink px-2 py-1.5 text-center text-xs text-paper shadow-lg group-hover:block">
                           Upgrade to enable alerts
                         </div>
                       </div>
                     )}
                   </td>
-                  <td className="hidden px-4 py-3 text-xs text-slate-400 lg:table-cell">
+                  <td className="hidden px-4 py-3 text-xs text-stone lg:table-cell">
                     {search.lastRunAt ? formatRelativeTime(search.lastRunAt) : 'Never'}
                   </td>
                   <td className="px-4 py-3">
@@ -196,7 +198,7 @@ export default function SavedSearchesPage() {
                       onClick={() => handleDelete(search.id)}
                       disabled={deletingId === search.id}
                       aria-label="Delete saved search"
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-stone transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
                     >
                       <Trash2 className="h-3.5 w-3.5 shrink-0" />
                     </button>
@@ -206,10 +208,10 @@ export default function SavedSearchesPage() {
             </tbody>
           </table>
           {!isPaidUser && (
-            <div className="border-t border-slate-100 px-4 py-3">
-              <p className="text-xs text-slate-400">
-                {searches.length} of 8 searches used on free plan ·{' '}
-                <a href="/settings" className="text-blue-600 hover:underline">
+            <div className="border-t border-sand bg-paper-2 px-4 py-3">
+              <p className="text-xs text-stone">
+                <span className="font-mono">{searches.length}</span> of <span className="font-mono">8</span> searches used on free plan ·{' '}
+                <a href="/settings" className="font-semibold text-signal hover:text-signal-600">
                   Upgrade for unlimited saves + alerts
                 </a>
               </p>

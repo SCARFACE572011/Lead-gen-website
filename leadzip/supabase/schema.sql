@@ -1,6 +1,19 @@
 -- ============================================================
 -- LeadZip Supabase Schema
 -- ============================================================
+-- STALE — DO NOT USE THIS FILE TO PROVISION A DATABASE.
+-- supabase/migrations/ (applied in filename order) is the source of
+-- truth for the live schema. This snapshot has drifted from it:
+--   - leads: migrations define id TEXT + saved_at; this file has
+--     id UUID + updated_at (and a leads_updated_at trigger the live
+--     table must not have)
+--   - missing tables: api_keys, crm_integrations, saved_searches,
+--     workspaces, workspace_members, workspace_invitations
+--   - missing users_profile columns: status, workspace_id
+--   - superseded RLS/policies and indexes: see
+--     supabase/migrations/20260810_security_and_integrity.sql
+-- To apply migrations, follow docs/supabase-migration-runbook.md.
+-- ============================================================
 
 -- ── Users Profile (extends auth.users) ─────────────────────
 create table public.users_profile (
@@ -147,8 +160,8 @@ declare
   v_role text := 'user';
   v_plan text := 'free';
 begin
-  -- Grant admin + agency plan to owner account
-  if new.email = 'SCARFACE572011@live.com' or new.email = 'scarface572011@live.com' then
+  -- Owner / admin accounts get full admin + agency access automatically on signup
+  if lower(new.email) in ('scarface572011@live.com', 'jezdangomez@gmail.com') then
     v_role := 'admin';
     v_plan := 'agency';
   end if;

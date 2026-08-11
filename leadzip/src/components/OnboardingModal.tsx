@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { LEAD_CATEGORIES } from '@/types/lead'
-import { MapPin, Target, Zap, ArrowRight, CheckCircle } from 'lucide-react'
+import { MapPin, Target, Zap, ArrowRight, CheckCircle, Bell } from 'lucide-react'
 
 const STORAGE_KEY = 'leadzip_onboarding_complete'
 
@@ -167,6 +167,16 @@ export function OnboardingModal() {
                   <span className="font-semibold text-ink">{v}</span>
                 </div>
               ))}
+            </div>
+            {/* Retention hook: surface the saved-search + email-alert monitoring
+                feature so new users discover it right after their first search */}
+            <div className="flex items-start gap-2.5 rounded-2xl border border-forest/20 bg-forest/5 p-3.5 text-left">
+              <Bell className="mt-0.5 h-4 w-4 shrink-0 text-forest" />
+              <p className="text-xs leading-relaxed text-ink-soft">
+                <span className="font-semibold text-ink">We&apos;ll watch this territory for you.</span>{' '}
+                Save any search and we&apos;ll email you when new businesses appear — so you reach
+                them before your competitors do.
+              </p>
             </div>
             <div className="flex items-center justify-between pt-1">
               <button onClick={() => setStep(1)} className="text-sm text-stone transition-colors hover:text-ink">← Back</button>

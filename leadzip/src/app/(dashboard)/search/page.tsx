@@ -79,6 +79,28 @@ function formatAge(iso: string): string {
   return `${hrs}h ago`
 }
 
+// Map raw provider ids to friendly names for the "real, not scraped" freshness badge
+function sourceLabel(source: string | null): string {
+  switch (source) {
+    case 'google_places':
+      return 'Google'
+    case 'yelp':
+      return 'Yelp'
+    case 'osm':
+      return 'OpenStreetMap'
+    case 'foursquare':
+      return 'Foursquare'
+    case 'here':
+      return 'HERE'
+    case 'tomtom':
+      return 'TomTom'
+    case 'demo':
+      return 'demo data'
+    default:
+      return 'live data'
+  }
+}
+
 function SkeletonCard() {
   return (
     <div className="flex flex-col gap-3 rounded-2xl border border-sand bg-card p-4 shadow-card">
@@ -187,6 +209,7 @@ function SearchPageInner() {
   const [dataSource, setDataSource] = useState<string | null>(null)
   const [sourceBannerDismissed, setSourceBannerDismissed] = useState(false)
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
+  const [fromCache, setFromCache] = useState(false)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
 
   // Load saved lead IDs from localStorage
@@ -266,7 +289,7 @@ function SearchPageInner() {
         return
       }
 
-      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number }; source?: string; fetchedAt?: string }
+      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number }; source?: string; fetchedAt?: string; fromCache?: boolean }
       const filteredLeads = params.excludeSaved
         ? result.leads.filter((l) => !savedLeadIds.has(l.id))
         : result.leads
@@ -277,6 +300,7 @@ function SearchPageInner() {
       if (result.center) setMapCenter(result.center)
       setDataSource(result.source ?? null)
       setFetchedAt(result.fetchedAt ?? null)
+      setFromCache(result.fromCache ?? false)
       setSourceBannerDismissed(false)
 
       // Save to search history in localStorage
@@ -660,8 +684,17 @@ function SearchPageInner() {
                       <>{totalFound === 1 ? 'lead' : 'leads'} found</>
                     )}
                     {fetchedAt && (
-                      <span className="ml-2 text-stone">
-                        · fetched {formatAge(fetchedAt)}
+                      <span className="ml-2 inline-flex items-center gap-1.5 rounded-full border border-sand bg-card px-2.5 py-1 align-middle font-mono text-xs text-ink-soft">
+                        <span className="relative flex h-1.5 w-1.5" aria-hidden="true">
+                          {!fromCache && (
+                            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-forest opacity-60" />
+                          )}
+                          <span className={cn('relative inline-flex h-1.5 w-1.5 rounded-full', fromCache ? 'bg-stone' : 'bg-forest')} />
+                        </span>
+                        {fromCache
+                          ? `Cached from ${sourceLabel(dataSource)}`
+                          : `Live from ${sourceLabel(dataSource)}`}
+                        <span className="text-stone">· fetched {formatAge(fetchedAt)}</span>
                       </span>
                     )}
                     {noResultZips.length > 0 && (

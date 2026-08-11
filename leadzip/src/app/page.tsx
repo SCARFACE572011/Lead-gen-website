@@ -32,8 +32,8 @@ const FEATURES = [
   { icon: Database, title: 'Real businesses, not scraped junk', body: 'Live data from Google Places & Yelp — verified names, addresses, phones, and websites. Every lead is a business you can actually call today.' },
   { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top — the businesses most likely to say yes to you.' },
   { icon: Mail, title: 'Decision-maker email finder', body: 'One tap surfaces the best contact email for any business with a domain, with a confidence badge so you know what you’re working with.' },
-  { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Salesforce, and Pipedrive. Your pipeline, your format — no copy-paste.' },
-  { icon: MapIcon, title: 'See the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Work a block, own a zip, plan your route.' },
+  { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Pipedrive & GoHighLevel. Your pipeline, your format — no copy-paste.' },
+  { icon: MapIcon, title: 'Own the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Claim a zip and get emailed when new businesses open in your area — so you reach them first, before competitors even know they exist.' },
   { icon: SlidersHorizontal, title: 'Filter down to your buyer', body: 'Radius, rating, review count, has-website, category — dial in exactly the businesses that fit before you spend a minute reaching out.' },
 ]
 
@@ -61,7 +61,7 @@ const FAQS = [
   { q: 'Where does the lead data come from?', a: 'LeadZipp pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. It is not a static scraped database; every search runs against current data.' },
   { q: 'What makes a lead “high-scoring”?', a: 'We rank each business by how likely it is to need your services. Signals like having no website, few reviews, or a low rating push a business up your list, because those are the owners most open to help.' },
   { q: 'Can I find email addresses?', a: 'Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).' },
-  { q: 'How do exports work?', a: 'Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Salesforce, or Pipedrive. Email, phone, score, and every field come along.' },
+  { q: 'How do exports work?', a: 'Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel. Email, phone, score, and every field come along.' },
   { q: 'Do I need a credit card to start?', a: 'No. The Starter plan is free forever and includes 25 searches a month against real data. Upgrade to Pro only when you want unlimited searches and the email finder.' },
 ]
 

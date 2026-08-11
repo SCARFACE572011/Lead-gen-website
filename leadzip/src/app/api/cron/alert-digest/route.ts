@@ -2,9 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import { searchLeadsCombined } from '@/lib/providers/combinedProvider'
-import type { SearchParams } from '@/types/lead'
+import type { SearchParams, SearchResult, Lead } from '@/types/lead'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
+
+// Cache TTL — keep in sync with src/app/api/leads/search/route.ts (12h). Every
+// cache MISS bills the paid Google Places API, so alert diffs must reuse the same
+// leads_cache pool the search route warms instead of re-billing on every run.
+const CACHE_TTL_MS = 12 * 60 * 60 * 1000 // 12 hours
+
+// Raw-pool cache key. MUST match buildCacheKey() in the search route so the cron
+// and interactive searches share cache entries: zip | category | radius only.
+function buildCacheKey(params: SearchParams): string {
+  const zip = params.zipCode.trim()
+  const cat = (params.category || '').trim()
+  const radius = params.radiusMiles ?? 25
+  return `${zip}|${cat}|${radius}`
+}
 
 export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization')
@@ -77,7 +91,37 @@ export async function GET(request: NextRequest) {
         keyword: (row.keyword as string | null) ?? undefined,
       }
 
-      const result = await searchLeadsCombined(params)
+      // Route through leads_cache first (same key / service-role pattern as the
+      // search route). Only fetch live on a MISS, then write the pool back so the
+      // next alert run — and interactive searches — reuse it instead of re-billing.
+      const cacheKey = buildCacheKey(params)
+      let result: SearchResult
+      const { data: cached } = await supabase
+        .from('leads_cache')
+        .select('leads, total, source')
+        .eq('cache_key', cacheKey)
+        .gt('expires_at', new Date().toISOString())
+        .maybeSingle()
+
+      if (cached) {
+        const cachedLeads = (cached.leads as Lead[]) ?? []
+        result = {
+          leads: cachedLeads,
+          total: (cached.total as number | null) ?? cachedLeads.length,
+          source: (cached.source as string | null) ?? undefined,
+        }
+      } else {
+        result = await searchLeadsCombined(params)
+        // Write-through to the cache (service-role client bypasses RLS).
+        await supabase.from('leads_cache').upsert({
+          cache_key: cacheKey,
+          leads: result.leads,
+          total: result.total,
+          source: result.source ?? 'osm',
+          expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+        })
+      }
+
       const newIds = result.leads.map((l) => l.id)
       const lastIds: string[] = (row.last_place_ids as string[]) ?? []
       const newLeads = result.leads.filter((l) => !lastIds.includes(l.id))

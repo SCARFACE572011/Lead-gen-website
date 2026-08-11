@@ -152,16 +152,26 @@ export async function POST(request: NextRequest) {
         const supabase = await createClient()
         const cacheKey = buildCacheKey(body)
 
-        // Write to cache
-        await supabase.from('leads_cache').upsert({
-          cache_key: cacheKey,
-          leads: results.leads,
-          total: results.total,
-          source: process.env.GOOGLE_PLACES_API_KEY ? 'google_places' : 'osm',
-          expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
-        })
+        // Write to cache with the service-role client. leads_cache is
+        // public-read / service-role-write under RLS, so the session client's
+        // write would be silently denied and the cache would never warm.
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        if (serviceRoleKey && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+          const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+          const admin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceRoleKey, {
+            auth: { autoRefreshToken: false, persistSession: false },
+          })
+          await admin.from('leads_cache').upsert({
+            cache_key: cacheKey,
+            leads: results.leads,
+            total: results.total,
+            source: results.source ?? 'osm',
+            expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+          })
+        }
 
-        // Log search history + usage
+        // Log search history + usage — user-scoped rows under RLS, so these
+        // must use the caller's session client, not the service role.
         const {
           data: { user },
         } = await supabase.auth.getUser()

@@ -256,15 +256,25 @@ alter table public.workspace_members validate constraint workspace_members_user_
 
 ---
 
-## 4. Known follow-ups NOT covered by this migration (code changes)
+## 4. Related code changes — already shipped in this same branch
 
-- `src/app/api/leads/search/route.ts` (cache upsert) and
-  `src/app/api/cron/prefetch-leads/route.ts` (cache upsert **and**
-  `search_history` read) use the anon/session client. After Fix 7, their cache
-  writes are silently RLS-denied (searches still work; the cache just never
-  warms). Both must switch to a `SUPABASE_SERVICE_ROLE_KEY` client.
-- The Stripe webhook upsert omits `user_id` (NOT NULL on `subscriptions`), so
-  its insert path still fails with 23502 even now that `onConflict` is backed
-  by a unique index. The webhook must resolve and supply `user_id`.
+These were flagged during the audit and have since been fixed in
+`fix/restore-search-and-security`; listed here so the migration and code stay in
+sync. No further action required.
+
+- **Cache writes now use the service role.** `src/app/api/leads/search/route.ts`
+  and `src/app/api/cron/prefetch-leads/route.ts` previously wrote `leads_cache`
+  with the anon/session client, which Fix 7 would have silently RLS-denied. Both
+  now use a `SUPABASE_SERVICE_ROLE_KEY` client for the cache write (user-scoped
+  `search_history` / `usage_limits` writes stay on the session client). The cron
+  also now reads `search_history` with the service role.
+- **Stripe webhook supplies `user_id`.** `src/app/api/stripe/webhook/route.ts`
+  was rewritten to resolve `user_id` (from metadata / `client_reference_id`,
+  falling back to the customer's existing row) and do an explicit
+  select-then-update/insert, so the NOT NULL insert no longer fails with 23502.
+
+Still true and unchanged:
+
 - `supabase/schema.sql` is a stale snapshot kept for reference only — see the
-  header note in that file. Never provision from it.
+  header note in that file. Never provision from it; `supabase/migrations/` is
+  the source of truth.

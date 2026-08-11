@@ -75,10 +75,10 @@ export function LeadChart({ data }: LeadChartProps) {
             tickLine={false}
             allowDecimals={false}
           />
-          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f0f9ff' }} />
+          <Tooltip content={<CustomTooltip />} cursor={{ fill: '#FFF6F2' }} />
           <Bar
             dataKey="value"
-            fill="#0369a1"
+            fill="#FF4D23"
             radius={[6, 6, 0, 0]}
             maxBarSize={48}
           />

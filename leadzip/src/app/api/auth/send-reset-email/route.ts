@@ -112,12 +112,12 @@ export async function POST(request: NextRequest) {
         <!-- Body -->
         <tr>
           <td style="padding:36px 32px 28px;">
-            <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">Reset your password</h1>
+            <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#17130E;">Reset your password</h1>
             <p style="margin:0 0 24px;font-size:15px;color:#64748B;line-height:1.6;">
-              We received a request to reset the password for your LeadZip account associated with <strong style="color:#0F172A;">${safeEmail}</strong>.
+              We received a request to reset the password for your LeadZip account associated with <strong style="color:#17130E;">${safeEmail}</strong>.
             </p>
             <p style="margin:0 0 28px;font-size:15px;color:#64748B;line-height:1.6;">
-              Click the button below to set a new password. This link expires in <strong style="color:#0F172A;">60 minutes</strong>.
+              Click the button below to set a new password. This link expires in <strong style="color:#17130E;">60 minutes</strong>.
             </p>
 
             <!-- CTA Button -->

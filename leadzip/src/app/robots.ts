@@ -6,9 +6,19 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/dashboard/', '/admin/', '/api/', '/search/', '/saved/', '/history/', '/exports/', '/settings/'],
+        disallow: [
+          '/api/',
+          '/dashboard',
+          '/search',
+          '/saved',
+          '/history',
+          '/exports',
+          '/settings',
+          '/admin',
+        ],
       },
     ],
     sitemap: 'https://leadzip.vercel.app/sitemap.xml',
+    host: 'https://leadzip.vercel.app',
   }
 }

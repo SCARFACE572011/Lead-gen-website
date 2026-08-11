@@ -49,7 +49,7 @@ function Section({ title, children, id }: { title: string; children: React.React
         className="flex items-center gap-2 w-full text-left mb-4"
       >
         {open ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
-        <h2 className="text-lg font-semibold text-[#0F172A]">{title}</h2>
+        <h2 className="text-lg font-semibold text-[#17130E]">{title}</h2>
       </button>
       {open && children}
     </div>
@@ -137,13 +137,13 @@ export default function ApiDocsPage() {
       <div className="max-w-3xl mx-auto px-6 py-12">
         <div className="mb-10">
           <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-3xl font-bold text-[#0F172A]">LeadZip API</h1>
+            <h1 className="text-3xl font-bold text-[#17130E]">LeadZip API</h1>
             <Badge color="bg-emerald-100 text-emerald-700">v1</Badge>
           </div>
           <p className="text-slate-500 text-base">
             Programmatic access to your leads, search history, and search engine. All endpoints
             require an API key generated from{' '}
-            <a href="/settings" className="text-[#0369A1] hover:underline">
+            <a href="/settings" className="text-[#FF4D23] hover:underline">
               Settings → API
             </a>
             .
@@ -310,7 +310,7 @@ export default function ApiDocsPage() {
         <div className="mt-10 pt-6 border-t border-slate-200 text-center">
           <p className="text-sm text-slate-400">
             Need help?{' '}
-            <a href="mailto:support@leadzip.com" className="text-[#0369A1] hover:underline">
+            <a href="mailto:support@leadzip.com" className="text-[#FF4D23] hover:underline">
               support@leadzip.com
             </a>
           </p>

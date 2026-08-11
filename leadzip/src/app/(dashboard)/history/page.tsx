@@ -236,7 +236,7 @@ export default function SearchHistoryPage() {
       <div className="max-w-5xl mx-auto px-6 py-8">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-[#0F172A]">Search History</h1>
+            <h1 className="text-2xl font-bold text-[#17130E]">Search History</h1>
             <p className="text-sm text-slate-500 mt-0.5">Rerun past searches or review previous results</p>
           </div>
           {history.length > 0 && (
@@ -256,13 +256,13 @@ export default function SearchHistoryPage() {
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
                 <SearchX className="w-8 h-8 text-slate-400" />
               </div>
-              <h3 className="text-lg font-semibold text-[#0F172A] mb-1">No search history</h3>
+              <h3 className="text-lg font-semibold text-[#17130E] mb-1">No search history</h3>
               <p className="text-sm text-slate-500 max-w-xs">
                 Your past searches will appear here so you can quickly rerun them.
               </p>
               <a
                 href="/search"
-                className="mt-5 inline-flex items-center gap-2 bg-[#0369A1] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#0F172A] transition-colors"
+                className="mt-5 inline-flex items-center gap-2 bg-[#FF4D23] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#17130E] transition-colors"
               >
                 Start Searching
               </a>
@@ -291,10 +291,10 @@ export default function SearchHistoryPage() {
                     >
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded-lg bg-[#0369A1]/10 flex items-center justify-center">
-                            <MapPin className="w-4 h-4 text-[#0369A1]" />
+                          <div className="w-8 h-8 rounded-lg bg-[#FF4D23]/10 flex items-center justify-center">
+                            <MapPin className="w-4 h-4 text-[#FF4D23]" />
                           </div>
-                          <span className="font-semibold text-[#0F172A] text-sm">{entry.zipCode}</span>
+                          <span className="font-semibold text-[#17130E] text-sm">{entry.zipCode}</span>
                         </div>
                       </td>
                       <td className="px-4 py-3.5">
@@ -333,7 +333,7 @@ export default function SearchHistoryPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleRerun(entry)}
-                            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-[#0369A1] text-white px-3 py-1.5 rounded-lg hover:bg-[#0F172A] transition-colors"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold bg-[#FF4D23] text-white px-3 py-1.5 rounded-lg hover:bg-[#17130E] transition-colors"
                           >
                             <RotateCcw className="w-3 h-3" />
                             Rerun

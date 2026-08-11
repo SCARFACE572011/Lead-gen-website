@@ -49,7 +49,7 @@ export default function FAQSection() {
             key={i}
             className={cn(
               "rounded-xl border bg-white transition-all duration-200",
-              isOpen ? "border-[#0369A1]/30 shadow-card" : "border-[#E2E8F0]"
+              isOpen ? "border-[#FF4D23]/30 shadow-card" : "border-[#E2E8F0]"
             )}
           >
             <button
@@ -57,11 +57,11 @@ export default function FAQSection() {
               onClick={() => setOpenIndex(isOpen ? null : i)}
               aria-expanded={isOpen}
             >
-              <span className="text-sm font-600 text-[#0F172A]">{faq.question}</span>
+              <span className="text-sm font-600 text-[#17130E]">{faq.question}</span>
               <ChevronDown
                 className={cn(
                   "h-4 w-4 shrink-0 text-[#94A3B8] transition-transform duration-200",
-                  isOpen && "rotate-180 text-[#0369A1]"
+                  isOpen && "rotate-180 text-[#FF4D23]"
                 )}
               />
             </button>

@@ -1,10 +1,14 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { LEAD_CATEGORIES } from '@/types/lead'
 import { MapPin, Target, Zap, ArrowRight, CheckCircle } from 'lucide-react'
 
 const STORAGE_KEY = 'leadzip_onboarding_complete'
+
+// Only surface onboarding inside the app — never over the marketing landing,
+// auth, or legal pages (the landing hero already carries a search widget).
+const APP_PREFIXES = ['/dashboard', '/search', '/saved', '/history', '/exports', '/settings', '/admin', '/saved-searches']
 
 interface Preset {
   id: string
@@ -15,38 +19,15 @@ interface Preset {
 }
 
 const PRESETS: Preset[] = [
-  {
-    id: 'no_website',
-    icon: <span className="text-2xl">🚫</span>,
-    label: 'No Website',
-    description: 'Businesses with no online presence — perfect for web design & local SEO agencies.',
-    params: { noWebsite: 'true' },
-  },
-  {
-    id: 'needs_seo',
-    icon: <span className="text-2xl">📈</span>,
-    label: 'Needs SEO',
-    description: 'Established businesses with a website but weak digital marketing.',
-    params: { hasWebsite: 'true', minRating: '3.5' },
-  },
-  {
-    id: 'established',
-    icon: <span className="text-2xl">⭐</span>,
-    label: 'Established',
-    description: 'High-rated businesses with lots of reviews — ideal for premium services.',
-    params: { minRating: '4', minReviews: '25' },
-  },
-  {
-    id: 'all',
-    icon: <span className="text-2xl">🔍</span>,
-    label: 'Show Everything',
-    description: 'No filters — see all businesses in the area.',
-    params: {},
-  },
+  { id: 'no_website', icon: <span className="text-2xl">🚫</span>, label: 'No Website', description: 'Businesses with no online presence — perfect for web design & local SEO agencies.', params: { noWebsite: 'true' } },
+  { id: 'needs_seo', icon: <span className="text-2xl">📈</span>, label: 'Needs SEO', description: 'Established businesses with a website but weak digital marketing.', params: { hasWebsite: 'true', minRating: '3.5' } },
+  { id: 'established', icon: <span className="text-2xl">⭐</span>, label: 'Established', description: 'High-rated businesses with lots of reviews — ideal for premium services.', params: { minRating: '4', minReviews: '25' } },
+  { id: 'all', icon: <span className="text-2xl">🔍</span>, label: 'Show Everything', description: 'No filters — see all businesses in the area.', params: {} },
 ]
 
 export function OnboardingModal() {
   const router = useRouter()
+  const pathname = usePathname()
   const [visible, setVisible] = useState(false)
   const [step, setStep] = useState(0)
   const [zipCode, setZipCode] = useState('')
@@ -56,11 +37,12 @@ export function OnboardingModal() {
   const [catError, setCatError] = useState('')
 
   useEffect(() => {
-    // Legitimate post-hydration setState: localStorage is only readable on the client,
-    // and a lazy initializer here would cause a hydration mismatch (modal is in the root layout).
+    const inApp = APP_PREFIXES.some((p) => pathname?.startsWith(p))
+    // Legitimate post-hydration setState: localStorage is client-only and a lazy
+    // initializer would cause a hydration mismatch (modal lives in the root layout).
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!localStorage.getItem(STORAGE_KEY)) setVisible(true)
-  }, [])
+    if (inApp && !localStorage.getItem(STORAGE_KEY)) setVisible(true)
+  }, [pathname])
 
   function dismiss() {
     localStorage.setItem(STORAGE_KEY, 'true')
@@ -69,109 +51,68 @@ export function OnboardingModal() {
 
   function handleStep1Next() {
     let valid = true
-    if (!zipCode.trim() || zipCode.trim().length < 5) {
-      setZipError('Enter a valid 5-digit ZIP code')
-      valid = false
-    } else {
-      setZipError('')
-    }
-    if (!category) {
-      setCatError('Pick a category to continue')
-      valid = false
-    } else {
-      setCatError('')
-    }
+    if (!zipCode.trim() || zipCode.trim().length < 5) { setZipError('Enter a valid 5-digit ZIP code'); valid = false } else setZipError('')
+    if (!category) { setCatError('Pick a category to continue'); valid = false } else setCatError('')
     if (valid) setStep(1)
   }
 
   function handleLaunch() {
     localStorage.setItem(STORAGE_KEY, 'true')
     setVisible(false)
-
     const preset = PRESETS.find((p) => p.id === selectedPreset)
-    const params = new URLSearchParams({
-      zip: zipCode.trim(),
-      category,
-      radius: '25',
-      ...preset?.params,
-    })
+    const params = new URLSearchParams({ zip: zipCode.trim(), category, radius: '25', ...preset?.params })
     router.push(`/search?${params.toString()}`)
   }
 
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
-
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-forest-900/70 backdrop-blur-sm">
+      <div className="grain relative w-full max-w-lg overflow-hidden rounded-3xl bg-paper shadow-2xl ring-1 ring-black/5">
         {/* Progress bar */}
-        <div className="flex gap-1.5 p-5 pb-0">
+        <div className="relative flex gap-1.5 p-5 pb-0">
           {[0, 1, 2].map((i) => (
-            <div
-              key={i}
-              className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                i <= step ? 'bg-blue-600' : 'bg-slate-100'
-              }`}
-            />
+            <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i <= step ? 'bg-signal' : 'bg-sand'}`} />
           ))}
         </div>
 
         {/* Step 1: ZIP + Category */}
         {step === 0 && (
-          <div className="p-6 space-y-5">
+          <div className="relative space-y-5 p-6">
             <div>
-              <h2 className="text-xl font-bold text-slate-900">Welcome to LeadZip 👋</h2>
-              <p className="mt-1 text-sm text-slate-500">Let&apos;s find your first batch of leads. Takes 30 seconds.</p>
+              <h2 className="font-display text-xl font-extrabold text-ink">Welcome to LeadZip 👋</h2>
+              <p className="mt-1 text-sm text-stone">Let&apos;s find your first batch of leads. Takes 30 seconds.</p>
             </div>
-
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  <MapPin className="inline h-3.5 w-3.5 mr-1 text-slate-400" />
-                  Target ZIP code
+                <label className="mb-1.5 block text-sm font-medium text-ink-soft">
+                  <MapPin className="mr-1 inline h-3.5 w-3.5 text-signal" /> Target ZIP code
                 </label>
                 <input
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={5}
-                  value={zipCode}
-                  onChange={(e) => {
-                    setZipCode(e.target.value.replace(/\D/g, ''))
-                    setZipError('')
-                  }}
+                  type="text" inputMode="numeric" maxLength={5} value={zipCode}
+                  onChange={(e) => { setZipCode(e.target.value.replace(/\D/g, '')); setZipError('') }}
                   placeholder="e.g. 90210"
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-xl border border-sand bg-white px-3 py-2.5 font-mono text-sm text-ink placeholder:text-stone/50 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
                 />
-                {zipError && <p className="mt-1 text-xs text-red-500">{zipError}</p>}
+                {zipError && <p className="mt-1 text-xs text-signal-600">{zipError}</p>}
               </div>
-
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">
-                  <Target className="inline h-3.5 w-3.5 mr-1 text-slate-400" />
-                  Business category
+                <label className="mb-1.5 block text-sm font-medium text-ink-soft">
+                  <Target className="mr-1 inline h-3.5 w-3.5 text-signal" /> Business category
                 </label>
                 <select
-                  value={category}
-                  onChange={(e) => { setCategory(e.target.value); setCatError('') }}
-                  className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 bg-white"
+                  value={category} onChange={(e) => { setCategory(e.target.value); setCatError('') }}
+                  className="w-full rounded-xl border border-sand bg-white px-3 py-2.5 text-sm text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
                 >
                   <option value="">Select a category…</option>
-                  {LEAD_CATEGORIES.filter((c) => c !== 'Custom Keyword').map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
+                  {LEAD_CATEGORIES.filter((c) => c !== 'Custom Keyword').map((c) => (<option key={c} value={c}>{c}</option>))}
                 </select>
-                {catError && <p className="mt-1 text-xs text-red-500">{catError}</p>}
+                {catError && <p className="mt-1 text-xs text-signal-600">{catError}</p>}
               </div>
             </div>
-
             <div className="flex items-center justify-between pt-2">
-              <button onClick={dismiss} className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
-                Skip setup
-              </button>
-              <button
-                onClick={handleStep1Next}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-              >
+              <button onClick={dismiss} className="text-sm text-stone transition-colors hover:text-ink">Skip setup</button>
+              <button onClick={handleStep1Next} className="flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-signal-600">
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -180,41 +121,27 @@ export function OnboardingModal() {
 
         {/* Step 2: Use case preset */}
         {step === 1 && (
-          <div className="p-6 space-y-4">
+          <div className="relative space-y-4 p-6">
             <div>
-              <h2 className="text-xl font-bold text-slate-900">What kind of leads?</h2>
-              <p className="mt-1 text-sm text-slate-500">Pick your focus — you can always change filters later.</p>
+              <h2 className="font-display text-xl font-extrabold text-ink">What kind of leads?</h2>
+              <p className="mt-1 text-sm text-stone">Pick your focus — you can always change filters later.</p>
             </div>
-
             <div className="grid grid-cols-2 gap-2.5">
               {PRESETS.map((preset) => (
                 <button
-                  key={preset.id}
-                  onClick={() => setSelectedPreset(preset.id)}
-                  className={`relative rounded-xl border-2 p-3.5 text-left transition-all ${
-                    selectedPreset === preset.id
-                      ? 'border-blue-500 bg-blue-50'
-                      : 'border-slate-200 bg-white hover:border-slate-300'
-                  }`}
+                  key={preset.id} onClick={() => setSelectedPreset(preset.id)}
+                  className={`relative rounded-2xl border-2 p-3.5 text-left transition-all ${selectedPreset === preset.id ? 'border-signal bg-signal-50' : 'border-sand bg-white hover:border-stone/40'}`}
                 >
-                  {selectedPreset === preset.id && (
-                    <CheckCircle className="absolute top-2.5 right-2.5 h-4 w-4 text-blue-500" />
-                  )}
+                  {selectedPreset === preset.id && (<CheckCircle className="absolute right-2.5 top-2.5 h-4 w-4 text-signal" />)}
                   <div className="mb-1.5">{preset.icon}</div>
-                  <p className="text-sm font-semibold text-slate-900">{preset.label}</p>
-                  <p className="mt-0.5 text-xs text-slate-500 leading-snug">{preset.description}</p>
+                  <p className="text-sm font-semibold text-ink">{preset.label}</p>
+                  <p className="mt-0.5 text-xs leading-snug text-stone">{preset.description}</p>
                 </button>
               ))}
             </div>
-
             <div className="flex items-center justify-between pt-1">
-              <button onClick={() => setStep(0)} className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
-                ← Back
-              </button>
-              <button
-                onClick={() => setStep(2)}
-                className="flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors"
-              >
+              <button onClick={() => setStep(0)} className="text-sm text-stone transition-colors hover:text-ink">← Back</button>
+              <button onClick={() => setStep(2)} className="flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-signal-600">
                 Continue <ArrowRight className="h-4 w-4" />
               </button>
             </div>
@@ -223,48 +150,28 @@ export function OnboardingModal() {
 
         {/* Step 3: Launch */}
         {step === 2 && (
-          <div className="p-6 space-y-5 text-center">
+          <div className="relative space-y-5 p-6 text-center">
             <div className="flex justify-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-green-50">
-                <Zap className="h-8 w-8 text-green-500" />
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-forest">
+                <Zap className="h-8 w-8 text-lime" />
               </div>
             </div>
-
             <div>
-              <h2 className="text-xl font-bold text-slate-900">You&apos;re all set!</h2>
-              <p className="mt-1 text-sm text-slate-500">Here&apos;s what we&apos;ll search for:</p>
+              <h2 className="font-display text-xl font-extrabold text-ink">You&apos;re all set!</h2>
+              <p className="mt-1 text-sm text-stone">Here&apos;s what we&apos;ll search for:</p>
             </div>
-
-            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-left space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Category</span>
-                <span className="font-semibold text-slate-900">{category}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">ZIP code</span>
-                <span className="font-semibold text-slate-900">{zipCode}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Radius</span>
-                <span className="font-semibold text-slate-900">25 miles</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Focus</span>
-                <span className="font-semibold text-slate-900">
-                  {PRESETS.find((p) => p.id === selectedPreset)?.label}
-                </span>
-              </div>
+            <div className="space-y-2 rounded-2xl border border-sand bg-paper-2 p-4 text-left">
+              {[['Category', category], ['ZIP code', zipCode], ['Radius', '25 miles'], ['Focus', PRESETS.find((p) => p.id === selectedPreset)?.label]].map(([k, v]) => (
+                <div key={k as string} className="flex items-center justify-between text-sm">
+                  <span className="text-stone">{k}</span>
+                  <span className="font-semibold text-ink">{v}</span>
+                </div>
+              ))}
             </div>
-
             <div className="flex items-center justify-between pt-1">
-              <button onClick={() => setStep(1)} className="text-sm text-slate-400 hover:text-slate-600 transition-colors">
-                ← Back
-              </button>
-              <button
-                onClick={handleLaunch}
-                className="flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
-              >
-                Find My First Leads <ArrowRight className="h-4 w-4" />
+              <button onClick={() => setStep(1)} className="text-sm text-stone transition-colors hover:text-ink">← Back</button>
+              <button onClick={handleLaunch} className="flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-signal-600">
+                Find my first leads <ArrowRight className="h-4 w-4" />
               </button>
             </div>
           </div>

@@ -65,7 +65,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
       onClick={onChange}
       className={cn(
         'relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none',
-        checked ? 'bg-[#0369A1]' : 'bg-slate-200'
+        checked ? 'bg-[#FF4D23]' : 'bg-slate-200'
       )}
     >
       <span
@@ -80,7 +80,7 @@ function ToggleSwitch({ checked, onChange }: { checked: boolean; onChange: () =>
 
 function UsageBar({ used, total }: { used: number; total: number | null; color?: string }) {
   const pct = total ? Math.min(100, (used / total) * 100) : 0
-  const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-[#0369A1]'
+  const barColor = pct >= 90 ? 'bg-red-500' : pct >= 70 ? 'bg-amber-500' : 'bg-[#FF4D23]'
   return (
     <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
       <div
@@ -155,23 +155,23 @@ function ProfileTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#0F172A]">Profile Information</h2>
+        <h2 className="text-lg font-semibold text-[#17130E]">Profile Information</h2>
         <p className="text-sm text-slate-500 mt-0.5">Update your account details</p>
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#0369A1] to-[#0F172A] flex items-center justify-center text-white font-bold text-xl">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#FF4D23] to-[#17130E] flex items-center justify-center text-white font-bold text-xl">
           {fullName.charAt(0) || '?'}
         </div>
         <div>
-          <p className="text-sm font-medium text-[#0F172A]">{fullName || 'Your Name'}</p>
+          <p className="text-sm font-medium text-[#17130E]">{fullName || 'Your Name'}</p>
           <p className="text-xs text-slate-400">LeadZip Pro Member</p>
         </div>
       </div>
 
       <div className="grid gap-5">
         <div>
-          <label className="block text-sm font-medium text-[#0F172A] mb-1.5">
+          <label className="block text-sm font-medium text-[#17130E] mb-1.5">
             <span className="flex items-center gap-2">
               <User className="w-3.5 h-3.5 text-slate-400" />
               Full Name
@@ -181,13 +181,13 @@ function ProfileTab() {
             type="text"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1] transition-all"
+            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] transition-all"
             placeholder="Your full name"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#0F172A] mb-1.5">
+          <label className="block text-sm font-medium text-[#17130E] mb-1.5">
             <span className="flex items-center gap-2">
               <Mail className="w-3.5 h-3.5 text-slate-400" />
               Email Address
@@ -212,7 +212,7 @@ function ProfileTab() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-[#0F172A] mb-1.5">
+          <label className="block text-sm font-medium text-[#17130E] mb-1.5">
             <span className="flex items-center gap-2">
               <Building2 className="w-3.5 h-3.5 text-slate-400" />
               Company Name
@@ -222,7 +222,7 @@ function ProfileTab() {
             type="text"
             value={company}
             onChange={(e) => setCompany(e.target.value)}
-            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1] transition-all"
+            className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] transition-all"
             placeholder="Your company name"
           />
         </div>
@@ -236,7 +236,7 @@ function ProfileTab() {
             'inline-flex items-center gap-2 text-sm font-semibold px-5 py-2.5 rounded-xl transition-all disabled:opacity-60',
             saved
               ? 'bg-emerald-500 text-white'
-              : 'bg-[#0F172A] text-white hover:bg-[#0369A1]'
+              : 'bg-[#17130E] text-white hover:bg-[#FF4D23]'
           )}
         >
           {saved ? (
@@ -305,12 +305,12 @@ function PlanTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#0F172A]">Plan & Usage</h2>
+        <h2 className="text-lg font-semibold text-[#17130E]">Plan & Usage</h2>
         <p className="text-sm text-slate-500 mt-0.5">Monitor your usage and manage your subscription</p>
       </div>
 
       {/* Current Plan */}
-      <div className="bg-gradient-to-br from-[#0F172A] to-[#0369A1] rounded-2xl p-6 text-white relative overflow-hidden">
+      <div className="bg-gradient-to-br from-[#17130E] to-[#FF4D23] rounded-2xl p-6 text-white relative overflow-hidden">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNCI+PHBhdGggZD0iTTAgMTBMMTAgMEgwdjEwem0wIDEwTDIwIDBIMTBMMCAyMHptMCAxMEwzMCAwSDIwTDAgMzB6bTAgMTBMNDAgMEgzMEwwIDQwek0xMCA0MEw0MCAxMEgzMEwxMCA0MHptMTAgMEw0MCAyMEgzMEwyMCA0MHptMTAgMEw0MCAzMEgzMEwzMCA0MHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-100" />
         <div className="relative">
           <div className="flex items-start justify-between">
@@ -349,17 +349,17 @@ function PlanTab() {
 
       {/* Usage Stats */}
       <div className="grid gap-4">
-        <h3 className="text-sm font-semibold text-[#0F172A]">Usage This Month</h3>
+        <h3 className="text-sm font-semibold text-[#17130E]">Usage This Month</h3>
 
         <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-[#0369A1]" />
-                <span className="text-sm font-medium text-[#0F172A]">Searches</span>
+                <BarChart3 className="w-4 h-4 text-[#FF4D23]" />
+                <span className="text-sm font-medium text-[#17130E]">Searches</span>
               </div>
               <div className="text-right">
-                <span className="text-sm font-bold text-[#0F172A]">12</span>
+                <span className="text-sm font-bold text-[#17130E]">12</span>
                 <span className="text-xs text-slate-400"> / Unlimited</span>
               </div>
             </div>
@@ -372,11 +372,11 @@ function PlanTab() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <Bookmark className="w-4 h-4 text-[#0369A1]" />
-                <span className="text-sm font-medium text-[#0F172A]">Saved Leads</span>
+                <Bookmark className="w-4 h-4 text-[#FF4D23]" />
+                <span className="text-sm font-medium text-[#17130E]">Saved Leads</span>
               </div>
               <div className="text-right">
-                <span className="text-sm font-bold text-[#0F172A]">23</span>
+                <span className="text-sm font-bold text-[#17130E]">23</span>
                 <span className="text-xs text-slate-400"> / 1,000</span>
               </div>
             </div>
@@ -395,7 +395,7 @@ function PlanTab() {
           <button
             onClick={handleManageBilling}
             disabled={billingLoading}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0369A1] hover:text-[#0F172A] transition-colors disabled:opacity-60 shrink-0"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#FF4D23] hover:text-[#17130E] transition-colors disabled:opacity-60 shrink-0"
           >
             {billingLoading ? 'Opening…' : 'Open Portal'}
             <ExternalLink className="w-3 h-3" />
@@ -446,49 +446,49 @@ function NotificationsTab() {
       key: 'emailLeadsFound' as const,
       label: 'Email when leads found',
       desc: 'Get notified when a search returns new results',
-      icon: <Mail className="w-4 h-4 text-[#0369A1]" />,
+      icon: <Mail className="w-4 h-4 text-[#FF4D23]" />,
     },
     {
       key: 'weeklyDigest' as const,
       label: 'Weekly digest',
       desc: 'Summary of your pipeline activity every Monday',
-      icon: <BarChart3 className="w-4 h-4 text-[#0369A1]" />,
+      icon: <BarChart3 className="w-4 h-4 text-[#FF4D23]" />,
     },
     {
       key: 'systemUpdates' as const,
       label: 'System updates',
       desc: 'Maintenance windows and downtime alerts',
-      icon: <AlertCircle className="w-4 h-4 text-[#0369A1]" />,
+      icon: <AlertCircle className="w-4 h-4 text-[#FF4D23]" />,
     },
     {
       key: 'newFeatures' as const,
       label: 'New features',
       desc: 'Be the first to know about new LeadZip features',
-      icon: <Zap className="w-4 h-4 text-[#0369A1]" />,
+      icon: <Zap className="w-4 h-4 text-[#FF4D23]" />,
     },
     {
       key: 'usageAlerts' as const,
       label: 'Usage limit alerts',
       desc: 'Alert when you reach 80% of your plan limits',
-      icon: <Bell className="w-4 h-4 text-[#0369A1]" />,
+      icon: <Bell className="w-4 h-4 text-[#FF4D23]" />,
     },
   ]
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#0F172A]">Notification Preferences</h2>
+        <h2 className="text-lg font-semibold text-[#17130E]">Notification Preferences</h2>
         <p className="text-sm text-slate-500 mt-0.5">Choose how and when you want to be notified</p>
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
         {items.map((item) => (
           <div key={item.key} className="flex items-center gap-4 px-5 py-4">
-            <div className="w-9 h-9 rounded-xl bg-[#0369A1]/8 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-[#FF4D23]/8 flex items-center justify-center shrink-0">
               {item.icon}
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-[#0F172A]">{item.label}</p>
+              <p className="text-sm font-medium text-[#17130E]">{item.label}</p>
               <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
             </div>
             <ToggleSwitch checked={prefs[item.key]} onChange={() => toggle(item.key)} />
@@ -500,7 +500,7 @@ function NotificationsTab() {
         onClick={handleSave}
         className={cn(
           'inline-flex items-center gap-2 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors',
-          saved ? 'bg-green-600' : 'bg-[#0F172A] hover:bg-[#0369A1]'
+          saved ? 'bg-green-600' : 'bg-[#17130E] hover:bg-[#FF4D23]'
         )}
       >
         <Check className="w-4 h-4" />
@@ -521,7 +521,7 @@ function ComplianceTab() {
         'LeadZip provides business contact information from publicly available sources. You are solely responsible for ensuring your outreach complies with all applicable laws. Never send unsolicited bulk emails or calls without proper consent mechanisms in place.',
     },
     {
-      icon: <Mail className="w-5 h-5 text-[#0369A1]" />,
+      icon: <Mail className="w-5 h-5 text-[#FF4D23]" />,
       bg: 'bg-blue-50 border-blue-200',
       iconBg: 'bg-blue-100',
       title: 'CAN-SPAM Compliance',
@@ -549,7 +549,7 @@ function ComplianceTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-semibold text-[#0F172A]">Compliance & Legal</h2>
+        <h2 className="text-lg font-semibold text-[#17130E]">Compliance & Legal</h2>
         <p className="text-sm text-slate-500 mt-0.5">Important information about responsible lead generation</p>
       </div>
 
@@ -561,7 +561,7 @@ function ComplianceTab() {
                 {card.icon}
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-[#0F172A] mb-1.5">{card.title}</h3>
+                <h3 className="text-sm font-semibold text-[#17130E] mb-1.5">{card.title}</h3>
                 <p className="text-sm text-slate-600 leading-relaxed">{card.content}</p>
               </div>
             </div>
@@ -662,7 +662,7 @@ function ApiTab() {
 
       {/* Generate */}
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-[#0F172A] mb-1">API Keys</h2>
+        <h2 className="text-base font-semibold text-[#17130E] mb-1">API Keys</h2>
         <p className="text-sm text-slate-500 mb-5">Use API keys to query LeadZip programmatically. Keys are scoped to your account and plan.</p>
 
         <div className="flex gap-2 mb-2">
@@ -671,12 +671,12 @@ function ApiTab() {
             value={newKeyName}
             onChange={(e) => setNewKeyName(e.target.value)}
             placeholder="Key name (optional)"
-            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/30 focus:border-[#0369A1]"
+            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/30 focus:border-[#FF4D23]"
           />
           <button
             onClick={handleGenerate}
             disabled={generating}
-            className="flex items-center gap-2 rounded-lg bg-[#0369A1] px-4 py-2 text-sm font-medium text-white hover:bg-[#0284C7] disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 rounded-lg bg-[#FF4D23] px-4 py-2 text-sm font-medium text-white hover:bg-[#E23A12] disabled:opacity-50 transition-colors"
           >
             {generating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Code2 className="h-4 w-4" />}
             Generate key
@@ -724,7 +724,7 @@ function ApiTab() {
       </div>
 
       <div className="rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-        See the <a href="/api-docs" className="text-[#0369A1] font-medium hover:underline">API documentation</a> for endpoint reference and code examples.
+        See the <a href="/api-docs" className="text-[#FF4D23] font-medium hover:underline">API documentation</a> for endpoint reference and code examples.
       </div>
     </div>
   )
@@ -844,14 +844,14 @@ function TeamTab() {
     return (
       <div className="space-y-4">
         <div>
-          <h2 className="text-base font-semibold text-[#0F172A]">Team Workspaces</h2>
+          <h2 className="text-base font-semibold text-[#17130E]">Team Workspaces</h2>
           <p className="text-sm text-slate-500 mt-0.5">Invite teammates and share your plan across your agency.</p>
         </div>
         <div className="border border-slate-200 rounded-xl p-6 text-center space-y-3">
           <Users className="w-8 h-8 text-slate-300 mx-auto" />
           <p className="text-sm font-medium text-slate-600">Agency plan required</p>
           <p className="text-xs text-slate-400">Upgrade to Agency to create a workspace and invite team members.</p>
-          <a href="/pricing" className="inline-block text-sm font-medium text-[#0369A1] hover:underline">View Pricing →</a>
+          <a href="/pricing" className="inline-block text-sm font-medium text-[#FF4D23] hover:underline">View Pricing →</a>
         </div>
       </div>
     )
@@ -860,7 +860,7 @@ function TeamTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-base font-semibold text-[#0F172A]">Team Workspaces</h2>
+        <h2 className="text-base font-semibold text-[#17130E]">Team Workspaces</h2>
         <p className="text-sm text-slate-500 mt-0.5">
           {role === 'member' ? `You're a member of ${workspaceName}.` : 'Manage your team and send invitations.'}
         </p>
@@ -869,7 +869,7 @@ function TeamTab() {
       {/* Create workspace (agency owners without one yet) */}
       {!workspaceName && userPlan === 'agency' && (
         <div className="border border-dashed border-slate-300 rounded-xl p-5 space-y-3">
-          <p className="text-sm font-medium text-[#0F172A]">Create your workspace</p>
+          <p className="text-sm font-medium text-[#17130E]">Create your workspace</p>
           <p className="text-xs text-slate-500">Name your team — members will see this when they accept your invite.</p>
           <div className="flex gap-2">
             <input
@@ -877,12 +877,12 @@ function TeamTab() {
               value={newWorkspaceName}
               onChange={e => setNewWorkspaceName(e.target.value)}
               placeholder="e.g. Apex Marketing Agency"
-              className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1]"
+              className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23]"
             />
             <button
               onClick={handleCreateWorkspace}
               disabled={creating || !newWorkspaceName.trim()}
-              className="text-sm font-medium bg-[#0369A1] text-white px-4 py-2 rounded-lg hover:bg-[#0284c7] transition-colors disabled:opacity-50"
+              className="text-sm font-medium bg-[#FF4D23] text-white px-4 py-2 rounded-lg hover:bg-[#E23A12] transition-colors disabled:opacity-50"
             >
               {creating ? 'Creating…' : 'Create'}
             </button>
@@ -896,27 +896,27 @@ function TeamTab() {
           <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-3 flex items-center gap-3">
             <Users className="w-4 h-4 text-violet-500 flex-shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-[#0F172A]">{workspaceName}</p>
+              <p className="text-sm font-semibold text-[#17130E]">{workspaceName}</p>
               <p className="text-xs text-slate-500">{members.length} member{members.length !== 1 ? 's' : ''} · Agency plan</p>
             </div>
           </div>
 
           {/* Invite form */}
           <div className="space-y-2">
-            <p className="text-sm font-medium text-[#0F172A]">Invite a teammate</p>
+            <p className="text-sm font-medium text-[#17130E]">Invite a teammate</p>
             <div className="flex gap-2">
               <input
                 type="email"
                 value={inviteEmail}
                 onChange={e => setInviteEmail(e.target.value)}
                 placeholder="teammate@company.com"
-                className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1]"
+                className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23]"
                 onKeyDown={e => e.key === 'Enter' && handleInvite()}
               />
               <button
                 onClick={handleInvite}
                 disabled={inviting || !inviteEmail.trim()}
-                className="inline-flex items-center gap-1.5 text-sm font-medium bg-[#0369A1] text-white px-4 py-2 rounded-lg hover:bg-[#0284c7] transition-colors disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 text-sm font-medium bg-[#FF4D23] text-white px-4 py-2 rounded-lg hover:bg-[#E23A12] transition-colors disabled:opacity-50"
               >
                 <Send className="w-3.5 h-3.5" />
                 {inviting ? 'Sending…' : 'Send Invite'}
@@ -929,12 +929,12 @@ function TeamTab() {
           {/* Members list */}
           {members.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[#0F172A]">Members</p>
+              <p className="text-sm font-medium text-[#17130E]">Members</p>
               <div className="space-y-1">
                 {members.map(m => (
                   <div key={m.user_id} className="flex items-center justify-between py-2 px-3 rounded-lg hover:bg-slate-50">
                     <div>
-                      <p className="text-sm text-[#0F172A]">{m.users_profile?.full_name || m.users_profile?.email}</p>
+                      <p className="text-sm text-[#17130E]">{m.users_profile?.full_name || m.users_profile?.email}</p>
                       <p className="text-xs text-slate-400">{m.users_profile?.email} · {m.role}</p>
                     </div>
                     {m.role !== 'owner' && (
@@ -955,12 +955,12 @@ function TeamTab() {
           {/* Pending invites */}
           {pendingInvites.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-[#0F172A]">Pending invitations</p>
+              <p className="text-sm font-medium text-[#17130E]">Pending invitations</p>
               <div className="space-y-1">
                 {pendingInvites.map(inv => (
                   <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-lg bg-amber-50 border border-amber-100">
                     <div>
-                      <p className="text-sm text-[#0F172A]">{inv.email}</p>
+                      <p className="text-sm text-[#17130E]">{inv.email}</p>
                       <p className="text-xs text-slate-400">Expires {new Date(inv.expires_at).toLocaleDateString()}</p>
                     </div>
                     <button
@@ -982,7 +982,7 @@ function TeamTab() {
         <div className="bg-violet-50 border border-violet-100 rounded-xl px-4 py-4 space-y-1">
           <div className="flex items-center gap-2">
             <Users className="w-4 h-4 text-violet-500" />
-            <p className="text-sm font-semibold text-[#0F172A]">{workspaceName}</p>
+            <p className="text-sm font-semibold text-[#17130E]">{workspaceName}</p>
           </div>
           <p className="text-xs text-slate-500 pl-6">You have access to all features under this team&apos;s plan.</p>
         </div>
@@ -1059,7 +1059,7 @@ function IntegrationsTab() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-base font-semibold text-[#0F172A]">CRM Integrations</h2>
+        <h2 className="text-base font-semibold text-[#17130E]">CRM Integrations</h2>
         <p className="text-sm text-slate-500 mt-0.5">Connect your CRM to push saved leads with one click.</p>
       </div>
 
@@ -1082,7 +1082,7 @@ function IntegrationsTab() {
                       <div className="w-5 h-5 rounded-full border-2 border-slate-200" />
                     )}
                     <div>
-                      <p className="text-sm font-semibold text-[#0F172A]">{meta.label}</p>
+                      <p className="text-sm font-semibold text-[#17130E]">{meta.label}</p>
                       <p className="text-xs text-slate-500">
                         {isConnected ? 'Connected' : 'Not connected'}
                       </p>
@@ -1101,7 +1101,7 @@ function IntegrationsTab() {
                     ) : (
                       <button
                         onClick={() => { setAdding(isAdding ? null : crm); setKeyInput(''); setError(null) }}
-                        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#0369A1] border border-[#0369A1]/30 hover:bg-[#0369A1]/5 px-3 py-1.5 rounded-lg transition-colors"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-[#FF4D23] border border-[#FF4D23]/30 hover:bg-[#FF4D23]/5 px-3 py-1.5 rounded-lg transition-colors"
                       >
                         <Plug className="w-3.5 h-3.5" />
                         Connect
@@ -1113,7 +1113,7 @@ function IntegrationsTab() {
                 {isAdding && (
                   <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
                     <p className="text-xs text-slate-500">{meta.help}{' '}
-                      <a href={meta.helpUrl} target="_blank" rel="noopener noreferrer" className="text-[#0369A1] hover:underline">
+                      <a href={meta.helpUrl} target="_blank" rel="noopener noreferrer" className="text-[#FF4D23] hover:underline">
                         Docs →
                       </a>
                     </p>
@@ -1123,12 +1123,12 @@ function IntegrationsTab() {
                         value={keyInput}
                         onChange={e => setKeyInput(e.target.value)}
                         placeholder={meta.placeholder}
-                        className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1] font-mono"
+                        className="flex-1 text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] font-mono"
                       />
                       <button
                         onClick={() => handleConnect(crm)}
                         disabled={saving || !keyInput.trim()}
-                        className="text-sm font-medium bg-[#0369A1] text-white px-4 py-2 rounded-lg hover:bg-[#0284c7] transition-colors disabled:opacity-50"
+                        className="text-sm font-medium bg-[#FF4D23] text-white px-4 py-2 rounded-lg hover:bg-[#E23A12] transition-colors disabled:opacity-50"
                       >
                         {saving ? 'Validating…' : 'Save'}
                       </button>
@@ -1171,7 +1171,7 @@ function WhiteLabelTab() {
   return (
     <div className="space-y-6">
       <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-        <h2 className="text-base font-semibold text-[#0F172A] mb-1">White Label Exports</h2>
+        <h2 className="text-base font-semibold text-[#17130E] mb-1">White Label Exports</h2>
         <p className="text-sm text-slate-500 mb-6">Add your agency branding to PDF exports. Your logo and colors replace LeadZip branding on all exported reports.</p>
 
         {/* Agency Name */}
@@ -1182,7 +1182,7 @@ function WhiteLabelTab() {
             value={settings.agencyName}
             onChange={(e) => setSettings((prev) => ({ ...prev, agencyName: e.target.value }))}
             placeholder="Acme Lead Agency"
-            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/30 focus:border-[#0369A1]"
+            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/30 focus:border-[#FF4D23]"
           />
         </div>
 
@@ -1204,7 +1204,7 @@ function WhiteLabelTab() {
             ) : null}
             <button
               onClick={() => fileRef.current?.click()}
-              className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm text-slate-600 hover:border-[#0369A1] hover:text-[#0369A1] transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-dashed border-slate-300 px-4 py-2.5 text-sm text-slate-600 hover:border-[#FF4D23] hover:text-[#FF4D23] transition-colors"
             >
               <Upload className="h-4 w-4" />
               {settings.logoDataUrl ? 'Replace logo' : 'Upload logo'}
@@ -1254,7 +1254,7 @@ function WhiteLabelTab() {
             'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-all',
             saved
               ? 'bg-emerald-50 text-emerald-700'
-              : 'bg-[#0369A1] text-white hover:bg-[#0284C7]'
+              : 'bg-[#FF4D23] text-white hover:bg-[#E23A12]'
           )}
         >
           {saved ? <><Check className="h-4 w-4" /> Saved</> : 'Save branding'}
@@ -1288,7 +1288,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-[#F8FAFC]">
       <div className="max-w-4xl mx-auto px-6 py-8">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#0F172A]">Settings</h1>
+          <h1 className="text-2xl font-bold text-[#17130E]">Settings</h1>
           <p className="text-sm text-slate-500 mt-0.5">Manage your account, plan, and preferences</p>
         </div>
 
@@ -1302,7 +1302,7 @@ export default function SettingsPage() {
                   className={cn(
                     'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
                     activeTab === tab.id
-                      ? 'bg-[#0369A1] text-white shadow-sm'
+                      ? 'bg-[#FF4D23] text-white shadow-sm'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
                   )}
                 >

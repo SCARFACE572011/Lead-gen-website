@@ -75,20 +75,20 @@ export async function POST(request: NextRequest) {
     <tr><td align="center">
       <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;">
         <tr>
-          <td style="background:#0369A1;padding:28px 32px;text-align:center;">
+          <td style="background:#FF4D23;padding:28px 32px;text-align:center;">
             <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:-0.5px;">📍 LeadZip</span>
           </td>
         </tr>
         <tr>
           <td style="padding:36px 32px 28px;">
-            <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#0F172A;">You're invited to join a team</h1>
+            <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#17130E;">You're invited to join a team</h1>
             <p style="margin:0 0 24px;font-size:15px;color:#64748B;line-height:1.6;">
-              <strong style="color:#0F172A;">${inviterName}</strong> has invited you to join
-              <strong style="color:#0F172A;">${workspace.name}</strong> on LeadZip — the local SMB lead generation platform.
+              <strong style="color:#17130E;">${inviterName}</strong> has invited you to join
+              <strong style="color:#17130E;">${workspace.name}</strong> on LeadZip — the local SMB lead generation platform.
             </p>
             <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
               <tr>
-                <td style="background:#0369A1;border-radius:10px;">
+                <td style="background:#FF4D23;border-radius:10px;">
                   <a href="${inviteUrl}" style="display:block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;">
                     Accept Invitation →
                   </a>

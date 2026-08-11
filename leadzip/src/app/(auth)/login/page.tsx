@@ -27,7 +27,7 @@ function DeactivatedNotice() {
   const searchParams = useSearchParams()
   if (searchParams.get('deactivated') !== 'true') return null
   return (
-    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950">
+    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950">
       <p className="text-sm font-semibold text-red-700 dark:text-red-400">Account Deactivated</p>
       <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
         Your account has been deactivated. Contact support if you believe this is an error.
@@ -40,7 +40,7 @@ function AuthCallbackErrorNotice() {
   const searchParams = useSearchParams()
   if (searchParams.get('error') !== 'auth_callback_failed') return null
   return (
-    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950">
+    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 dark:border-red-900 dark:bg-red-950">
       <p className="text-sm font-semibold text-red-700 dark:text-red-400">Sign-in link failed</p>
       <p className="text-xs text-red-600 dark:text-red-500 mt-0.5">
         Your sign-in link is invalid or has expired. Please sign in or request a new link.
@@ -99,8 +99,9 @@ export default function LoginPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-[#0F172A]">Welcome back</h1>
-        <p className="mt-1.5 text-sm text-[#64748B]">
+        <span className="readout text-signal">Sign in</span>
+        <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Welcome back</h1>
+        <p className="mt-1.5 text-sm text-ink-soft">
           Sign in to your LeadZip account to continue.
         </p>
       </div>
@@ -113,7 +114,7 @@ export default function LoginPage() {
         <div>
           <label
             htmlFor="email"
-            className="mb-1.5 block text-sm font-medium text-[#374151]"
+            className="mb-1.5 block text-sm font-medium text-ink-soft"
           >
             Email address
           </label>
@@ -127,10 +128,10 @@ export default function LoginPage() {
               if (errors.email) setErrors((prev) => ({ ...prev, email: undefined }));
             }}
             placeholder="you@company.com"
-            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-colors focus:border-[#0369A1] focus:ring-2 focus:ring-[#0369A1]/10 ${
+            className={`w-full rounded-xl border px-3.5 py-2.5 text-sm text-ink placeholder:text-stone outline-none transition-colors focus:border-signal focus:ring-2 focus:ring-signal/15 ${
               errors.email
                 ? "border-red-400 bg-red-50"
-                : "border-[#E2E8F0] bg-[#F8FAFC] hover:border-[#CBD5E1]"
+                : "border-sand bg-paper hover:border-stone/40"
             }`}
           />
           {errors.email && (
@@ -143,13 +144,13 @@ export default function LoginPage() {
           <div className="mb-1.5 flex items-center justify-between">
             <label
               htmlFor="password"
-              className="text-sm font-medium text-[#374151]"
+              className="text-sm font-medium text-ink-soft"
             >
               Password
             </label>
             <Link
               href="/forgot-password"
-              className="text-xs font-medium text-[#0369A1] hover:text-[#0284C7] transition-colors"
+              className="text-xs font-medium text-signal hover:text-signal-600 transition-colors"
             >
               Forgot password?
             </Link>
@@ -166,16 +167,16 @@ export default function LoginPage() {
                   setErrors((prev) => ({ ...prev, password: undefined }));
               }}
               placeholder="••••••••"
-              className={`w-full rounded-xl border px-3.5 py-2.5 pr-10 text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-colors focus:border-[#0369A1] focus:ring-2 focus:ring-[#0369A1]/10 ${
+              className={`w-full rounded-xl border px-3.5 py-2.5 pr-10 text-sm text-ink placeholder:text-stone outline-none transition-colors focus:border-signal focus:ring-2 focus:ring-signal/15 ${
                 errors.password
                   ? "border-red-400 bg-red-50"
-                  : "border-[#E2E8F0] bg-[#F8FAFC] hover:border-[#CBD5E1]"
+                  : "border-sand bg-paper hover:border-stone/40"
               }`}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? (
@@ -194,7 +195,7 @@ export default function LoginPage() {
         <Button
           type="submit"
           disabled={loading}
-          className="mt-2 h-11 w-full rounded-xl bg-[#0369A1] text-sm font-semibold text-white hover:bg-[#0284C7] disabled:opacity-70"
+          className="mt-2 h-11 w-full rounded-full bg-signal text-sm font-semibold text-white hover:bg-signal-600 disabled:opacity-70"
         >
           {loading ? (
             <>
@@ -210,7 +211,7 @@ export default function LoginPage() {
         </Button>
 
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
@@ -218,30 +219,30 @@ export default function LoginPage() {
 
       {/* Divider */}
       <div className="my-5 flex items-center gap-3">
-        <div className="h-px flex-1 bg-[#E2E8F0]" />
-        <span className="text-xs text-[#94A3B8]">or</span>
-        <div className="h-px flex-1 bg-[#E2E8F0]" />
+        <div className="h-px flex-1 bg-sand" />
+        <span className="text-xs text-stone">or</span>
+        <div className="h-px flex-1 bg-sand" />
       </div>
 
       {/* Sign up link */}
-      <p className="text-center text-sm text-[#64748B]">
+      <p className="text-center text-sm text-ink-soft">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-semibold text-[#0369A1] hover:text-[#0284C7] transition-colors"
+          className="font-semibold text-signal hover:text-signal-600 transition-colors"
         >
           Create an account
         </Link>
       </p>
 
       {/* Compliance */}
-      <p className="mt-8 text-center text-xs leading-relaxed text-[#94A3B8]">
+      <p className="mt-8 text-center text-xs leading-relaxed text-stone">
         By signing in you agree to our{" "}
-        <Link href="/terms" className="underline hover:text-[#64748B]">
+        <Link href="/terms" className="underline hover:text-ink">
           Terms of Service
         </Link>{" "}
         and{" "}
-        <Link href="/privacy" className="underline hover:text-[#64748B]">
+        <Link href="/privacy" className="underline hover:text-ink">
           Privacy Policy
         </Link>
         .

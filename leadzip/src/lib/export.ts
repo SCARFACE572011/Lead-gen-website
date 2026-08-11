@@ -110,7 +110,7 @@ export async function exportToBrandedPDF(leads: Lead[], reportTitle?: string): P
 
   const wl = getWhiteLabel()
   const agencyName = wl.agencyName || 'Lead Report'
-  const accent = wl.accentColor || '#0369A1'
+  const accent = wl.accentColor || '#FF4D23'
   const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
 
   // Parse hex accent to RGB

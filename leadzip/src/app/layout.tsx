@@ -1,38 +1,101 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Bricolage_Grotesque, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Script from "next/script";
 import { ThemeProvider } from "next-themes";
 import { CookieConsent } from "@/components/CookieConsent"
 import { OnboardingModal } from "@/components/OnboardingModal";
+import StructuredData from "@/components/seo/StructuredData";
+import { SmoothScroll } from "@/components/SmoothScroll";
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-plus-jakarta",
+// Display — characterful modern grotesque, used with restraint for headlines
+const bricolage = Bricolage_Grotesque({
+  variable: "--font-display",
   subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800"],
+  weight: ["400", "500", "600", "700", "800"],
   display: "swap",
 });
 
+// Body — warm, highly readable
+const hanken = Hanken_Grotesk({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Data — ZIP codes, coordinates, stats rendered like map readouts
+const spaceMono = Space_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
+});
+
+const SITE_TITLE = "LeadZip — Type a ZIP code, get the whole street";
+const SITE_DESCRIPTION =
+  "Type a ZIP code and pick a trade. LeadZip pulls live business listings from Google Places and Yelp, scores the ones most likely to need you, finds emails, and exports to CSV, PDF, or your CRM.";
+const OG_IMAGE = "/og?title=Type+a+ZIP+code,+get+the+whole+street&subtitle=Live,+scored+local+business+leads";
+
 export const metadata: Metadata = {
-  title: "LeadZip — Find Local Business Leads by ZIP Code",
-  description:
-    "Search by location, industry, and radius. Find businesses that need your services. Export and outreach — all in one place.",
-  keywords: ["lead generation", "local business leads", "ZIP code search", "B2B leads", "sales prospecting"],
   metadataBase: new URL("https://leadzip.vercel.app"),
+  title: {
+    default: SITE_TITLE,
+    template: "%s — LeadZip",
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: "LeadZip",
+  keywords: [
+    "lead generation",
+    "local business leads",
+    "ZIP code business search",
+    "B2B leads",
+    "sales prospecting",
+    "local lead finder",
+    "Google Places leads",
+    "Yelp business data",
+    "email finder",
+    "lead scoring",
+    "CSV lead export",
+    "CRM lead export",
+  ],
+  authors: [{ name: "LeadZip" }],
+  creator: "LeadZip",
+  publisher: "LeadZip",
+  category: "business",
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
-    title: "LeadZip — Find Local Business Leads by ZIP Code",
-    description: "Search by location, industry, and radius. Find businesses that need your services.",
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
     url: "https://leadzip.vercel.app",
     siteName: "LeadZip",
-    images: [{ url: "/og?title=Find+Local+Business+Leads+by+ZIP+Code", width: 1200, height: 630 }],
+    locale: "en_US",
+    images: [
+      {
+        url: OG_IMAGE,
+        width: 1200,
+        height: 630,
+        alt: "LeadZip — type a ZIP code, get the whole street",
+      },
+    ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "LeadZip — Find Local Business Leads by ZIP Code",
-    description: "Search by location, industry, and radius. Find businesses that need your services.",
-    images: ["/og?title=Find+Local+Business+Leads+by+ZIP+Code"],
+    title: SITE_TITLE,
+    description: SITE_DESCRIPTION,
+    images: [OG_IMAGE],
   },
   alternates: { canonical: "https://leadzip.vercel.app" },
   verification: {
@@ -48,10 +111,14 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakartaSans.variable} h-full antialiased`}
+      className={`${bricolage.variable} ${hanken.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+        <SmoothScroll />
+        {/* SEO — JSON-LD structured data (Organization, WebSite, SoftwareApplication, FAQ) */}
+        <StructuredData />
+
         {/* GTM noscript fallback */}
         {process.env.NEXT_PUBLIC_GTM_ID && (
           <noscript>

@@ -33,12 +33,12 @@ function PasswordStrength({ password }: { password: string }) {
           <div
             key={i}
             className={`h-1 flex-1 rounded-full transition-colors ${
-              i < strength ? colors[strength - 1] : "bg-[#E2E8F0]"
+              i < strength ? colors[strength - 1] : "bg-sand"
             }`}
           />
         ))}
       </div>
-      <p className={`mt-1 text-xs font-medium ${strength >= 3 ? "text-emerald-600" : "text-[#94A3B8]"}`}>
+      <p className={`mt-1 text-xs font-medium ${strength >= 3 ? "text-emerald-600" : "text-stone"}`}>
         {labels[strength - 1] ?? "Too short"}
       </p>
     </div>
@@ -112,32 +112,35 @@ export default function SignupPage() {
   }
 
   const inputClass = (hasError: boolean) =>
-    `w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-colors focus:border-[#0369A1] focus:ring-2 focus:ring-[#0369A1]/10 ${
+    `w-full rounded-xl border px-3.5 py-2.5 text-sm text-ink placeholder:text-stone outline-none transition-colors focus:border-signal focus:ring-2 focus:ring-signal/15 ${
       hasError
         ? "border-red-400 bg-red-50"
-        : "border-[#E2E8F0] bg-[#F8FAFC] hover:border-[#CBD5E1]"
+        : "border-sand bg-paper hover:border-stone/40"
     }`;
 
   if (success) {
     return (
       <div>
         <div className="mb-8">
-          <h1 className="text-2xl font-extrabold text-[#0F172A]">Create your account</h1>
-          <p className="mt-1.5 text-sm text-[#64748B]">
+          <span className="readout text-signal">Create account</span>
+          <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Create your account</h1>
+          <p className="mt-1.5 text-sm text-ink-soft">
             Start finding local business leads in minutes.
           </p>
         </div>
-        <div className="rounded-xl bg-green-50 border border-green-200 p-6 text-center">
-          <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-3" />
-          <h3 className="font-semibold text-slate-900 mb-1">Check your email</h3>
-          <p className="text-sm text-slate-600">
-            We sent a confirmation link to <strong>{email}</strong>.{" "}
+        <div className="rounded-2xl bg-signal-50 border border-signal/20 p-6 text-center">
+          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-signal/10">
+            <CheckCircle className="h-7 w-7 text-signal" />
+          </span>
+          <h3 className="font-display font-bold text-ink mb-1">Check your email</h3>
+          <p className="text-sm text-ink-soft">
+            We sent a confirmation link to <strong className="text-ink">{email}</strong>.{" "}
             Click it to activate your account.
           </p>
         </div>
-        <p className="mt-5 text-center text-sm text-[#64748B]">
+        <p className="mt-5 text-center text-sm text-ink-soft">
           Already have an account?{" "}
-          <Link href="/login" className="font-semibold text-[#0369A1] hover:text-[#0284C7] transition-colors">
+          <Link href="/login" className="font-semibold text-signal hover:text-signal-600 transition-colors">
             Sign in
           </Link>
         </p>
@@ -148,8 +151,9 @@ export default function SignupPage() {
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-[#0F172A]">Create your account</h1>
-        <p className="mt-1.5 text-sm text-[#64748B]">
+        <span className="readout text-signal">Create account</span>
+        <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Create your account</h1>
+        <p className="mt-1.5 text-sm text-ink-soft">
           Start finding local business leads in minutes.
         </p>
       </div>
@@ -157,7 +161,7 @@ export default function SignupPage() {
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Full name */}
         <div>
-          <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-[#374151]">
+          <label htmlFor="fullName" className="mb-1.5 block text-sm font-medium text-ink-soft">
             Full name
           </label>
           <input
@@ -174,7 +178,7 @@ export default function SignupPage() {
 
         {/* Email */}
         <div>
-          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-[#374151]">
+          <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-ink-soft">
             Email address
           </label>
           <input
@@ -191,7 +195,7 @@ export default function SignupPage() {
 
         {/* Password */}
         <div>
-          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-[#374151]">
+          <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-ink-soft">
             Password
           </label>
           <div className="relative">
@@ -207,7 +211,7 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -219,7 +223,7 @@ export default function SignupPage() {
 
         {/* Confirm password */}
         <div>
-          <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-[#374151]">
+          <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-ink-soft">
             Confirm password
           </label>
           <div className="relative">
@@ -235,7 +239,7 @@ export default function SignupPage() {
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] transition-colors"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"
               aria-label={showConfirm ? "Hide password" : "Show password"}
             >
               {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -252,13 +256,13 @@ export default function SignupPage() {
         </div>
 
         {/* Terms */}
-        <p className="text-xs leading-relaxed text-[#64748B]">
+        <p className="text-xs leading-relaxed text-ink-soft">
           By signing up, you agree to our{" "}
-          <Link href="/terms" className="font-medium text-[#0369A1] hover:text-[#0284C7]">
+          <Link href="/terms" className="font-medium text-signal hover:text-signal-600">
             Terms of Service
           </Link>{" "}
           and{" "}
-          <Link href="/privacy" className="font-medium text-[#0369A1] hover:text-[#0284C7]">
+          <Link href="/privacy" className="font-medium text-signal hover:text-signal-600">
             Privacy Policy
           </Link>
           .
@@ -268,7 +272,7 @@ export default function SignupPage() {
         <Button
           type="submit"
           disabled={loading}
-          className="h-11 w-full rounded-xl bg-[#0369A1] text-sm font-semibold text-white hover:bg-[#0284C7] disabled:opacity-70"
+          className="h-11 w-full rounded-full bg-signal text-sm font-semibold text-white hover:bg-signal-600 disabled:opacity-70"
         >
           {loading ? (
             <>
@@ -284,16 +288,16 @@ export default function SignupPage() {
         </Button>
 
         {error && (
-          <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
             {error}
           </div>
         )}
       </form>
 
       {/* Sign in link */}
-      <p className="mt-5 text-center text-sm text-[#64748B]">
+      <p className="mt-5 text-center text-sm text-ink-soft">
         Already have an account?{" "}
-        <Link href="/login" className="font-semibold text-[#0369A1] hover:text-[#0284C7] transition-colors">
+        <Link href="/login" className="font-semibold text-signal hover:text-signal-600 transition-colors">
           Sign in
         </Link>
       </p>

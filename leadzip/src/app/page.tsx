@@ -1,762 +1,385 @@
-import Link from "next/link";
+import Link from 'next/link'
+import Image from 'next/image'
 import {
-  MapPin,
-  Search,
-  Star,
-  Download,
-  CheckCircle,
-  ArrowRight,
-  Zap,
-  Users,
-  Building2,
-  TrendingUp,
-  Globe,
-  Phone,
-} from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/layout/Navbar";
-import FAQSection from "@/components/landing/FAQSection"
-import { HeroSearchWidget } from "@/components/landing/HeroSearchWidget";
+  MapPin, ArrowRight, Search, Target, Send, Database, Gauge, Mail,
+  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Menu,
+} from 'lucide-react'
+import { HeroSearchWidget } from '@/components/landing/HeroSearchWidget'
+import { HeroMap } from '@/components/landing/HeroMap'
+import { Reveal } from '@/components/landing/Reveal'
 
-export const metadata = {
-  title: "LeadZip — Find Local Business Leads by ZIP Code | Free Lead Generation Tool",
-  description:
-    "Search 35+ business categories by ZIP code and radius. Get lead scores, contact info, and export to CSV. Free plan available — no credit card required.",
-  keywords: [
-    "lead generation",
-    "local business leads",
-    "ZIP code leads",
-    "B2B prospecting",
-    "web design leads",
-    "marketing agency leads",
-    "find local businesses",
-  ],
-  alternates: { canonical: "https://leadzip.vercel.app" },
-  openGraph: {
-    title: "LeadZip — Find Local Business Leads by ZIP Code",
-    description: "Search 35+ business categories by ZIP code and radius. Get lead scores, export to CSV.",
-    images: [{ url: "https://leadzip.vercel.app/og", width: 1200, height: 630 }],
-  },
-};
+const TRADES = [
+  'Plumbers', 'Dentists', 'Roofers', 'Salons', 'HVAC', 'Law Firms', 'Restaurants',
+  'Contractors', 'Auto Shops', 'Realtors', 'Gyms', 'Electricians', 'Landscapers', 'Chiropractors',
+]
 
-/* ─── Fake lead card data for hero visual ─── */
-const FAKE_LEADS = [
+const STEPS = [
   {
-    name: "Silverton Roofing Co.",
-    category: "Roofing",
-    rating: 4.7,
-    reviews: 63,
-    score: 87,
-    distance: "1.2 mi",
-    hasWeb: true,
-    hasPhone: true,
+    n: '01', icon: MapPin, title: 'Drop a pin',
+    body: 'Type a ZIP code and pick a trade — plumbers, dentists, roofers, anything. Set your radius and go.',
   },
   {
-    name: "Clearview Window Cleaning",
-    category: "Cleaning Services",
-    rating: 4.2,
-    reviews: 31,
-    score: 72,
-    distance: "2.7 mi",
-    hasWeb: false,
-    hasPhone: true,
+    n: '02', icon: Target, title: 'We map the block',
+    body: 'Every real business in that area, pulled live from Google & Yelp, then scored by how badly they need what you sell.',
   },
   {
-    name: "Peak HVAC Solutions",
-    category: "HVAC Services",
-    rating: 4.9,
-    reviews: 118,
-    score: 94,
-    distance: "3.1 mi",
-    hasWeb: true,
-    hasPhone: true,
+    n: '03', icon: Send, title: 'Reach out first',
+    body: 'Find the owner’s email, tap to call, and export straight to your CRM. You’re talking to them before competitors even know they exist.',
   },
-];
+]
 
-function ScoreBadge({ score }: { score: number }) {
-  const color =
-    score >= 85
-      ? "bg-emerald-100 text-emerald-700"
-      : score >= 65
-      ? "bg-amber-100 text-amber-700"
-      : "bg-red-100 text-red-700";
-  return (
-    <span
-      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold ${color}`}
-    >
-      {score}
-    </span>
-  );
-}
+const FEATURES = [
+  { icon: Database, title: 'Real businesses, not scraped junk', body: 'Live data from Google Places & Yelp — verified names, addresses, phones, and websites. Every lead is a business you can actually call today.' },
+  { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top — the businesses most likely to say yes to you.' },
+  { icon: Mail, title: 'Decision-maker email finder', body: 'One tap surfaces the best contact email for any business with a domain, with a confidence badge so you know what you’re working with.' },
+  { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Salesforce, and Pipedrive. Your pipeline, your format — no copy-paste.' },
+  { icon: MapIcon, title: 'See the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Work a block, own a zip, plan your route.' },
+  { icon: SlidersHorizontal, title: 'Filter down to your buyer', body: 'Radius, rating, review count, has-website, category — dial in exactly the businesses that fit before you spend a minute reaching out.' },
+]
 
-function StarRating({ rating }: { rating: number }) {
-  return (
-    <span className="flex items-center gap-0.5">
-      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-      <span className="text-xs font-semibold text-[#475569]">{rating}</span>
-    </span>
-  );
-}
+const SHOWCASE = [
+  { img: '/img/storefront.jpg', name: 'Marlowe Home Goods', cat: 'Retail · 90028', score: 92, tag: 'No website' },
+  { img: '/img/tradesman.jpg', name: 'Ironwood Electric', cat: 'Electrician · 90026', score: 97, tag: 'No website' },
+  { img: '/img/dentist.jpg', name: 'Bright Ave Dental', cat: 'Dentist · 90210', score: 84, tag: 'Weak reviews' },
+  { img: '/img/cafe.jpg', name: 'Poppy & Rye Café', cat: 'Restaurant · 90012', score: 89, tag: 'No website' },
+]
 
-function HeroVisual() {
+const STATS = [
+  { v: '43', l: 'industries covered' },
+  { v: '41k+', l: 'US ZIP codes' },
+  { v: 'Live', l: 'Google & Yelp data' },
+  { v: '<10s', l: 'to a full lead list' },
+]
+
+const PLANS = [
+  { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'CSV export'], cta: 'Start free', href: '/signup', highlight: false },
+  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'PDF & CRM export', 'Map view'], cta: 'Go Pro', href: '/signup', highlight: true },
+  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces', 'White-label PDFs', 'Priority support'], cta: 'Start Agency', href: '/signup', highlight: false },
+]
+
+const FAQS = [
+  { q: 'Where does the lead data come from?', a: 'LeadZip pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. It is not a static scraped database; every search runs against current data.' },
+  { q: 'What makes a lead “high-scoring”?', a: 'We rank each business by how likely it is to need your services. Signals like having no website, few reviews, or a low rating push a business up your list, because those are the owners most open to help.' },
+  { q: 'Can I find email addresses?', a: 'Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).' },
+  { q: 'How do exports work?', a: 'Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Salesforce, or Pipedrive. Email, phone, score, and every field come along.' },
+  { q: 'Do I need a credit card to start?', a: 'No. The Starter plan is free forever and includes 25 searches a month against real data. Upgrade to Pro only when you want unlimited searches and the email finder.' },
+]
+
+export default function Home() {
   return (
-    <div className="relative w-full max-w-lg">
-      {/* Search bar mockup */}
-      <div className="rounded-xl border border-[#E2E8F0] bg-white shadow-card-hover p-3 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3">
-            <MapPin className="h-4 w-4 text-[#0369A1] shrink-0" />
-            <span className="text-sm text-[#0F172A] font-medium">78701</span>
-          </div>
-          <div className="flex h-9 flex-1 items-center gap-2 rounded-lg border border-[#E2E8F0] bg-[#F8FAFC] px-3">
-            <Building2 className="h-4 w-4 text-[#94A3B8] shrink-0" />
-            <span className="text-sm text-[#94A3B8]">Roofing</span>
-          </div>
-          <button className="flex h-9 items-center gap-1.5 rounded-lg bg-[#0369A1] px-3 text-xs font-semibold text-white shrink-0">
-            <Search className="h-3.5 w-3.5" />
-            Search
-          </button>
-        </div>
-        <div className="mt-2 flex items-center gap-2">
-          <span className="text-xs text-[#94A3B8]">Radius:</span>
-          {["5 mi", "10 mi", "25 mi"].map((r, i) => (
-            <span
-              key={r}
-              className={`rounded-full px-2.5 py-0.5 text-xs font-medium cursor-default ${
-                i === 1
-                  ? "bg-[#0369A1] text-white"
-                  : "bg-[#F1F5F9] text-[#64748B]"
-              }`}
-            >
-              {r}
+    <div className="grain relative min-h-screen bg-paper text-ink">
+      {/* ================= NAV ================= */}
+      <header className="sticky top-0 z-50 border-b border-sand/70 bg-paper/80 backdrop-blur-md">
+        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
+          <Link href="/" className="flex items-center gap-2">
+            <span className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
+              <MapPin className="h-4 w-4 text-white" />
+              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-paper" />
             </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Lead cards */}
-      <div className="space-y-2.5">
-        {FAKE_LEADS.map((lead, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-[#E2E8F0] bg-white shadow-card p-3 flex items-center gap-3"
-          >
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[#F0F9FF] text-[#0369A1]">
-              <Building2 className="h-5 w-5" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 mb-0.5">
-                <span className="text-sm font-semibold text-[#0F172A] truncate">
-                  {lead.name}
-                </span>
-                <ScoreBadge score={lead.score} />
-              </div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-[#94A3B8]">{lead.category}</span>
-                <span className="text-[#E2E8F0]">·</span>
-                <StarRating rating={lead.rating} />
-                <span className="text-xs text-[#94A3B8]">({lead.reviews})</span>
-                <span className="text-[#E2E8F0]">·</span>
-                <span className="text-xs text-[#94A3B8]">{lead.distance}</span>
-              </div>
-              <div className="mt-1 flex items-center gap-2">
-                {lead.hasWeb && (
-                  <span className="flex items-center gap-0.5 text-xs text-emerald-600">
-                    <Globe className="h-3 w-3" /> Website
-                  </span>
-                )}
-                {lead.hasPhone && (
-                  <span className="flex items-center gap-0.5 text-xs text-emerald-600">
-                    <Phone className="h-3 w-3" /> Phone
-                  </span>
-                )}
-              </div>
-            </div>
-            <button className="shrink-0 rounded-lg border border-[#E2E8F0] p-1.5 hover:bg-[#F8FAFC] transition-colors">
-              <Download className="h-3.5 w-3.5 text-[#94A3B8]" />
-            </button>
+            <span className="font-display text-xl font-extrabold tracking-tight">LeadZip</span>
+          </Link>
+          <div className="hidden items-center gap-8 md:flex">
+            <a href="#how" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">How it works</a>
+            <a href="#features" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Features</a>
+            <Link href="/pricing" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Pricing</Link>
+            <a href="#faq" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">FAQ</a>
           </div>
-        ))}
-      </div>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="hidden text-sm font-semibold text-ink transition-colors hover:text-signal sm:block">Log in</Link>
+            <Link href="/signup" className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-paper transition-transform hover:scale-[1.03] active:scale-95">
+              Start free
+            </Link>
+            <button className="md:hidden" aria-label="Menu"><Menu className="h-5 w-5" /></button>
+          </div>
+        </nav>
+      </header>
 
-      <div className="mt-3 flex items-center justify-between px-1">
-        <span className="text-xs text-[#94A3B8]">Showing 3 of 47 results</span>
-        <span className="text-xs font-medium text-[#0369A1]">View all →</span>
-      </div>
-
-      {/* Decorative glow elements */}
-      <div className="absolute -right-6 -top-6 -z-10 h-48 w-48 rounded-full bg-[#0369A1]/5 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-8 -left-8 -z-10 h-56 w-56 rounded-full bg-sky-100/60 blur-3xl pointer-events-none" />
-    </div>
-  );
-}
-
-function FeatureCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-white p-6 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-0.5 group">
-      <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-[#F0F9FF] transition-colors group-hover:bg-[#0369A1]">
-        <Icon className="h-5 w-5 text-[#0369A1] group-hover:text-white transition-colors" />
-      </div>
-      <h3 className="mb-2 text-base font-semibold text-[#0F172A]">{title}</h3>
-      <p className="text-sm leading-relaxed text-[#64748B]">{description}</p>
-    </div>
-  );
-}
-
-function StepCard({
-  number,
-  title,
-  description,
-  isLast,
-}: {
-  number: number;
-  title: string;
-  description: string;
-  isLast?: boolean;
-}) {
-  return (
-    <div className="relative flex gap-4">
-      <div className="flex flex-col items-center">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0369A1] text-sm font-bold text-white shadow-sm z-10">
-          {number}
-        </div>
-        {!isLast && (
-          <div className="mt-2 h-full w-px bg-gradient-to-b from-[#0369A1]/40 to-transparent min-h-12" />
-        )}
-      </div>
-      <div className="pb-8">
-        <h3 className="mb-1.5 text-base font-semibold text-[#0F172A]">{title}</h3>
-        <p className="text-sm leading-relaxed text-[#64748B]">{description}</p>
-      </div>
-    </div>
-  );
-}
-
-function UseCaseCard({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: React.ElementType;
-  title: string;
-  description: string;
-}) {
-  return (
-    <div className="rounded-xl border border-[#E2E8F0] bg-white p-5 shadow-card hover:border-[#0369A1]/30 hover:shadow-card-hover transition-all">
-      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-[#F0F9FF]">
-        <Icon className="h-5 w-5 text-[#0369A1]" />
-      </div>
-      <h3 className="mb-1.5 text-sm font-semibold text-[#0F172A]">{title}</h3>
-      <p className="text-xs leading-relaxed text-[#64748B]">{description}</p>
-    </div>
-  );
-}
-
-function PricingPreviewCard({
-  name,
-  price,
-  description,
-  popular,
-}: {
-  name: string;
-  price: string;
-  description: string;
-  popular?: boolean;
-}) {
-  return (
-    <div
-      className={`relative rounded-xl border p-5 shadow-card transition-shadow hover:shadow-card-hover ${
-        popular
-          ? "border-[#0369A1] bg-[#F0F9FF]"
-          : "border-[#E2E8F0] bg-white"
-      }`}
-    >
-      {popular && (
-        <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#0369A1] px-3 py-0.5 text-xs font-bold text-white whitespace-nowrap">
-          Most Popular
-        </span>
-      )}
-      <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#94A3B8]">
-        {name}
-      </p>
-      <p className="mb-2 text-2xl font-extrabold text-[#0F172A]">{price}</p>
-      <p className="text-xs text-[#64748B]">{description}</p>
-    </div>
-  );
-}
-
-export default function HomePage() {
-  return (
-    <div className="flex flex-col min-h-screen bg-white">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify([
-            {
-              "@context": "https://schema.org",
-              "@type": "Organization",
-              name: "LeadZip",
-              url: "https://leadzip.vercel.app",
-              logo: "https://leadzip.vercel.app/og",
-              description:
-                "B2B lead generation platform for finding local businesses by ZIP code",
-              contactPoint: {
-                "@type": "ContactPoint",
-                email: "hello@leadzip.com",
-                contactType: "customer support",
-              },
-            },
-            {
-              "@context": "https://schema.org",
-              "@type": "SoftwareApplication",
-              name: "LeadZip",
-              applicationCategory: "BusinessApplication",
-              operatingSystem: "Web",
-              description:
-                "Find local business leads by ZIP code, industry, and radius. Lead scoring, CSV export, and CRM features.",
-              offers: [
-                { "@type": "Offer", name: "Free", price: "0", priceCurrency: "USD" },
-                {
-                  "@type": "Offer",
-                  name: "Pro",
-                  price: "49",
-                  priceCurrency: "USD",
-                  billingIncrement: "month",
-                },
-                {
-                  "@type": "Offer",
-                  name: "Agency",
-                  price: "99",
-                  priceCurrency: "USD",
-                  billingIncrement: "month",
-                },
-              ],
-              url: "https://leadzip.vercel.app",
-            },
-            {
-              "@context": "https://schema.org",
-              "@type": "FAQPage",
-              mainEntity: [
-                {
-                  "@type": "Question",
-                  name: "What data sources does LeadZip use?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "LeadZip uses compliant public business data sources including approved APIs. All data comes from publicly available business listings.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "How is the lead score calculated?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Lead scores (0-100) are calculated based on phone number availability, website presence, Google rating, review count, and distance from your target ZIP code.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Can I export leads to CSV?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Yes, Pro and Agency plan users can export saved leads to CSV format including all contact info, scores, status, and notes.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Is there a free plan?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "Yes, the free plan includes 10 searches per month and up to 25 saved leads with no credit card required.",
-                  },
-                },
-                {
-                  "@type": "Question",
-                  name: "Is LeadZip compliant with privacy laws?",
-                  acceptedAnswer: {
-                    "@type": "Answer",
-                    text: "LeadZip uses only approved public data sources. Users are responsible for ensuring their outreach complies with CAN-SPAM, GDPR, and applicable privacy regulations.",
-                  },
-                },
-              ],
-            },
-            {
-              "@context": "https://schema.org",
-              "@type": "WebSite",
-              name: "LeadZip",
-              url: "https://leadzip.vercel.app",
-            },
-          ]),
-        }}
-      />
-      <Navbar />
-
-      {/* ── Hero ── */}
-      <section className="relative overflow-hidden bg-white pt-16 pb-20 lg:pt-24 lg:pb-28">
-        <div className="absolute inset-0 bg-grid-pattern opacity-40 [mask-image:radial-gradient(ellipse_at_center,white_30%,transparent_80%)]" />
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 h-64 w-[600px] bg-gradient-to-b from-[#0369A1]/8 to-transparent rounded-full blur-3xl pointer-events-none" />
-
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center gap-14 lg:flex-row lg:items-center lg:gap-12">
-            {/* Left: copy */}
-            <div className="flex-1 text-center lg:text-left">
-              <Badge
-                variant="blue"
-                className="mb-5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
-              >
-                <Zap className="h-3 w-3" />
-                Lead generation, simplified
-              </Badge>
-
-              <h1 className="mb-5 text-4xl font-extrabold leading-tight tracking-tight text-[#0F172A] sm:text-5xl lg:text-[3.25rem]">
-                Find Local Business
-                <br />
-                <span className="text-[#0369A1]">Leads by ZIP Code</span>
-              </h1>
-
-              <p className="mb-8 max-w-xl text-lg leading-relaxed text-[#475569] mx-auto lg:mx-0">
-                Search by location, industry, and radius. Find businesses that need your services.
-                Export and outreach&nbsp;— all in one place.
-              </p>
-
-              {/* Mobile: inline search widget */}
-              <div className="sm:hidden w-full max-w-sm">
-                <HeroSearchWidget />
-              </div>
-
-              {/* Tablet+: original CTA buttons */}
-              <div className="hidden sm:flex flex-col sm:flex-row items-center gap-3 justify-center lg:justify-start">
-                <Link href="/signup">
-                  <Button className="h-12 rounded-xl bg-[#0369A1] px-7 text-base font-semibold text-white hover:bg-[#0284C7] shadow-sm transition-all hover:shadow-md hover:-translate-y-px">
-                    Start Searching Free
-                    <ArrowRight className="ml-1.5 h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link href="#demo">
-                  <Button
-                    variant="outline"
-                    className="h-12 rounded-xl border-[#E2E8F0] px-7 text-base font-semibold text-[#0F172A] hover:bg-[#F8FAFC]"
-                  >
-                    View Demo
-                  </Button>
-                </Link>
-              </div>
-
-              <div className="mt-8 flex items-center gap-4 justify-center lg:justify-start">
-                <div className="flex -space-x-2">
-                  {[
-                    "bg-blue-400",
-                    "bg-teal-400",
-                    "bg-violet-400",
-                    "bg-amber-400",
-                  ].map((c, i) => (
-                    <div
-                      key={i}
-                      className={`h-7 w-7 rounded-full border-2 border-white ${c}`}
-                    />
-                  ))}
-                </div>
-                <p className="text-sm text-[#64748B]">
-                  <span className="font-semibold text-[#0F172A]">2,400+</span>{" "}
-                  businesses found this week
-                </p>
-              </div>
+      {/* ================= HERO ================= */}
+      <section className="topo relative overflow-hidden text-white">
+        <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-16 sm:py-24 lg:grid-cols-2">
+          <div>
+            <span className="readout inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-lime ring-1 ring-white/15">
+              <span className="h-1.5 w-1.5 rounded-full bg-lime" /> Local lead intelligence
+            </span>
+            <h1 className="mt-6 font-display text-[2.7rem] font-extrabold leading-[0.98] tracking-tight sm:text-6xl">
+              Type a ZIP code.<br />
+              Get the whole <span className="relative whitespace-nowrap text-signal">street.
+                <svg className="absolute -bottom-2 left-0 w-full" height="10" viewBox="0 0 200 10" fill="none" aria-hidden>
+                  <path d="M2 7C40 3 160 3 198 7" stroke="#CBF23F" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+              </span>
+            </h1>
+            <p className="mt-6 max-w-md text-lg leading-relaxed text-white/75">
+              LeadZip maps every local business in any ZIP — scored by who needs you most —
+              with real phones, websites, and owner emails. Not a scraped demo. Actual businesses you can call today.
+            </p>
+            <div className="mt-8">
+              <HeroSearchWidget />
             </div>
+          </div>
+          <div className="lg:pl-6">
+            <HeroMap />
+          </div>
+        </div>
+      </section>
 
-            {/* Right: visual */}
-            <div id="demo" className="flex-1 flex justify-center lg:justify-end">
-              <HeroVisual />
+      {/* ================= TRUST MARQUEE ================= */}
+      <section className="border-y border-sand bg-paper-2 py-5">
+        <div className="mx-auto flex max-w-6xl items-center gap-6 px-5">
+          <span className="readout hidden flex-shrink-0 text-stone sm:block">Prospecting for →</span>
+          <div className="relative flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
+            <div className="marquee-track gap-3">
+              {[...TRADES, ...TRADES].map((t, i) => (
+                <span key={i} className="flex-shrink-0 rounded-full border border-sand bg-paper px-4 py-1.5 font-mono text-sm text-ink-soft">
+                  {t}
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* ── Social proof strip ── */}
-      <section className="border-y border-[#E2E8F0] bg-[#F8FAFC] py-4">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-3 text-sm text-[#94A3B8]">
-            {[
-              "Web Design Agencies",
-              "Marketing Firms",
-              "Sales Teams",
-              "Local Service Pros",
-              "B2B Consultants",
-            ].map((label) => (
-              <span
-                key={label}
-                className="flex items-center gap-2 font-medium"
-              >
-                <CheckCircle className="h-3.5 w-3.5 text-[#0369A1]" />
-                {label}
-              </span>
+      {/* ================= HOW IT WORKS ================= */}
+      <section id="how" className="mx-auto max-w-6xl px-5 py-20 sm:py-28">
+        <Reveal>
+          <span className="readout text-signal">The workflow</span>
+          <h2 className="mt-3 max-w-2xl font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+            From a ZIP code to a booked call in three moves.
+          </h2>
+        </Reveal>
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <Reveal key={s.n} delay={i * 0.1}>
+              <div className="relative h-full rounded-3xl border border-sand bg-white p-7 card-lift">
+                <span className="font-mono text-sm font-bold text-signal">{s.n}</span>
+                <span className="mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-signal-50">
+                  <s.icon className="h-6 w-6 text-signal" />
+                </span>
+                <h3 className="mt-5 font-display text-xl font-bold">{s.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{s.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ================= FEATURES ================= */}
+      <section id="features" className="relative border-y border-sand bg-paper-2 py-20 sm:py-28 map-grid">
+        <div className="mx-auto max-w-6xl px-5">
+          <Reveal className="max-w-2xl">
+            <span className="readout text-signal">What you get</span>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+              Everything you need to turn a neighborhood into a pipeline.
+            </h2>
+          </Reveal>
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f, i) => (
+              <Reveal key={f.title} delay={(i % 3) * 0.08}>
+                <div className="group h-full rounded-2xl border border-sand bg-white p-6 transition-colors hover:border-signal/40">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest text-lime transition-colors group-hover:bg-signal group-hover:text-white">
+                    <f.icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-5 font-display text-lg font-bold">{f.title}</h3>
+                  <p className="mt-2 text-[14.5px] leading-relaxed text-ink-soft">{f.body}</p>
+                </div>
+              </Reveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ── Features ── */}
-      <section id="features" className="py-20 bg-[#F8FAFC]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#0369A1]">
-              Features
-            </p>
-            <h2 className="text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
-              Everything you need to find leads
+      {/* ================= SHOWCASE ================= */}
+      <section className="mx-auto max-w-6xl px-5 py-20 sm:py-28">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <Reveal>
+            <span className="readout text-signal">The output</span>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+              These are real businesses in one ZIP — ranked and ready.
             </h2>
-            <p className="mt-3 text-base text-[#64748B] max-w-xl mx-auto">
-              A complete toolkit for discovering, scoring, and reaching out to
-              local businesses.
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-soft">
+              Every card is a live listing with a real address, phone, and score. The ones with
+              <span className="font-semibold text-ink"> no website</span> or
+              <span className="font-semibold text-ink"> thin reviews</span> rise to the top —
+              because those owners are the easiest yes you’ll have all week.
             </p>
-          </div>
-
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            <FeatureCard
-              icon={MapPin}
-              title="Search by ZIP & Radius"
-              description="Enter any ZIP code, set your radius, and instantly find local businesses in your target area."
-            />
-            <FeatureCard
-              icon={Star}
-              title="Smart Lead Scoring"
-              description="Every lead is scored 0-100 based on online presence, ratings, reviews, and distance from your target area."
-            />
-            <FeatureCard
-              icon={Download}
-              title="Export & Outreach"
-              description="Save leads, add CRM notes, track status, and export to CSV for your outreach campaigns."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ── How It Works ── */}
-      <section id="how-it-works" className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col lg:flex-row gap-16 items-start">
-            <div className="lg:w-2/5 lg:sticky lg:top-24">
-              <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#0369A1]">
-                How It Works
-              </p>
-              <h2 className="text-3xl font-extrabold text-[#0F172A] sm:text-4xl mb-4">
-                Three steps to your next client
-              </h2>
-              <p className="text-base text-[#64748B] leading-relaxed mb-6">
-                LeadZip cuts through the noise. No complicated setup, no data
-                wrangling — just targeted local leads in minutes.
-              </p>
-              <Link href="/signup">
-                <Button className="h-10 rounded-xl bg-[#0369A1] px-5 text-sm font-semibold text-white hover:bg-[#0284C7]">
-                  Try it free
-                  <ArrowRight className="ml-1.5 h-4 w-4" />
-                </Button>
-              </Link>
-            </div>
-
-            <div className="lg:w-3/5">
-              <StepCard
-                number={1}
-                title="Enter ZIP Code & Category"
-                description="Type any U.S. ZIP code, choose your target business category (or enter a custom keyword), and pick your search radius from 5 to 50 miles."
-              />
-              <StepCard
-                number={2}
-                title="Review Scored Leads"
-                description="Browse a ranked list of matching businesses. Each lead shows a 0-100 score, star rating, review count, website presence, and distance from your target."
-              />
-              <StepCard
-                number={3}
-                title="Save & Export"
-                description="Bookmark leads, add private notes, update outreach status, and export your list to CSV for use in your CRM or email outreach tool."
-                isLast
-              />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ── Use Cases ── */}
-      <section className="py-20 bg-[#F8FAFC]">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-12 text-center">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#0369A1]">
-              Use Cases
-            </p>
-            <h2 className="text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
-              Built for teams that sell locally
-            </h2>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            <UseCaseCard
-              icon={Building2}
-              title="Web Design Agencies"
-              description="Find local businesses with outdated or no websites and pitch your services directly."
-            />
-            <UseCaseCard
-              icon={TrendingUp}
-              title="Marketing Agencies"
-              description="Identify underserved local businesses that need digital marketing, SEO, or ad management."
-            />
-            <UseCaseCard
-              icon={Users}
-              title="Sales Teams"
-              description="Give your reps pre-qualified, scored leads so they can focus on conversations, not research."
-            />
-            <UseCaseCard
-              icon={MapPin}
-              title="Local Service Providers"
-              description="Find complementary businesses in your area to build referral partnerships and grow together."
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* ── Pricing Preview ── */}
-      <section className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-10 text-center">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#0369A1]">
-              Pricing
-            </p>
-            <h2 className="text-3xl font-extrabold text-[#0F172A] sm:text-4xl mb-3">
-              Simple, transparent pricing
-            </h2>
-            <p className="text-base text-[#64748B]">
-              Start free. Upgrade when you&apos;re ready to grow.
-            </p>
-          </div>
-
-          <div className="grid gap-5 sm:grid-cols-3 max-w-3xl mx-auto mb-8">
-            <PricingPreviewCard
-              name="Free"
-              price="$0/mo"
-              description="10 searches, 25 saved leads, basic scoring."
-            />
-            <PricingPreviewCard
-              name="Pro"
-              price="$49/mo"
-              description="Unlimited searches, CSV export, notes & status."
-              popular
-            />
-            <PricingPreviewCard
-              name="Agency"
-              price="$99/mo"
-              description="Unlimited everything, advanced filters, priority support."
-            />
-          </div>
-
-          <div className="text-center">
-            <Link href="/pricing">
-              <Button
-                variant="outline"
-                className="h-10 rounded-xl border-[#E2E8F0] px-6 text-sm font-semibold text-[#0F172A] hover:bg-[#F8FAFC]"
-              >
-                View Full Pricing
-                <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Button>
+            <Link href="/signup" className="mt-8 inline-flex items-center gap-2 rounded-full bg-signal px-6 py-3 font-semibold text-white transition-all hover:bg-signal-600 active:scale-95">
+              See leads in your area <ArrowRight className="h-4 w-4" />
             </Link>
+          </Reveal>
+          <div className="grid grid-cols-2 gap-4">
+            {SHOWCASE.map((b, i) => (
+              <Reveal key={b.name} delay={i * 0.08} className={i % 2 === 1 ? 'mt-8' : ''}>
+                <div className="overflow-hidden rounded-2xl border border-sand bg-white card-lift">
+                  <div className="relative aspect-[4/3]">
+                    <Image src={b.img} alt={b.name} fill sizes="(max-width:768px) 45vw, 240px" className="object-cover" />
+                    <span className="absolute right-2 top-2 rounded-lg bg-signal px-2 py-0.5 text-xs font-bold text-white">{b.tag}</span>
+                  </div>
+                  <div className="p-3.5">
+                    <p className="truncate font-display text-[15px] font-bold">{b.name}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="readout !text-[10px] !normal-case tracking-normal text-stone">{b.cat}</span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-forest px-1.5 py-0.5">
+                        <Star className="h-2.5 w-2.5 fill-lime text-lime" />
+                        <span className="font-mono text-xs font-bold text-white">{b.score}</span>
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ── FAQ ── */}
-      <section className="py-20 bg-[#F8FAFC]">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <div className="mb-10 text-center">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-widest text-[#0369A1]">
-              FAQ
-            </p>
-            <h2 className="text-3xl font-extrabold text-[#0F172A] sm:text-4xl">
-              Questions answered
-            </h2>
-          </div>
-          <FAQSection />
+      {/* ================= STATS BAND ================= */}
+      <section className="topo relative overflow-hidden py-16 text-white">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-5 md:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.l} className="text-center">
+              <p className="font-display text-4xl font-extrabold text-lime sm:text-5xl">{s.v}</p>
+              <p className="readout mt-2 text-white/60">{s.l}</p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ── Final CTA ── */}
-      <section className="bg-[#0F172A] py-20">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="mb-4 text-3xl font-extrabold text-white sm:text-4xl">
-            Ready to find your next client?
+      {/* ================= PRICING PREVIEW ================= */}
+      <section className="mx-auto max-w-6xl px-5 py-20 sm:py-28">
+        <Reveal className="mx-auto max-w-2xl text-center">
+          <span className="readout text-signal">Simple pricing</span>
+          <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+            Start free. Upgrade when the deals roll in.
           </h2>
-          <p className="mb-8 text-lg text-[#94A3B8] max-w-xl mx-auto">
-            Join thousands of agencies and sales teams who use LeadZip to fill
-            their pipeline with warm local leads every week.
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/signup">
-              <Button className="h-12 rounded-xl bg-[#0369A1] px-8 text-base font-semibold text-white hover:bg-[#0284C7] shadow-lg hover:shadow-xl transition-all hover:-translate-y-px">
-                Start Searching Free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link href="/pricing">
-              <Button
-                variant="outline"
-                className="h-12 rounded-xl border-white/20 px-8 text-base font-semibold text-white hover:bg-white/10 bg-transparent"
-              >
-                View Pricing
-              </Button>
-            </Link>
+        </Reveal>
+        <div className="mt-14 grid items-stretch gap-6 md:grid-cols-3">
+          {PLANS.map((p, i) => (
+            <Reveal key={p.name} delay={i * 0.08}>
+              <div className={`relative flex h-full flex-col rounded-3xl border p-7 ${p.highlight ? 'border-signal bg-forest text-white signal-glow' : 'border-sand bg-white'}`}>
+                {p.highlight && (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-signal px-3 py-1 text-xs font-bold text-white">
+                    Most popular
+                  </span>
+                )}
+                <h3 className={`font-display text-lg font-bold ${p.highlight ? 'text-lime' : ''}`}>{p.name}</h3>
+                <p className={`mt-1 text-sm ${p.highlight ? 'text-white/70' : 'text-stone'}`}>{p.blurb}</p>
+                <div className="mt-5 flex items-baseline gap-1">
+                  <span className="font-display text-4xl font-extrabold">{p.price}</span>
+                  <span className={`text-sm ${p.highlight ? 'text-white/60' : 'text-stone'}`}>{p.per}</span>
+                </div>
+                <ul className="mt-6 flex-1 space-y-2.5">
+                  {p.feats.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm">
+                      <Check className={`mt-0.5 h-4 w-4 flex-shrink-0 ${p.highlight ? 'text-lime' : 'text-signal'}`} />
+                      <span className={p.highlight ? 'text-white/90' : 'text-ink-soft'}>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Link href={p.href} className={`mt-7 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold transition-all active:scale-95 ${p.highlight ? 'bg-signal text-white hover:bg-signal-600' : 'bg-ink text-paper hover:bg-ink-soft'}`}>
+                  {p.cta} <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+        <p className="mt-8 text-center text-sm text-stone">
+          Compare every feature on the <Link href="/pricing" className="font-semibold text-signal underline-offset-2 hover:underline">full pricing page</Link>.
+        </p>
+      </section>
+
+      {/* ================= FAQ ================= */}
+      <section id="faq" className="border-t border-sand bg-paper-2 py-20 sm:py-28">
+        <div className="mx-auto max-w-3xl px-5">
+          <Reveal>
+            <span className="readout text-signal">Questions</span>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+              The stuff people ask before their first search.
+            </h2>
+          </Reveal>
+          <div className="mt-12 divide-y divide-sand rounded-3xl border border-sand bg-white">
+            {FAQS.map((f) => (
+              <details key={f.q} className="group px-6 py-5 [&_svg]:open:rotate-45">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
+                  <span className="font-display text-lg font-semibold">{f.q}</span>
+                  <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-signal-50 text-signal transition-transform">
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                  </span>
+                </summary>
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{f.a}</p>
+              </details>
+            ))}
           </div>
-          <p className="mt-5 text-sm text-[#475569]">
-            No credit card required. Free plan available.
-          </p>
         </div>
       </section>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-[#1E293B] bg-[#0F172A] py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0369A1]">
-                <Zap className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="text-base font-extrabold text-white">
-                Lead<span className="text-[#0EA5E9]">Zip</span>
-              </span>
+      {/* ================= FINAL CTA ================= */}
+      <section className="relative overflow-hidden bg-signal py-20 text-white sm:py-28">
+        <div className="grain absolute inset-0 opacity-40" />
+        <div className="relative mx-auto max-w-3xl px-5 text-center">
+          <h2 className="font-display text-4xl font-extrabold leading-[1.02] sm:text-5xl">
+            Your next 50 clients are<br className="hidden sm:block" /> already on the map.
+          </h2>
+          <p className="mx-auto mt-5 max-w-lg text-lg text-white/85">
+            Run your first search free — no card, no demo data. Just type a ZIP and watch your territory light up.
+          </p>
+          <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-semibold text-signal transition-transform hover:scale-[1.03] active:scale-95">
+              <Search className="h-4 w-4" /> Start finding leads
             </Link>
-
-            <nav className="flex flex-wrap items-center justify-center gap-5">
-              {[
-                { label: "Features", href: "#features" },
-                { label: "Pricing", href: "/pricing" },
-                { label: "Login", href: "/login" },
-                { label: "Privacy", href: "/privacy" },
-                { label: "Terms", href: "/terms" },
-              ].map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-sm text-[#64748B] hover:text-white transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
+            <Link href="/pricing" className="inline-flex items-center gap-2 rounded-full border border-white/40 px-7 py-3.5 font-semibold text-white transition-colors hover:bg-white/10">
+              See pricing
+            </Link>
           </div>
+        </div>
+      </section>
 
-          <div className="mt-6 border-t border-[#1E293B] pt-6">
-            <p className="text-center text-xs leading-relaxed text-[#475569]">
-              LeadZip uses approved public data sources. Users are responsible
-              for outreach compliance with CAN-SPAM, GDPR, and applicable
-              privacy laws. &copy; {new Date().getFullYear()} LeadZip. All
-              rights reserved.
-            </p>
+      {/* ================= FOOTER ================= */}
+      <footer className="bg-forest-900 py-14 text-white/70">
+        <div className="mx-auto max-w-6xl px-5">
+          <div className="flex flex-col justify-between gap-8 md:flex-row">
+            <div className="max-w-xs">
+              <div className="flex items-center gap-2">
+                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
+                  <MapPin className="h-4 w-4 text-white" />
+                </span>
+                <span className="font-display text-xl font-extrabold text-white">LeadZip</span>
+              </div>
+              <p className="mt-4 text-sm leading-relaxed">
+                Turn any ZIP code into a map of local businesses that need what you sell.
+              </p>
+            </div>
+            <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
+              <div>
+                <p className="readout text-lime">Product</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><a href="#features" className="hover:text-white">Features</a></li>
+                  <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+                  <li><Link href="/api-docs" className="hover:text-white">API</Link></li>
+                  <li><Link href="/search" className="hover:text-white">Search</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="readout text-lime">Company</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><a href="#how" className="hover:text-white">How it works</a></li>
+                  <li><a href="#faq" className="hover:text-white">FAQ</a></li>
+                  <li><Link href="/login" className="hover:text-white">Log in</Link></li>
+                </ul>
+              </div>
+              <div>
+                <p className="readout text-lime">Legal</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><Link href="/privacy" className="hover:text-white">Privacy</Link></li>
+                  <li><Link href="/terms" className="hover:text-white">Terms</Link></li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm sm:flex-row">
+            <p>© {new Date().getFullYear()} LeadZip. Built for people who sell to Main Street.</p>
+            <p className="readout text-white/40">Real data · Google &amp; Yelp</p>
           </div>
         </div>
       </footer>
     </div>
-  );
+  )
 }

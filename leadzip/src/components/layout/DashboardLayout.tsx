@@ -49,7 +49,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
             <Menu className="w-5 h-5" />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#0F172A] flex items-center justify-center">
+            <div className="w-6 h-6 rounded-md bg-[#17130E] flex items-center justify-center">
               <svg
                 className="w-3.5 h-3.5 text-white"
                 fill="none"
@@ -69,7 +69,7 @@ export default function DashboardLayout({ children, currentPath }: DashboardLayo
                 />
               </svg>
             </div>
-            <span className="text-[#0F172A] font-bold text-base tracking-tight">LeadZip</span>
+            <span className="text-[#17130E] font-bold text-base tracking-tight">LeadZip</span>
           </div>
         </header>
 

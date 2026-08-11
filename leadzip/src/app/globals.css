@@ -4,12 +4,23 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* ============================================================
+   LeadZip — "Signal" design system
+   Turn a ZIP code into a live map of local opportunity.
+   Palette: warm paper + ink · signal-orange beacon · deep map-green
+   · rare electric lime. Type: Bricolage display / Hanken body /
+   Space Mono for coordinates & data.
+   ============================================================ */
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-plus-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-plus-jakarta), "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --font-sans: var(--font-body), "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-mono), "Space Mono", ui-monospace, monospace;
+  --font-heading: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -39,90 +50,103 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
+
+  --radius-sm: calc(var(--radius) * 0.55);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+  --radius-3xl: calc(var(--radius) * 2.6);
+  --radius-4xl: calc(var(--radius) * 3.2);
 
-  /* LeadZip custom colors */
-  --color-lz-navy: #0F172A;
-  --color-lz-blue: #0369A1;
-  --color-lz-blue-light: #0EA5E9;
-  --color-lz-bg: #F8FAFC;
-  --color-lz-border: #E2E8F0;
-  --color-lz-muted: #94A3B8;
+  /* ---- Signal brand tokens (source of truth) ---- */
+  --color-paper: #FBFAF6;      /* warm base */
+  --color-paper-2: #F4F1E9;    /* raised warm surface */
+  --color-ink: #17130E;        /* warm near-black text */
+  --color-ink-soft: #423B32;   /* secondary text */
+  --color-stone: #79705F;      /* muted warm gray */
+  --color-sand: #E7E1D4;       /* warm borders / hairlines */
+
+  --color-signal: #FF4D23;     /* THE brand color — a live beacon/pin */
+  --color-signal-600: #E23A12; /* hover / pressed */
+  --color-signal-50: #FFEDE6;  /* tint wash */
+
+  --color-forest: #0C2B24;     /* deep map-green — dark sections */
+  --color-forest-700: #123a30;
+  --color-forest-900: #071d18;
+  --color-lime: #CBF23F;       /* rare electric highlight */
+  --color-sky: #2E6BE6;        /* cool support accent, used sparingly */
 }
 
+/* ---- Light (default): warm paper world ---- */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --background: #FBFAF6;
+  --foreground: #17130E;
+  --card: #FFFFFF;
+  --card-foreground: #17130E;
+  --popover: #FFFFFF;
+  --popover-foreground: #17130E;
+  --primary: #FF4D23;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F4F1E9;
+  --secondary-foreground: #17130E;
+  --muted: #F4F1E9;
+  --muted-foreground: #79705F;
+  --accent: #FFEDE6;
+  --accent-foreground: #B5300F;
+  --destructive: #D6402B;
+  --border: #E7E1D4;
+  --input: #E7E1D4;
+  --ring: #FF4D23;
+  --chart-1: #FF4D23;
+  --chart-2: #0C2B24;
+  --chart-3: #2E6BE6;
+  --chart-4: #E7A100;
+  --chart-5: #7C9A2E;
+  --radius: 0.75rem;
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #17130E;
+  --sidebar-primary: #FF4D23;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F4F1E9;
+  --sidebar-accent-foreground: #17130E;
+  --sidebar-border: #E7E1D4;
+  --sidebar-ring: #FF4D23;
 }
 
+/* ---- Dark: deep map-green world ---- */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: #0A211B;
+  --foreground: #F3EFE6;
+  --card: #0E2A22;
+  --card-foreground: #F3EFE6;
+  --popover: #0E2A22;
+  --popover-foreground: #F3EFE6;
+  --primary: #FF5A33;
+  --primary-foreground: #0A211B;
+  --secondary: #12332A;
+  --secondary-foreground: #F3EFE6;
+  --muted: #12332A;
+  --muted-foreground: #9FB3A6;
+  --accent: #12332A;
+  --accent-foreground: #CBF23F;
+  --destructive: #F87061;
+  --border: rgba(243, 239, 230, 0.12);
+  --input: rgba(243, 239, 230, 0.16);
+  --ring: #FF5A33;
+  --chart-1: #FF5A33;
+  --chart-2: #CBF23F;
+  --chart-3: #5B8DEF;
+  --chart-4: #F2B705;
+  --chart-5: #9FB3A6;
+  --sidebar: #0E2A22;
+  --sidebar-foreground: #F3EFE6;
+  --sidebar-primary: #FF5A33;
+  --sidebar-primary-foreground: #0A211B;
+  --sidebar-accent: #12332A;
+  --sidebar-accent-foreground: #F3EFE6;
+  --sidebar-border: rgba(243, 239, 230, 0.12);
+  --sidebar-ring: #FF5A33;
 }
 
 @layer base {
@@ -131,59 +155,140 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+    font-family: var(--font-body), "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+    font-feature-settings: "ss01", "cv01";
   }
   html {
     scroll-behavior: smooth;
-    font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display), "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+  ::selection {
+    background: var(--color-signal);
+    color: #fff;
   }
 }
 
-/* LeadZip utility classes */
-.shadow-card {
-  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+/* ============================================================
+   Signature textures & utilities
+   ============================================================ */
+
+/* Fine paper grain — keeps warm surfaces from feeling flat/AI-clean */
+.grain::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
 }
 
-.shadow-card-hover {
-  box-shadow: 0 4px 16px 0 rgb(0 0 0 / 0.10), 0 2px 6px -2px rgb(0 0 0 / 0.06);
+/* Topographic contour lines — the "map" motif for dark sections */
+.topo {
+  background-color: var(--color-forest);
+  background-image:
+    radial-gradient(120% 90% at 85% -10%, rgba(203, 242, 63, 0.10), transparent 55%),
+    radial-gradient(120% 120% at 10% 110%, rgba(255, 77, 35, 0.14), transparent 55%),
+    repeating-radial-gradient(circle at 78% 18%, transparent 0 22px, rgba(243, 239, 230, 0.05) 22px 23px);
 }
 
-.bg-grid-pattern {
-  background-image: linear-gradient(to right, #E2E8F0 1px, transparent 1px),
-    linear-gradient(to bottom, #E2E8F0 1px, transparent 1px);
-  background-size: 40px 40px;
+/* Map dot-grid — light sections */
+.map-grid {
+  background-image: radial-gradient(var(--color-sand) 1.15px, transparent 1.15px);
+  background-size: 22px 22px;
+  background-position: -11px -11px;
 }
 
-.lead-card-hover {
-  transition: all 150ms ease-out;
-}
-.lead-card-hover:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+/* Soft signal glow */
+.signal-glow {
+  box-shadow: 0 0 0 1px rgba(255, 77, 35, 0.15), 0 18px 60px -18px rgba(255, 77, 35, 0.55);
 }
 
-.sidebar-shadow {
-  box-shadow: 1px 0 0 #E2E8F0;
+/* Warm elevated card */
+.card-lift {
+  box-shadow: 0 1px 0 0 rgba(23, 19, 14, 0.04), 0 12px 34px -20px rgba(23, 19, 14, 0.30);
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.card-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 1px 0 0 rgba(23, 19, 14, 0.05), 0 26px 60px -26px rgba(23, 19, 14, 0.40);
+}
+
+/* Mono data label — coordinates / ZIP / stat readouts */
+.readout {
+  font-family: var(--font-mono), "Space Mono", ui-monospace, monospace;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+}
+
+/* Thick, confident focus ring for accessibility */
+.focus-signal:focus-visible {
+  outline: 3px solid var(--color-signal);
+  outline-offset: 2px;
+}
+
+/* ---- Motion ---- */
+@keyframes pin-pulse {
+  0% { transform: scale(0.6); opacity: 0.9; }
+  70% { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+.pin-pulse { animation: pin-pulse 2.4s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+
+@keyframes float-y {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.float-y { animation: float-y 6s ease-in-out infinite; }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  animation: marquee 32s linear infinite;
 }
 
 @keyframes slide-up {
   from { transform: translateY(100%); }
   to { transform: translateY(0); }
 }
-.animate-slide-up {
-  animation: slide-up 0.3s ease-out forwards;
+.animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+
+@keyframes sheen {
+  0% { background-position: -140% 0; }
+  100% { background-position: 240% 0; }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* LeadZip legacy utility shims (kept so existing pages don't break) */
+.shadow-card { box-shadow: 0 1px 0 0 rgba(23,19,14,.04), 0 10px 30px -18px rgba(23,19,14,.28); }
+.shadow-card-hover { box-shadow: 0 1px 0 0 rgba(23,19,14,.05), 0 22px 50px -24px rgba(23,19,14,.36); }
+.bg-grid-pattern {
+  background-image: radial-gradient(var(--color-sand) 1.15px, transparent 1.15px);
+  background-size: 22px 22px;
+}
+.lead-card-hover { transition: all 200ms cubic-bezier(0.22,1,0.36,1); }
+.lead-card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 44px -24px rgba(23,19,14,.4); }
+.sidebar-shadow { box-shadow: 1px 0 0 var(--color-sand); }
 
 /* Prevent iOS auto-zoom on input focus (font-size must be >= 16px) */
 @media (max-width: 1023px) {
-  input[type="text"],
-  input[type="email"],
-  input[type="password"],
-  input[type="number"],
-  input[type="search"],
-  input[type="tel"],
-  select,
-  textarea {
-    font-size: 16px !important;
-  }
+  input[type="text"], input[type="email"], input[type="password"],
+  input[type="number"], input[type="search"], input[type="tel"],
+  select, textarea { font-size: 16px !important; }
 }

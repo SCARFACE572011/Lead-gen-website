@@ -9,7 +9,7 @@ const KEY = 'leadzip_whitelabel'
 export const DEFAULT_WHITE_LABEL: WhiteLabelSettings = {
   agencyName: '',
   logoDataUrl: '',
-  accentColor: '#0369A1',
+  accentColor: '#FF4D23',
 }
 
 export function getWhiteLabel(): WhiteLabelSettings {

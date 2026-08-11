@@ -147,11 +147,11 @@ function LeadRow({
           type="checkbox"
           checked={selected}
           onChange={(e) => onSelect(lead.id, e.target.checked)}
-          className="w-4 h-4 rounded border-slate-300 text-[#0369A1] accent-[#0369A1]"
+          className="w-4 h-4 rounded border-slate-300 text-[#FF4D23] accent-[#FF4D23]"
         />
       </td>
       <td className="px-3 py-3">
-        <div className="font-semibold text-[#0F172A] text-sm leading-tight">{lead.businessName}</div>
+        <div className="font-semibold text-[#17130E] text-sm leading-tight">{lead.businessName}</div>
         <div className="text-xs text-slate-400 mt-0.5">{lead.city}, {lead.state}</div>
       </td>
       <td className="px-3 py-3">
@@ -161,7 +161,7 @@ function LeadRow({
       </td>
       <td className="px-3 py-3">
         {lead.phone ? (
-          <a href={`tel:${lead.phone}`} className="inline-flex items-center gap-1 text-xs text-[#0369A1] hover:underline">
+          <a href={`tel:${lead.phone}`} className="inline-flex items-center gap-1 text-xs text-[#FF4D23] hover:underline">
             <Phone className="w-3 h-3" />
             {lead.phone}
           </a>
@@ -175,7 +175,7 @@ function LeadRow({
             href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 text-xs text-[#0369A1] hover:underline max-w-[100px] truncate"
+            className="inline-flex items-center gap-1 text-xs text-[#FF4D23] hover:underline max-w-[100px] truncate"
           >
             <Globe className="w-3 h-3 shrink-0" />
             <span className="truncate">{lead.website.replace(/^https?:\/\//, '')}</span>
@@ -209,14 +209,14 @@ function LeadRow({
             <textarea
               value={noteDraft}
               onChange={(e) => setNoteDraft(e.target.value)}
-              className="w-full text-xs border border-[#0369A1] rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20"
+              className="w-full text-xs border border-[#FF4D23] rounded-lg px-2 py-1.5 resize-none focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20"
               rows={2}
               autoFocus
             />
             <div className="flex gap-1">
               <button
                 onClick={saveNotes}
-                className="inline-flex items-center gap-0.5 text-xs bg-[#0369A1] text-white px-2 py-1 rounded-md hover:bg-[#0F172A] transition-colors"
+                className="inline-flex items-center gap-0.5 text-xs bg-[#FF4D23] text-white px-2 py-1 rounded-md hover:bg-[#17130E] transition-colors"
               >
                 <Check className="w-3 h-3" /> Save
               </button>
@@ -236,7 +236,7 @@ function LeadRow({
             <span className="text-xs text-slate-500 leading-relaxed flex-1 min-h-[1.5rem]">
               {lead.notes || <span className="text-slate-300 italic">Add note…</span>}
             </span>
-            <Pencil className="w-3 h-3 text-slate-300 group-hover:text-[#0369A1] shrink-0 mt-0.5 transition-colors" />
+            <Pencil className="w-3 h-3 text-slate-300 group-hover:text-[#FF4D23] shrink-0 mt-0.5 transition-colors" />
           </button>
         )}
       </td>
@@ -479,17 +479,17 @@ export default function SavedLeadsPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
             <div>
-              <h1 className="text-2xl font-bold text-[#0F172A]">Saved Leads</h1>
+              <h1 className="text-2xl font-bold text-[#17130E]">Saved Leads</h1>
               <p className="text-sm text-slate-500 mt-0.5">Manage and track your prospect pipeline</p>
             </div>
-            <span className="bg-[#0369A1] text-white text-sm font-semibold px-3 py-1 rounded-full">
+            <span className="bg-[#FF4D23] text-white text-sm font-semibold px-3 py-1 rounded-full">
               {leads.length}
             </span>
           </div>
           <button
             onClick={handleExportAll}
             disabled={leads.length === 0}
-            className="inline-flex items-center gap-2 bg-[#0F172A] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#1e293b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center gap-2 bg-[#17130E] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#1e293b] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
             Export All
@@ -497,7 +497,7 @@ export default function SavedLeadsPage() {
         </div>
 
         {someSelected && (
-          <div className="mb-4 flex items-center gap-3 bg-[#0369A1] text-white px-4 py-3 rounded-xl">
+          <div className="mb-4 flex items-center gap-3 bg-[#FF4D23] text-white px-4 py-3 rounded-xl">
             <span className="text-sm font-medium">{selectedIds.size} lead{selectedIds.size !== 1 ? 's' : ''} selected</span>
             <div className="flex-1" />
             <button
@@ -572,13 +572,13 @@ export default function SavedLeadsPage() {
               placeholder="Search leads…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1]"
+              className="w-full pl-9 pr-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23]"
             />
           </div>
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1] bg-white text-slate-700"
+            className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] bg-white text-slate-700"
           >
             {STATUS_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>{o.label}</option>
@@ -589,7 +589,7 @@ export default function SavedLeadsPage() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#0369A1]/20 focus:border-[#0369A1] bg-white text-slate-700"
+              className="text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#FF4D23]/20 focus:border-[#FF4D23] bg-white text-slate-700"
             >
               {SORT_OPTIONS.map((o) => (
                 <option key={o.value} value={o.value}>Sort: {o.label}</option>
@@ -607,7 +607,7 @@ export default function SavedLeadsPage() {
               <div className="w-16 h-16 rounded-2xl bg-slate-100 flex items-center justify-center mb-4">
                 <BookmarkX className="w-8 h-8 text-slate-400" />
               </div>
-              <h3 className="text-lg font-semibold text-[#0F172A] mb-1">
+              <h3 className="text-lg font-semibold text-[#17130E] mb-1">
                 {leads.length === 0 ? 'No saved leads yet' : 'No leads match your filters'}
               </h3>
               <p className="text-sm text-slate-500 max-w-xs">
@@ -618,7 +618,7 @@ export default function SavedLeadsPage() {
               {leads.length === 0 && (
                 <a
                   href="/search"
-                  className="mt-5 inline-flex items-center gap-2 bg-[#0369A1] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#0F172A] transition-colors"
+                  className="mt-5 inline-flex items-center gap-2 bg-[#FF4D23] text-white text-sm font-medium px-4 py-2 rounded-xl hover:bg-[#17130E] transition-colors"
                 >
                   <Search className="w-4 h-4" />
                   Search for Leads
@@ -637,7 +637,7 @@ export default function SavedLeadsPage() {
                         type="checkbox"
                         checked={allSelected}
                         onChange={(e) => handleSelectAll(e.target.checked)}
-                        className="w-4 h-4 rounded border-slate-300 accent-[#0369A1]"
+                        className="w-4 h-4 rounded border-slate-300 accent-[#FF4D23]"
                       />
                     </th>
                     <th className="px-3 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Business</th>

@@ -5,65 +5,221 @@ export const runtime = 'edge'
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url)
-  const title = searchParams.get('title') || 'Find Local Business Leads by ZIP Code'
-  const subtitle = searchParams.get('subtitle') || 'Search by location, industry, and radius.'
+  const title = searchParams.get('title') || 'Type a ZIP code. Get the whole street.'
+  const subtitle =
+    searchParams.get('subtitle') ||
+    'Every local business in any ZIP — scored by who needs you most.'
 
   return new ImageResponse(
     (
       <div
         style={{
+          position: 'relative',
           width: '1200px',
           height: '630px',
           display: 'flex',
           flexDirection: 'column',
-          background: 'linear-gradient(135deg, #0F172A 0%, #1E3A5F 50%, #0369A1 100%)',
-          padding: '80px',
+          justifyContent: 'center',
+          background: '#0C2B24',
+          padding: '72px 80px',
           fontFamily: 'sans-serif',
+          overflow: 'hidden',
         }}
       >
-        {/* Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '60px' }}>
-          <div style={{
-            width: '48px', height: '48px', borderRadius: '12px',
-            background: '#0369A1', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <div style={{ width: '24px', height: '24px', background: '#fff', borderRadius: '50%' }} />
+        {/* Signal-orange glow (bottom-left beacon) */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: '-220px',
+            left: '-160px',
+            width: '640px',
+            height: '640px',
+            borderRadius: '50%',
+            background:
+              'radial-gradient(circle, rgba(255,77,35,0.34), rgba(255,77,35,0) 70%)',
+            display: 'flex',
+          }}
+        />
+        {/* Lime glow (top-right) */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '-240px',
+            right: '-140px',
+            width: '540px',
+            height: '540px',
+            borderRadius: '50%',
+            background:
+              'radial-gradient(circle, rgba(203,242,63,0.18), rgba(203,242,63,0) 70%)',
+            display: 'flex',
+          }}
+        />
+
+        {/* Wordmark: orange pin + LeadZip + lime beacon */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            marginBottom: '44px',
+          }}
+        >
+          <div
+            style={{
+              position: 'relative',
+              display: 'flex',
+              width: '54px',
+              height: '54px',
+              borderRadius: '15px',
+              background: '#FF4D23',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <svg
+              width="30"
+              height="30"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ffffff"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            {/* lime beacon dot */}
+            <div
+              style={{
+                position: 'absolute',
+                top: '-5px',
+                right: '-5px',
+                width: '16px',
+                height: '16px',
+                borderRadius: '50%',
+                background: '#CBF23F',
+                border: '4px solid #0C2B24',
+                display: 'flex',
+              }}
+            />
           </div>
-          <span style={{ color: '#fff', fontSize: '28px', fontWeight: '700', letterSpacing: '-0.5px' }}>
+          <span
+            style={{
+              color: '#FBFAF6',
+              fontSize: '32px',
+              fontWeight: 800,
+              letterSpacing: '-0.5px',
+            }}
+          >
             LeadZip
           </span>
         </div>
 
-        {/* Main headline */}
-        <div style={{
-          color: '#fff', fontSize: '56px', fontWeight: '800',
-          lineHeight: 1.1, letterSpacing: '-1px', maxWidth: '900px', marginBottom: '24px',
-        }}>
+        {/* Eyebrow readout with lime dot */}
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            marginBottom: '22px',
+          }}
+        >
+          <div
+            style={{
+              width: '9px',
+              height: '9px',
+              borderRadius: '50%',
+              background: '#CBF23F',
+              display: 'flex',
+            }}
+          />
+          <span
+            style={{
+              color: '#CBF23F',
+              fontSize: '17px',
+              fontWeight: 700,
+              letterSpacing: '4px',
+              textTransform: 'uppercase',
+              fontFamily: 'monospace',
+            }}
+          >
+            Local lead intelligence
+          </span>
+        </div>
+
+        {/* Headline */}
+        <div
+          style={{
+            display: 'flex',
+            color: '#FBFAF6',
+            fontSize: '64px',
+            fontWeight: 800,
+            lineHeight: 1.04,
+            letterSpacing: '-2px',
+            maxWidth: '960px',
+          }}
+        >
           {title}
         </div>
 
+        {/* Signal-orange accent underline */}
+        <div
+          style={{
+            display: 'flex',
+            width: '132px',
+            height: '9px',
+            borderRadius: '9px',
+            background: '#FF4D23',
+            marginTop: '30px',
+          }}
+        />
+
         {/* Subtitle */}
-        <div style={{ color: '#94A3B8', fontSize: '24px', fontWeight: '400', maxWidth: '700px' }}>
+        <div
+          style={{
+            display: 'flex',
+            color: 'rgba(251,250,246,0.72)',
+            fontSize: '26px',
+            fontWeight: 400,
+            maxWidth: '780px',
+            marginTop: '26px',
+          }}
+        >
           {subtitle}
         </div>
 
-        {/* Bottom stats bar */}
-        <div style={{
-          marginTop: 'auto', display: 'flex', gap: '48px',
-        }}>
-          {['35+ Categories', 'Nationwide Coverage', 'Lead Scoring', 'CSV Export'].map(stat => (
-            <div key={stat} style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <div style={{ color: '#0EA5E9', fontSize: '16px', fontWeight: '600' }}>{stat}</div>
-            </div>
-          ))}
-        </div>
-
-        {/* URL watermark */}
-        <div style={{
-          position: 'absolute', bottom: '40px', right: '80px',
-          color: '#475569', fontSize: '18px',
-        }}>
-          leadzip.vercel.app
+        {/* Bottom bar: mono stats + URL */}
+        <div
+          style={{
+            position: 'absolute',
+            left: '80px',
+            right: '80px',
+            bottom: '48px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <div style={{ display: 'flex', gap: '36px' }}>
+            {['43 industries', '41k+ ZIP codes', 'Live Google & Yelp'].map((stat) => (
+              <span
+                key={stat}
+                style={{
+                  color: '#CBF23F',
+                  fontSize: '16px',
+                  fontWeight: 700,
+                  letterSpacing: '0.5px',
+                  fontFamily: 'monospace',
+                }}
+              >
+                {stat}
+              </span>
+            ))}
+          </div>
+          <span style={{ color: 'rgba(251,250,246,0.45)', fontSize: '18px' }}>
+            leadzip.vercel.app
+          </span>
         </div>
       </div>
     ),

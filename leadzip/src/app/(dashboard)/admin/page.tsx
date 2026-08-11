@@ -100,7 +100,7 @@ function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProp
   return (
     <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm">
       <div className="flex items-start justify-between mb-3">
-        <div className="w-10 h-10 rounded-xl bg-[#0369A1]/10 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-xl bg-[#FF4D23]/10 flex items-center justify-center">
           {icon}
         </div>
         {trend && (
@@ -113,10 +113,10 @@ function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProp
           </span>
         )}
       </div>
-      <div className="text-2xl font-bold text-[#0F172A] mb-0.5">
+      <div className="text-2xl font-bold text-[#17130E] mb-0.5">
         {typeof value === 'number' ? value.toLocaleString() : value}
       </div>
-      <div className="text-sm font-medium text-[#0F172A]">{title}</div>
+      <div className="text-sm font-medium text-[#17130E]">{title}</div>
       <div className="text-xs text-slate-500 mt-0.5">{subtitle}</div>
     </div>
   )
@@ -125,8 +125,8 @@ function StatCard({ title, value, subtitle, icon, trend, trendUp }: StatCardProp
 function SortIcon({ col, sort, order }: { col: string; sort: string; order: string }) {
   if (sort !== col) return <ChevronUp className="w-3 h-3 text-slate-300 inline ml-0.5" />
   return order === 'asc'
-    ? <ChevronUp className="w-3 h-3 text-[#0369A1] inline ml-0.5" />
-    : <ChevronDown className="w-3 h-3 text-[#0369A1] inline ml-0.5" />
+    ? <ChevronUp className="w-3 h-3 text-[#FF4D23] inline ml-0.5" />
+    : <ChevronDown className="w-3 h-3 text-[#FF4D23] inline ml-0.5" />
 }
 
 // ── main page ────────────────────────────────────────────────────────────────
@@ -302,7 +302,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-6 h-6 animate-spin text-[#0369A1]" />
+        <Loader2 className="w-6 h-6 animate-spin text-[#FF4D23]" />
       </div>
     )
   }
@@ -314,7 +314,7 @@ export default function AdminPage() {
           <div className="w-16 h-16 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
             <ShieldAlert className="w-8 h-8 text-red-500" />
           </div>
-          <h2 className="text-xl font-bold text-[#0F172A] mb-2">Access Denied</h2>
+          <h2 className="text-xl font-bold text-[#17130E] mb-2">Access Denied</h2>
           <p className="text-sm text-slate-500">Admin access only.</p>
         </div>
       </div>
@@ -327,8 +327,8 @@ export default function AdminPage() {
 
   const planBreakdown = [
     { plan: 'Free',   users: planCounts.free   ?? 0, color: 'bg-slate-400',  hex: '#94a3b8' },
-    { plan: 'Pro',    users: planCounts.pro    ?? 0, color: 'bg-[#0369A1]', hex: '#0369A1' },
-    { plan: 'Agency', users: planCounts.agency ?? 0, color: 'bg-[#0F172A]', hex: '#0F172A' },
+    { plan: 'Pro',    users: planCounts.pro    ?? 0, color: 'bg-[#FF4D23]', hex: '#FF4D23' },
+    { plan: 'Agency', users: planCounts.agency ?? 0, color: 'bg-[#17130E]', hex: '#17130E' },
   ]
 
   return (
@@ -339,7 +339,7 @@ export default function AdminPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <div className="flex items-center gap-3 mb-1">
-              <h1 className="text-2xl font-bold text-[#0F172A]">Owner Portal</h1>
+              <h1 className="text-2xl font-bold text-[#17130E]">Owner Portal</h1>
               <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold px-2.5 py-1 rounded-full">
                 <ShieldAlert className="w-3 h-3" />
                 Admin Only
@@ -355,20 +355,20 @@ export default function AdminPage() {
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={handleTabChange}>
           <TabsList className="mb-6 bg-white border border-slate-200 p-1 h-auto rounded-xl">
-            <TabsTrigger value="overview"   className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#0369A1] data-[state=active]:text-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
-            <TabsTrigger value="users"      className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#0369A1] data-[state=active]:text-white data-[state=active]:shadow-sm">Users</TabsTrigger>
-            <TabsTrigger value="billing"    className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#0369A1] data-[state=active]:text-white data-[state=active]:shadow-sm">Billing</TabsTrigger>
-            <TabsTrigger value="analytics"  className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#0369A1] data-[state=active]:text-white data-[state=active]:shadow-sm">Analytics</TabsTrigger>
+            <TabsTrigger value="overview"   className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Overview</TabsTrigger>
+            <TabsTrigger value="users"      className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Users</TabsTrigger>
+            <TabsTrigger value="billing"    className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Billing</TabsTrigger>
+            <TabsTrigger value="analytics"  className="px-5 py-2 text-sm font-medium rounded-lg data-[state=active]:bg-[#FF4D23] data-[state=active]:text-white data-[state=active]:shadow-sm">Analytics</TabsTrigger>
           </TabsList>
 
           {/* ── OVERVIEW ── */}
           <TabsContent value="overview">
             {/* Stat cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatCard title="Total Users"          value={totalUsers}              subtitle="Registered accounts"    icon={<Users      className="w-5 h-5 text-[#0369A1]" />} />
-              <StatCard title="Active Subscribers"   value={activeSubs}              subtitle="Pro + Agency plans"     icon={<UserCheck   className="w-5 h-5 text-[#0369A1]" />} />
-              <StatCard title="Est. Monthly Revenue" value={`$${(stats?.mrr ?? 0).toLocaleString()}`} subtitle="MRR from paid plans" icon={<DollarSign  className="w-5 h-5 text-[#0369A1]" />} />
-              <StatCard title="Total Searches"       value={stats?.totalSearches ?? 0} subtitle="All-time"            icon={<Search     className="w-5 h-5 text-[#0369A1]" />} />
+              <StatCard title="Total Users"          value={totalUsers}              subtitle="Registered accounts"    icon={<Users      className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="Active Subscribers"   value={activeSubs}              subtitle="Pro + Agency plans"     icon={<UserCheck   className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="Est. Monthly Revenue" value={`$${(stats?.mrr ?? 0).toLocaleString()}`} subtitle="MRR from paid plans" icon={<DollarSign  className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="Total Searches"       value={stats?.totalSearches ?? 0} subtitle="All-time"            icon={<Search     className="w-5 h-5 text-[#FF4D23]" />} />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
@@ -380,7 +380,7 @@ export default function AdminPage() {
               {/* Subscription breakdown */}
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#0F172A]">Subscription Breakdown</h2>
+                  <h2 className="text-base font-semibold text-[#17130E]">Subscription Breakdown</h2>
                   <p className="text-xs text-slate-500 mt-0.5">Plan distribution</p>
                 </div>
                 <div className="p-5 space-y-4">
@@ -391,10 +391,10 @@ export default function AdminPage() {
                         <div className="flex items-center justify-between mb-1.5">
                           <div className="flex items-center gap-2">
                             <div className={cn('w-2.5 h-2.5 rounded-full', s.color)} />
-                            <span className="text-sm font-medium text-[#0F172A]">{s.plan}</span>
+                            <span className="text-sm font-medium text-[#17130E]">{s.plan}</span>
                           </div>
                           <div className="text-right">
-                            <span className="text-sm font-bold text-[#0F172A]">{s.users}</span>
+                            <span className="text-sm font-bold text-[#17130E]">{s.users}</span>
                             <span className="text-xs text-slate-400 ml-1">({pct}%)</span>
                           </div>
                         </div>
@@ -407,11 +407,11 @@ export default function AdminPage() {
                   <div className="border-t border-slate-100 pt-4 space-y-2">
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>Monthly Revenue</span>
-                      <span className="font-semibold text-[#0F172A]">${(stats?.mrr ?? 0).toLocaleString()}</span>
+                      <span className="font-semibold text-[#17130E]">${(stats?.mrr ?? 0).toLocaleString()}</span>
                     </div>
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>Paid Subscribers</span>
-                      <span className="font-semibold text-[#0F172A]">{activeSubs}</span>
+                      <span className="font-semibold text-[#17130E]">{activeSubs}</span>
                     </div>
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>Conversion Rate</span>
@@ -421,7 +421,7 @@ export default function AdminPage() {
                     </div>
                     <div className="flex justify-between text-xs text-slate-500">
                       <span>Saved Leads</span>
-                      <span className="font-semibold text-[#0F172A]">{(stats?.savedLeads ?? 0).toLocaleString()}</span>
+                      <span className="font-semibold text-[#17130E]">{(stats?.savedLeads ?? 0).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -439,7 +439,7 @@ export default function AdminPage() {
                   value={searchInput}
                   onChange={e => handleSearchInput(e.target.value)}
                   placeholder="Search by email or name…"
-                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-[#0F172A] placeholder:text-slate-400 outline-none focus:border-[#0369A1] focus:ring-2 focus:ring-[#0369A1]/10"
+                  className="w-full pl-9 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-white text-[#17130E] placeholder:text-slate-400 outline-none focus:border-[#FF4D23] focus:ring-2 focus:ring-[#FF4D23]/10"
                 />
               </div>
               <Select value={usersQuery.plan || 'all'} onValueChange={v => updateUsersQuery(q => ({ ...q, plan: v === 'all' ? '' : (v ?? ''), page: 1 }))}>
@@ -476,7 +476,7 @@ export default function AdminPage() {
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
               {usersLoading ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 animate-spin text-[#0369A1]" />
+                  <Loader2 className="w-5 h-5 animate-spin text-[#FF4D23]" />
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -518,12 +518,12 @@ export default function AdminPage() {
                               <div className="flex items-center gap-2.5">
                                 <div className={cn(
                                   'w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shrink-0',
-                                  user.status === 'deactivated' ? 'bg-slate-400' : 'bg-gradient-to-br from-[#0369A1] to-[#0F172A]'
+                                  user.status === 'deactivated' ? 'bg-slate-400' : 'bg-gradient-to-br from-[#FF4D23] to-[#17130E]'
                                 )}>
                                   {user.email.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-sm font-medium text-[#0F172A] truncate max-w-[180px]">{user.email}</div>
+                                  <div className="text-sm font-medium text-[#17130E] truncate max-w-[180px]">{user.email}</div>
                                   {user.full_name && (
                                     <div className="text-xs text-slate-500 truncate max-w-[180px]">{user.full_name}</div>
                                   )}
@@ -543,7 +543,7 @@ export default function AdminPage() {
                             <td className="px-4 py-3.5 text-right">
                               <button
                                 onClick={() => setSelectedUser(user)}
-                                className="text-xs font-medium text-[#0369A1] hover:text-[#0284C7] border border-[#0369A1]/20 hover:border-[#0369A1]/40 bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
+                                className="text-xs font-medium text-[#FF4D23] hover:text-[#E23A12] border border-[#FF4D23]/20 hover:border-[#FF4D23]/40 bg-blue-50/50 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-all"
                               >
                                 View
                               </button>
@@ -605,17 +605,17 @@ export default function AdminPage() {
           <TabsContent value="billing">
             {/* Summary cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-              <StatCard title="Monthly Revenue"   value={`$${(billing?.summary.mrr ?? 0).toLocaleString()}`}      subtitle="Est. MRR"           icon={<DollarSign  className="w-5 h-5 text-[#0369A1]" />} />
-              <StatCard title="Total Subscribers" value={billing?.summary.totalSubscribers ?? 0}                  subtitle="Pro + Agency active" icon={<CreditCard  className="w-5 h-5 text-[#0369A1]" />} />
-              <StatCard title="New This Month"    value={billing?.summary.newThisMonth ?? 0}                      subtitle="New paid subscribers" icon={<TrendingUp  className="w-5 h-5 text-[#0369A1]" />} />
-              <StatCard title="Churned This Month" value={billing?.summary.churnedThisMonth ?? 0}                 subtitle="Cancellations"       icon={<Bookmark   className="w-5 h-5 text-[#0369A1]" />} />
+              <StatCard title="Monthly Revenue"   value={`$${(billing?.summary.mrr ?? 0).toLocaleString()}`}      subtitle="Est. MRR"           icon={<DollarSign  className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="Total Subscribers" value={billing?.summary.totalSubscribers ?? 0}                  subtitle="Pro + Agency active" icon={<CreditCard  className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="New This Month"    value={billing?.summary.newThisMonth ?? 0}                      subtitle="New paid subscribers" icon={<TrendingUp  className="w-5 h-5 text-[#FF4D23]" />} />
+              <StatCard title="Churned This Month" value={billing?.summary.churnedThisMonth ?? 0}                 subtitle="Cancellations"       icon={<Bookmark   className="w-5 h-5 text-[#FF4D23]" />} />
             </div>
 
             {/* Subscriptions table */}
             <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
               <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-[#0F172A]">All Subscriptions</h2>
+                  <h2 className="text-base font-semibold text-[#17130E]">All Subscriptions</h2>
                   <p className="text-xs text-slate-500 mt-0.5">
                     Conversion rate: <span className="font-semibold text-emerald-600">{billing?.summary.conversionRate ?? 0}%</span>
                     {' '}· Pro: {billing?.summary.proCount ?? 0} · Agency: {billing?.summary.agencyCount ?? 0}
@@ -632,7 +632,7 @@ export default function AdminPage() {
 
               {billingLoading ? (
                 <div className="flex items-center justify-center py-16">
-                  <Loader2 className="w-5 h-5 animate-spin text-[#0369A1]" />
+                  <Loader2 className="w-5 h-5 animate-spin text-[#FF4D23]" />
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -662,7 +662,7 @@ export default function AdminPage() {
                           return (
                             <tr key={s.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors">
                               <td className="px-4 py-3.5">
-                                <div className="text-sm font-medium text-[#0F172A] truncate max-w-[180px]">{s.email}</div>
+                                <div className="text-sm font-medium text-[#17130E] truncate max-w-[180px]">{s.email}</div>
                                 {s.fullName && <div className="text-xs text-slate-500">{s.fullName}</div>}
                               </td>
                               <td className="px-4 py-3.5"><PlanBadge plan={s.plan} /></td>
@@ -677,7 +677,7 @@ export default function AdminPage() {
                                         ? <CheckCircle className="w-3 h-3 text-emerald-500" />
                                         : <Copy className="w-3 h-3" />}
                                     </button>
-                                    <a href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#0369A1] transition-colors">
+                                    <a href={`https://dashboard.stripe.com/customers/${s.stripeCustomerId}`} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-[#FF4D23] transition-colors">
                                       <ExternalLink className="w-3 h-3" />
                                     </a>
                                   </div>
@@ -701,22 +701,22 @@ export default function AdminPage() {
               {/* Signups trend */}
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#0F172A]">New Signups</h2>
+                  <h2 className="text-base font-semibold text-[#17130E]">New Signups</h2>
                   <p className="text-xs text-slate-500 mt-0.5">Last 30 days</p>
                 </div>
                 <div className="p-5">
-                  <TrendChart data={stats?.signupTrend ?? []} color="#0369A1" label="Signups" />
+                  <TrendChart data={stats?.signupTrend ?? []} color="#FF4D23" label="Signups" />
                 </div>
               </div>
 
               {/* Search volume trend */}
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#0F172A]">Search Volume</h2>
+                  <h2 className="text-base font-semibold text-[#17130E]">Search Volume</h2>
                   <p className="text-xs text-slate-500 mt-0.5">Last 30 days</p>
                 </div>
                 <div className="p-5">
-                  <TrendChart data={stats?.searchTrend ?? []} color="#0F172A" label="Searches" />
+                  <TrendChart data={stats?.searchTrend ?? []} color="#17130E" label="Searches" />
                 </div>
               </div>
             </div>
@@ -725,7 +725,7 @@ export default function AdminPage() {
               {/* Plan distribution pie */}
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="px-5 py-4 border-b border-slate-100">
-                  <h2 className="text-base font-semibold text-[#0F172A]">Plan Distribution</h2>
+                  <h2 className="text-base font-semibold text-[#17130E]">Plan Distribution</h2>
                   <p className="text-xs text-slate-500 mt-0.5">{totalUsers} total users</p>
                 </div>
                 <div className="p-5">
@@ -813,17 +813,17 @@ function SearchAnalyticsChart({
   return (
     <div>
       <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-[#0F172A]">Search Analytics</h2>
+        <h2 className="text-base font-semibold text-[#17130E]">Search Analytics</h2>
         <div className="flex gap-1 bg-slate-100 p-1 rounded-lg">
           <button
             onClick={() => setActiveChart('zip')}
-            className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', activeChart === 'zip' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+            className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', activeChart === 'zip' ? 'bg-white text-[#17130E] shadow-sm' : 'text-slate-500 hover:text-slate-700')}
           >
             <MapPin className="w-3 h-3 inline mr-1" />ZIP Codes
           </button>
           <button
             onClick={() => setActiveChart('category')}
-            className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', activeChart === 'category' ? 'bg-white text-[#0F172A] shadow-sm' : 'text-slate-500 hover:text-slate-700')}
+            className={cn('px-3 py-1.5 rounded-md text-xs font-medium transition-all', activeChart === 'category' ? 'bg-white text-[#17130E] shadow-sm' : 'text-slate-500 hover:text-slate-700')}
           >
             <Tag className="w-3 h-3 inline mr-1" />Categories
           </button>
@@ -842,7 +842,7 @@ function SearchAnalyticsChart({
                   <XAxis dataKey="zip" tick={{ fontSize: 11, fill: '#94a3b8' }} />
                   <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} formatter={(v) => [`${v} searches`, 'Volume']} />
-                  <Bar dataKey="searches" fill="#0369A1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="searches" fill="#FF4D23" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -859,7 +859,7 @@ function SearchAnalyticsChart({
                   <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} />
                   <YAxis dataKey="name" type="category" tick={{ fontSize: 11, fill: '#94a3b8' }} width={80} />
                   <Tooltip contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #e2e8f0' }} formatter={(v) => [`${v} searches`, 'Volume']} />
-                  <Bar dataKey="searches" fill="#0F172A" radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="searches" fill="#17130E" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}

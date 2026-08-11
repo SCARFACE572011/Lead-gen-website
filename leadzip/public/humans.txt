@@ -1,0 +1,31 @@
+/* TEAM */
+
+  LeadZip — built by a small product team.
+  Contact: hello@leadzip.com
+  Site: https://leadzip.vercel.app
+
+/* THANKS */
+
+  To every agency, freelancer, and sales rep who
+  turned a ZIP code into their next client.
+
+/* TECH / COLOPHON */
+
+  Framework .......... Next.js 16 (App Router, React 19)
+  Language ........... TypeScript
+  Styling ............ Tailwind CSS v4
+  Database + Auth .... Supabase (Postgres)
+  Payments ........... Stripe
+  Rate limiting ...... Upstash Redis
+  Maps ............... Leaflet
+  Charts ............. Recharts
+  PDF export ......... jsPDF
+  Hosting ............ Vercel
+
+  Data sources ....... Google Places, Yelp
+
+  Design system: "Signal" — warm paper, signal orange,
+  and deep map-green. Typefaces: Bricolage Grotesque
+  (display), Hanken Grotesk (body), Space Mono (data).
+
+  Last updated: 2026-08

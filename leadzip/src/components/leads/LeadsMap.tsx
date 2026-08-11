@@ -45,7 +45,7 @@ export function LeadsMap({ leads, centerLat, centerLon, onLeadClick }: LeadsMapP
       }).addTo(map)
 
       // Search area ring
-      L.circle([centerLat, centerLon], { radius: 800, color: '#0369A1', fillOpacity: 0.08, weight: 1.5 }).addTo(map)
+      L.circle([centerLat, centerLon], { radius: 800, color: '#FF4D23', fillOpacity: 0.08, weight: 1.5 }).addTo(map)
 
       const leadsWithCoords = leads.filter((l) => l.latitude != null && l.longitude != null)
 

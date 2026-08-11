@@ -76,11 +76,11 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
       <SheetContent className="w-full sm:max-w-[440px] overflow-y-auto">
         <SheetHeader className="mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#0369A1] to-[#0F172A] flex items-center justify-center text-white text-lg font-bold shrink-0">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#FF4D23] to-[#17130E] flex items-center justify-center text-white text-lg font-bold shrink-0">
               {user.email.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
-              <SheetTitle className="text-left text-base font-bold text-[#0F172A] truncate">
+              <SheetTitle className="text-left text-base font-bold text-[#17130E] truncate">
                 {user.full_name || user.email}
               </SheetTitle>
               <p className="text-xs text-slate-500 mt-0.5 truncate">{user.email}</p>
@@ -139,7 +139,7 @@ export function UserDetailSheet({ user, open, currentUserId, onClose, onAction }
                         href={`https://dashboard.stripe.com/customers/${sub.stripe_customer_id}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-slate-400 hover:text-[#0369A1] transition-colors"
+                        className="text-slate-400 hover:text-[#FF4D23] transition-colors"
                         title="Open in Stripe"
                       >
                         <ExternalLink className="w-3.5 h-3.5" />
@@ -248,7 +248,7 @@ function Row({ label, value, children }: { label: string; value?: string; childr
   return (
     <div className="flex items-center justify-between py-1.5 border-b border-slate-50 last:border-0">
       <span className="text-xs text-slate-500">{label}</span>
-      {children ?? <span className="text-xs font-medium text-[#0F172A]">{value}</span>}
+      {children ?? <span className="text-xs font-medium text-[#17130E]">{value}</span>}
     </div>
   )
 }
@@ -264,13 +264,13 @@ function UsageStat({ label, used, limit }: { label: string; used: number; limit:
     <div className="py-1.5">
       <div className="flex justify-between text-xs mb-1.5">
         <span className="text-slate-500">{label}</span>
-        <span className={cn('font-medium', hot ? 'text-red-600' : 'text-[#0F172A]')}>
+        <span className={cn('font-medium', hot ? 'text-red-600' : 'text-[#17130E]')}>
           {used.toLocaleString()} / {limit.toLocaleString()}
         </span>
       </div>
       <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
         <div
-          className={cn('h-1.5 rounded-full transition-all', hot ? 'bg-red-400' : 'bg-[#0369A1]')}
+          className={cn('h-1.5 rounded-full transition-all', hot ? 'bg-red-400' : 'bg-[#FF4D23]')}
           style={{ width: `${pct}%` }}
         />
       </div>

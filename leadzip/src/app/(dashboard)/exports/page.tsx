@@ -160,7 +160,7 @@ export default function ExportsPage() {
       <div className="max-w-6xl mx-auto px-6 py-8">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl font-bold text-[#0F172A]">Export Leads</h1>
+          <h1 className="text-2xl font-bold text-[#17130E]">Export Leads</h1>
           <p className="text-sm text-slate-500 mt-0.5">Download your leads in CSV format for outreach tools and CRMs</p>
         </div>
 
@@ -173,7 +173,7 @@ export default function ExportsPage() {
               className={cn(
                 'px-4 py-2 rounded-lg text-sm font-medium transition-all',
                 activeTab === id
-                  ? 'bg-white text-[#0F172A] shadow-sm'
+                  ? 'bg-white text-[#17130E] shadow-sm'
                   : 'text-slate-500 hover:text-slate-700'
               )}
             >
@@ -189,15 +189,15 @@ export default function ExportsPage() {
               {/* Lead selection card */}
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                 <div className="px-4 py-3 border-b border-slate-100 flex items-center justify-between">
-                  <h2 className="text-sm font-semibold text-[#0F172A] flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4 text-[#0369A1]" />
+                  <h2 className="text-sm font-semibold text-[#17130E] flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4 text-[#FF4D23]" />
                     Select Leads
                   </h2>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-slate-500">{selectedLeadIds.size} of {leads.length} selected</span>
                     <button
                       onClick={() => handleSelectAllLeads(selectedLeadIds.size !== leads.length)}
-                      className="text-xs text-[#0369A1] hover:underline font-medium"
+                      className="text-xs text-[#FF4D23] hover:underline font-medium"
                     >
                       {selectedLeadIds.size === leads.length ? 'Deselect all' : 'Select all'}
                     </button>
@@ -208,7 +208,7 @@ export default function ExportsPage() {
                   <div className="py-12 text-center">
                     <Package className="w-10 h-10 text-slate-300 mx-auto mb-3" />
                     <p className="text-sm text-slate-500">No saved leads yet.</p>
-                    <a href="/search" className="text-xs text-[#0369A1] hover:underline mt-1 inline-block">
+                    <a href="/search" className="text-xs text-[#FF4D23] hover:underline mt-1 inline-block">
                       Search for leads →
                     </a>
                   </div>
@@ -223,10 +223,10 @@ export default function ExportsPage() {
                           type="checkbox"
                           checked={selectedLeadIds.has(lead.id)}
                           onChange={() => toggleLeadSelect(lead.id)}
-                          className="w-4 h-4 rounded border-slate-300 accent-[#0369A1]"
+                          className="w-4 h-4 rounded border-slate-300 accent-[#FF4D23]"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="text-sm font-medium text-[#0F172A] truncate">{lead.businessName}</div>
+                          <div className="text-sm font-medium text-[#17130E] truncate">{lead.businessName}</div>
                           <div className="text-xs text-slate-400">{lead.category} · {lead.city}, {lead.state}</div>
                         </div>
                         <div className="flex items-center gap-2 text-xs text-slate-400 shrink-0">
@@ -249,8 +249,8 @@ export default function ExportsPage() {
               {selectedLeads.length > 0 && (
                 <div className="bg-white border border-slate-200 rounded-xl shadow-sm overflow-hidden">
                   <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
-                    <Eye className="w-4 h-4 text-[#0369A1]" />
-                    <h2 className="text-sm font-semibold text-[#0F172A]">
+                    <Eye className="w-4 h-4 text-[#FF4D23]" />
+                    <h2 className="text-sm font-semibold text-[#17130E]">
                       Preview — First {Math.min(5, selectedLeads.length)} rows
                     </h2>
                   </div>
@@ -290,22 +290,22 @@ export default function ExportsPage() {
             <div className="space-y-4">
               {/* Format */}
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
-                <h2 className="text-sm font-semibold text-[#0F172A] mb-3 flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-[#0369A1]" />
+                <h2 className="text-sm font-semibold text-[#17130E] mb-3 flex items-center gap-2">
+                  <FileText className="w-4 h-4 text-[#FF4D23]" />
                   Export Format
                 </h2>
                 <div className="space-y-2">
                   {[
                     { value: 'csv', label: 'Standard CSV', desc: 'Compatible with all tools' },
                     { value: 'excel_csv', label: 'Excel-ready CSV', desc: 'UTF-8 BOM for Excel' },
-                    { value: 'branded_pdf', label: 'Branded PDF', desc: 'Agency logo, colors, and name — configure in Settings → White Label', icon: <FileImage className="w-3.5 h-3.5 text-[#0369A1]" /> },
+                    { value: 'branded_pdf', label: 'Branded PDF', desc: 'Agency logo, colors, and name — configure in Settings → White Label', icon: <FileImage className="w-3.5 h-3.5 text-[#FF4D23]" /> },
                   ].map((f) => (
                     <label
                       key={f.value}
                       className={cn(
                         'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all',
                         format === f.value
-                          ? 'border-[#0369A1] bg-[#0369A1]/5'
+                          ? 'border-[#FF4D23] bg-[#FF4D23]/5'
                           : 'border-slate-200 hover:border-slate-300'
                       )}
                     >
@@ -315,10 +315,10 @@ export default function ExportsPage() {
                         value={f.value}
                         checked={format === f.value}
                         onChange={() => setFormat(f.value as 'csv' | 'excel_csv' | 'branded_pdf')}
-                        className="mt-0.5 accent-[#0369A1]"
+                        className="mt-0.5 accent-[#FF4D23]"
                       />
                       <div>
-                        <div className="text-sm font-medium text-[#0F172A] flex items-center gap-1.5">
+                        <div className="text-sm font-medium text-[#17130E] flex items-center gap-1.5">
                           {f.label}
                           {'icon' in f && f.icon}
                         </div>
@@ -332,13 +332,13 @@ export default function ExportsPage() {
               {/* Fields */}
               <div className="bg-white border border-slate-200 rounded-xl shadow-sm p-4">
                 <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-sm font-semibold text-[#0F172A] flex items-center gap-2">
-                    <CheckSquare className="w-4 h-4 text-[#0369A1]" />
+                  <h2 className="text-sm font-semibold text-[#17130E] flex items-center gap-2">
+                    <CheckSquare className="w-4 h-4 text-[#FF4D23]" />
                     Fields to Include
                   </h2>
                   <button
                     onClick={() => handleSelectAllFields(selectedFields.size !== ALL_FIELDS.length)}
-                    className="text-xs text-[#0369A1] hover:underline font-medium"
+                    className="text-xs text-[#FF4D23] hover:underline font-medium"
                   >
                     {selectedFields.size === ALL_FIELDS.length ? 'Deselect all' : 'Select all'}
                   </button>
@@ -353,7 +353,7 @@ export default function ExportsPage() {
                         type="checkbox"
                         checked={selectedFields.has(f.key)}
                         onChange={() => toggleField(f.key)}
-                        className="w-4 h-4 rounded border-slate-300 accent-[#0369A1]"
+                        className="w-4 h-4 rounded border-slate-300 accent-[#FF4D23]"
                       />
                       <span className="text-sm text-slate-600 group-hover:text-slate-900 transition-colors">
                         {f.label}
@@ -367,7 +367,7 @@ export default function ExportsPage() {
               <button
                 onClick={handleExport}
                 disabled={selectedLeads.length === 0 || selectedFields.size === 0}
-                className="w-full inline-flex items-center justify-center gap-2 bg-[#0369A1] text-white text-sm font-semibold px-4 py-3 rounded-xl hover:bg-[#0F172A] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                className="w-full inline-flex items-center justify-center gap-2 bg-[#FF4D23] text-white text-sm font-semibold px-4 py-3 rounded-xl hover:bg-[#17130E] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Download className="w-4 h-4" />
                 Export {selectedLeads.length > 0 ? `${selectedLeads.length} Lead${selectedLeads.length !== 1 ? 's' : ''}` : 'Leads'}
@@ -385,11 +385,11 @@ export default function ExportsPage() {
             {exportHistory.length === 0 ? (
               <div className="py-16 text-center">
                 <FileDown className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-                <h3 className="text-base font-semibold text-[#0F172A] mb-1">No exports yet</h3>
+                <h3 className="text-base font-semibold text-[#17130E] mb-1">No exports yet</h3>
                 <p className="text-sm text-slate-500">Your export history will appear here.</p>
                 <button
                   onClick={() => setActiveTab('export')}
-                  className="mt-4 text-sm text-[#0369A1] hover:underline font-medium"
+                  className="mt-4 text-sm text-[#FF4D23] hover:underline font-medium"
                 >
                   Export your first leads →
                 </button>
@@ -416,7 +416,7 @@ export default function ExportsPage() {
                               <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
                                 <FileText className="w-4 h-4 text-emerald-600" />
                               </div>
-                              <span className="text-sm font-medium text-[#0F172A] truncate max-w-[200px]">
+                              <span className="text-sm font-medium text-[#17130E] truncate max-w-[200px]">
                                 {record.filename}
                               </span>
                             </div>
@@ -428,7 +428,7 @@ export default function ExportsPage() {
                             </div>
                           </td>
                           <td className="px-4 py-3.5">
-                            <span className="text-sm font-semibold text-[#0F172A]">{record.leadCount}</span>
+                            <span className="text-sm font-semibold text-[#17130E]">{record.leadCount}</span>
                             <span className="text-xs text-slate-400 ml-1">leads</span>
                           </td>
                           <td className="px-4 py-3.5">
@@ -442,7 +442,7 @@ export default function ExportsPage() {
                           <td className="px-4 py-3.5 pr-4">
                             <button
                               onClick={() => handleDownloadAgain(record)}
-                              className="inline-flex items-center gap-1.5 text-xs font-medium border border-[#0369A1] text-[#0369A1] px-3 py-1.5 rounded-lg hover:bg-[#0369A1] hover:text-white transition-all"
+                              className="inline-flex items-center gap-1.5 text-xs font-medium border border-[#FF4D23] text-[#FF4D23] px-3 py-1.5 rounded-lg hover:bg-[#FF4D23] hover:text-white transition-all"
                             >
                               <Download className="w-3 h-3" />
                               Download

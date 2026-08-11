@@ -35,8 +35,8 @@ export default function Navbar() {
         className={cn(
           'fixed top-0 left-0 right-0 z-50 transition-all duration-300',
           scrolled
-            ? 'bg-white/95 backdrop-blur-md border-b border-[#E2E8F0] shadow-sm'
-            : 'bg-white',
+            ? 'bg-paper/80 backdrop-blur-md border-b border-sand shadow-sm'
+            : 'bg-paper',
         )}
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -47,11 +47,12 @@ export default function Navbar() {
               className="flex items-center gap-2 group"
               aria-label="LeadZip home"
             >
-              <div className="w-8 h-8 rounded-lg bg-[#0F172A] flex items-center justify-center shadow-sm group-hover:bg-[#0369A1] transition-colors duration-200">
+              <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-signal shadow-sm transition-transform duration-200 group-hover:scale-105">
                 <MapPin className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-[#0F172A] font-bold text-xl tracking-tight">
-                Lead<span className="text-[#0369A1]">Zip</span>
+                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-paper" />
+              </span>
+              <span className="font-display text-ink font-extrabold text-xl tracking-tight">
+                LeadZip
               </span>
             </Link>
 
@@ -61,7 +62,7 @@ export default function Navbar() {
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
-                  className="text-sm font-medium text-slate-600 hover:text-[#0F172A] transition-colors duration-150 cursor-pointer"
+                  className="text-sm font-medium text-ink-soft hover:text-ink transition-colors duration-150 cursor-pointer"
                 >
                   {link.label}
                 </button>
@@ -72,13 +73,13 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-3">
               <Link
                 href="/login"
-                className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#0F172A] transition-colors duration-150"
+                className="px-4 py-2 text-sm font-semibold text-ink hover:text-signal transition-colors duration-150"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
-                className="px-4 py-2 text-sm font-semibold text-white bg-[#0369A1] hover:bg-[#0284C7] rounded-xl transition-colors duration-150 shadow-sm"
+                className="px-4 py-2 text-sm font-semibold text-paper bg-ink hover:scale-[1.03] active:scale-95 rounded-full transition-transform duration-150 shadow-sm"
               >
                 Start Free
               </Link>
@@ -86,7 +87,7 @@ export default function Navbar() {
 
             {/* Mobile hamburger */}
             <button
-              className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 transition-colors"
+              className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-ink-soft hover:bg-paper-2 transition-colors"
               onClick={() => setMobileOpen(v => !v)}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
@@ -101,33 +102,33 @@ export default function Navbar() {
       {mobileOpen && (
         <>
           <div
-            className="md:hidden fixed inset-0 bg-black/20 backdrop-blur-sm z-40"
+            className="md:hidden fixed inset-0 bg-ink/20 backdrop-blur-sm z-40"
             onClick={() => setMobileOpen(false)}
             aria-hidden="true"
           />
-          <div className="md:hidden fixed top-16 left-0 right-0 z-50 bg-white border-b border-[#E2E8F0] shadow-lg px-4 py-4">
+          <div className="md:hidden fixed top-16 left-0 right-0 z-50 bg-paper border-b border-sand shadow-lg px-4 py-4">
             <nav className="flex flex-col gap-1">
               {NAV_LINKS.map(link => (
                 <button
                   key={link.href}
                   onClick={() => handleNavClick(link.href)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-[#0369A1] transition-colors duration-150"
+                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-ink-soft hover:bg-paper-2 hover:text-signal transition-colors duration-150"
                 >
                   {link.label}
                 </button>
               ))}
-              <hr className="my-2 border-[#E2E8F0]" />
+              <hr className="my-2 border-sand" />
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="px-3 py-2.5 rounded-lg text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors duration-150"
+                className="px-3 py-2.5 rounded-lg text-sm font-medium text-ink-soft hover:bg-paper-2 transition-colors duration-150"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
                 onClick={() => setMobileOpen(false)}
-                className="mt-1 px-3 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#0369A1] hover:bg-[#0284C7] text-center transition-colors duration-150"
+                className="mt-1 px-3 py-2.5 rounded-full text-sm font-semibold text-paper bg-ink text-center transition-transform duration-150 hover:scale-[1.02] active:scale-95"
               >
                 Start Free
               </Link>

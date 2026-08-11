@@ -46,26 +46,29 @@ export default function ResetPasswordPage() {
   }
 
   const inputClass = (hasError: boolean) =>
-    `w-full rounded-xl border px-3.5 py-2.5 text-sm text-[#0F172A] placeholder:text-[#94A3B8] outline-none transition-colors focus:border-[#0369A1] focus:ring-2 focus:ring-[#0369A1]/10 ${
+    `w-full rounded-xl border px-3.5 py-2.5 text-sm text-ink placeholder:text-stone outline-none transition-colors focus:border-signal focus:ring-2 focus:ring-signal/15 ${
       hasError
         ? "border-red-400 bg-red-50"
-        : "border-[#E2E8F0] bg-[#F8FAFC] hover:border-[#CBD5E1]"
+        : "border-sand bg-paper hover:border-stone/40"
     }`;
 
   return (
     <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-extrabold text-[#0F172A]">Set new password</h1>
-        <p className="mt-1.5 text-sm text-[#64748B]">
+        <span className="readout text-signal">New password</span>
+        <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Set new password</h1>
+        <p className="mt-1.5 text-sm text-ink-soft">
           Choose a strong password for your LeadZip account.
         </p>
       </div>
 
       {success ? (
-        <div className="rounded-xl bg-green-50 border border-green-200 p-6 text-center">
-          <CheckCircle className="mx-auto h-12 w-12 text-green-500 mb-3" />
-          <h3 className="font-semibold text-slate-900 mb-1">Password updated</h3>
-          <p className="text-sm text-slate-600">
+        <div className="rounded-2xl bg-signal-50 border border-signal/20 p-6 text-center">
+          <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-signal/10">
+            <CheckCircle className="h-7 w-7 text-signal" />
+          </span>
+          <h3 className="font-display font-bold text-ink mb-1">Password updated</h3>
+          <p className="text-sm text-ink-soft">
             Your password has been changed. Redirecting to dashboard...
           </p>
         </div>
@@ -73,7 +76,7 @@ export default function ResetPasswordPage() {
         <form onSubmit={handleSubmit} noValidate className="space-y-4">
           {/* New password */}
           <div>
-            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-[#374151]">
+            <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-ink-soft">
               New password
             </label>
             <div className="relative">
@@ -89,7 +92,7 @@ export default function ResetPasswordPage() {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"
                 aria-label={showPassword ? "Hide password" : "Show password"}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -99,7 +102,7 @@ export default function ResetPasswordPage() {
 
           {/* Confirm password */}
           <div>
-            <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-[#374151]">
+            <label htmlFor="confirmPassword" className="mb-1.5 block text-sm font-medium text-ink-soft">
               Confirm new password
             </label>
             <div className="relative">
@@ -115,7 +118,7 @@ export default function ResetPasswordPage() {
               <button
                 type="button"
                 onClick={() => setShowConfirm(!showConfirm)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#94A3B8] hover:text-[#64748B] transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"
                 aria-label={showConfirm ? "Hide password" : "Show password"}
               >
                 {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -129,7 +132,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {error && (
-            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+            <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
               {error}
             </div>
           )}
@@ -137,7 +140,7 @@ export default function ResetPasswordPage() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="h-11 w-full rounded-xl bg-[#0369A1] text-sm font-semibold text-white hover:bg-[#0284C7] disabled:opacity-70"
+            className="h-11 w-full rounded-full bg-signal text-sm font-semibold text-white hover:bg-signal-600 disabled:opacity-70"
           >
             {isLoading ? (
               <>
@@ -157,7 +160,7 @@ export default function ResetPasswordPage() {
       <div className="mt-5 text-center">
         <Link
           href="/login"
-          className="text-sm font-medium text-[#64748B] hover:text-[#0F172A] transition-colors"
+          className="text-sm font-medium text-ink-soft hover:text-ink transition-colors"
         >
           Back to sign in
         </Link>

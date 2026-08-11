@@ -1,0 +1,39 @@
+# LeadZip
+
+LeadZip turns any US ZIP code into a scored list of real local businesses to sell to, complete with phones, websites, and owner emails.
+
+> Type a ZIP code. Get the whole street.
+
+## What it does
+
+LeadZip maps every local business in a ZIP code or radius using live data from Google Places and Yelp, then scores each result by how likely it is to need your services. You get verified names, addresses, phone numbers, ratings, and websites, plus a one-tap email finder for reaching the decision-maker. Results export to CSV, branded PDF, or directly into your CRM. A search runs against current data in under ten seconds — it is not a static scraped database.
+
+## Who it's for
+
+- Digital and marketing agencies prospecting local businesses.
+- Freelancers (web designers, SEO consultants, ad buyers) looking for their next client.
+- Sales reps and SDRs selling products or services to local, brick-and-mortar businesses.
+
+## Key features
+
+- Real business data pulled live from Google Places and Yelp — verified names, addresses, phones, ratings, and websites.
+- Lead scoring (0–100) that surfaces the best opportunities first — businesses with no website, few reviews, or a low rating rank highest.
+- Decision-maker email finder that returns the best contact email for any business with a domain, with a confidence badge.
+- One-click export to CSV, branded PDF, or CRM (HubSpot, Salesforce, Pipedrive).
+- Map view to see every lead across a neighborhood and plan a route.
+- Filters for radius, rating, review count, has-website, and category.
+
+## Pricing
+
+- Starter — Free forever. 25 searches per month, real business data, CSV export.
+- Pro — $25/month. Unlimited searches, email finder, lead scoring, PDF and CRM export, map view.
+- Agency — $50/month. Everything in Pro plus team workspaces, white-label PDFs, and priority support.
+
+## Key pages
+
+- [Home](https://leadzip.vercel.app/): Product overview, how it works, features, and pricing.
+- [Pricing](https://leadzip.vercel.app/pricing): Full plan comparison for Starter, Pro, and Agency.
+- [Search](https://leadzip.vercel.app/search): The core app — search a ZIP and trade to generate a scored lead list (requires an account).
+- [API docs](https://leadzip.vercel.app/api-docs): Reference for the LeadZip API and lead data endpoints.
+- [Log in](https://leadzip.vercel.app/login): Sign in to an existing account.
+- [Sign up](https://leadzip.vercel.app/signup): Create a free Starter account, no credit card required.

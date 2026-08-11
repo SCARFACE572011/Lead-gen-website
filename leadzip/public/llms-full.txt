@@ -1,0 +1,73 @@
+# LeadZip
+
+LeadZip turns any US ZIP code into a scored list of real local businesses to sell to, complete with phones, websites, and owner emails.
+
+> Type a ZIP code. Get the whole street.
+
+## What it does
+
+LeadZip maps every local business in a ZIP code or radius using live data from Google Places and Yelp, then scores each result by how likely it is to need your services. You get verified names, addresses, phone numbers, ratings, and websites, plus a one-tap email finder for reaching the decision-maker. Results export to CSV, branded PDF, or directly into your CRM. A search runs against current data in under ten seconds. It is not a static scraped database; every search queries current listings.
+
+## Who it's for
+
+- Digital and marketing agencies prospecting local businesses.
+- Freelancers such as web designers, SEO consultants, and ad buyers looking for their next client.
+- Sales reps and SDRs selling products or services to local, brick-and-mortar businesses.
+
+## Key features
+
+- Real business data. Live listings from Google Places and Yelp with verified names, addresses, phones, ratings, and websites.
+- Lead scoring. Each business gets a 0–100 score based on how likely it is to need help. No website, few reviews, or a low rating push a business higher.
+- Email finder. For any business with a website, one tap returns the best contact email with a confidence badge (verified, likely, or pattern-based).
+- Export. One click to CSV, branded PDF, or CRM (HubSpot, Salesforce, Pipedrive). Email, phone, score, and every field come along.
+- Map view. See every lead plotted across the neighborhood to work a block and plan a route.
+- Filters. Narrow by radius, rating, review count, has-website, and category before reaching out.
+
+## Pricing
+
+- Starter. Free forever. 25 searches per month, real business data, CSV export.
+- Pro. $25 per month. Unlimited searches, email finder, lead scoring, PDF and CRM export, and map view.
+- Agency. $50 per month. Everything in Pro, plus team workspaces, white-label PDFs, and priority support.
+
+No credit card is required to start on Starter.
+
+## How it works
+
+Three steps take you from a ZIP code to a booked call.
+
+1. Drop a pin. Type a ZIP code and pick a trade — plumbers, dentists, roofers, or anything else. Set your radius and search.
+2. We map the block. LeadZip pulls every real business in that area, live from Google and Yelp, and scores each one by how badly it needs what you sell.
+3. Reach out first. Find the owner's email, tap to call, and export straight to your CRM. You contact them before competitors even know they exist.
+
+## FAQ
+
+Q: Where does the lead data come from?
+A: LeadZip pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. It is not a static scraped database; every search runs against current data.
+
+Q: What makes a lead "high-scoring"?
+A: LeadZip ranks each business by how likely it is to need your services. Signals like having no website, few reviews, or a low rating push a business up your list, because those are the owners most open to help.
+
+Q: Can I find email addresses?
+A: Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).
+
+Q: How do exports work?
+A: Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Salesforce, or Pipedrive. Email, phone, score, and every field come along.
+
+Q: Do I need a credit card to start?
+A: No. The Starter plan is free forever and includes 25 searches a month against real data. Upgrade to Pro only when you want unlimited searches and the email finder.
+
+## Glossary
+
+- Lead score. A 0–100 number LeadZip assigns to each business to rank sales opportunity. Higher means more likely to need your services. Missing website, low review count, and low rating raise the score.
+- Email confidence. A badge on a found email address indicating how reliable it is. "Verified" means confirmed deliverable, "likely" means a strong match, and "pattern-based" means inferred from a common address format.
+- Radius. The distance around a searched ZIP code, in miles, that LeadZip includes when finding businesses. Widen it for more results, narrow it to focus a territory.
+- ZIP search. The core action in LeadZip: enter a US ZIP code and a business category to generate a scored list of local businesses in that area.
+
+## Key pages
+
+- Home: https://leadzip.vercel.app/ — Product overview, how it works, features, and pricing.
+- Pricing: https://leadzip.vercel.app/pricing — Full plan comparison for Starter, Pro, and Agency.
+- Search: https://leadzip.vercel.app/search — The core app; search a ZIP and trade to generate a scored lead list (requires an account).
+- API docs: https://leadzip.vercel.app/api-docs — Reference for the LeadZip API and lead data endpoints.
+- Log in: https://leadzip.vercel.app/login — Sign in to an existing account.
+- Sign up: https://leadzip.vercel.app/signup — Create a free Starter account, no credit card required.

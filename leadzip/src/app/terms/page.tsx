@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Zap } from "lucide-react";
+import { MapPin } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 
 export const metadata = {
@@ -9,31 +9,37 @@ export const metadata = {
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  const match = title.match(/^(\d+)\.\s*(.*)$/);
+  const num = match ? match[1].padStart(2, "0") : null;
+  const heading = match ? match[2] : title;
   return (
-    <section className="py-8 border-b border-slate-100 last:border-none">
-      <h2 className="text-xl font-bold text-[#0F172A] mb-4">{title}</h2>
-      <div className="space-y-3 text-[#475569] leading-relaxed text-[15px]">{children}</div>
+    <section className="py-8 border-b border-sand last:border-none">
+      <h2 className="mb-4 flex items-baseline gap-3 font-display text-xl font-bold tracking-tight text-ink">
+        {num && <span className="font-mono text-sm font-bold text-signal">{num}</span>}
+        <span>{heading}</span>
+      </h2>
+      <div className="space-y-3 text-ink-soft leading-relaxed text-[15px]">{children}</div>
     </section>
   );
 }
 
 export default function TermsPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="grain relative flex flex-col min-h-screen bg-paper text-ink">
       <Navbar />
 
-      <main className="flex-1 pt-24 pb-20">
+      <main className="flex-1 pt-28 pb-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-10">
-            <p className="text-sm font-semibold uppercase tracking-widest text-[#0369A1] mb-2">
+            <p className="readout text-signal mb-2">
               Legal
             </p>
-            <h1 className="text-4xl font-extrabold text-[#0F172A] mb-3">Terms of Service</h1>
-            <p className="text-[#64748B] text-sm">
-              Effective date: <span className="font-medium text-[#0F172A]">May 12, 2025</span>
+            <h1 className="font-display text-4xl font-extrabold tracking-tight text-ink mb-3">Terms of Service</h1>
+            <p className="text-stone text-sm">
+              Effective date: <span className="font-medium text-ink">May 12, 2025</span>
             </p>
-            <p className="mt-4 text-[#475569] leading-relaxed">
+            <p className="mt-4 text-ink-soft leading-relaxed">
               Please read these Terms of Service (&ldquo;Terms&rdquo;) carefully before using LeadZip.
               By creating an account or using the service, you agree to be bound by these Terms.
               If you do not agree, do not use LeadZip.
@@ -79,7 +85,7 @@ export default function TermsPage() {
             </ul>
             <p className="mt-3">
               You must notify us immediately at{" "}
-              <a href="mailto:hello@leadzip.com" className="text-[#0369A1] underline underline-offset-2">
+              <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
                 hello@leadzip.com
               </a>{" "}
               if you suspect unauthorized access to your account. We reserve the right to suspend
@@ -126,48 +132,48 @@ export default function TermsPage() {
 
           <Section title="5. Subscription Plans & Billing">
             <p>LeadZip offers the following subscription tiers:</p>
-            <div className="mt-3 rounded-xl border border-[#E2E8F0] overflow-hidden">
+            <div className="mt-3 overflow-hidden rounded-2xl border border-sand">
               <table className="w-full text-sm">
-                <thead className="bg-[#F8FAFC]">
+                <thead className="bg-paper-2">
                   <tr>
-                    <th className="text-left px-4 py-3 font-semibold text-[#0F172A]">Plan</th>
-                    <th className="text-left px-4 py-3 font-semibold text-[#0F172A]">Price</th>
-                    <th className="text-left px-4 py-3 font-semibold text-[#0F172A]">Key Limits</th>
+                    <th className="readout px-4 py-3 text-left text-stone">Plan</th>
+                    <th className="readout px-4 py-3 text-left text-stone">Price</th>
+                    <th className="readout px-4 py-3 text-left text-stone">Key Limits</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#E2E8F0]">
+                <tbody className="divide-y divide-sand">
                   <tr>
-                    <td className="px-4 py-3 font-medium text-[#0F172A]">Free</td>
-                    <td className="px-4 py-3 text-[#475569]">$0 / month</td>
-                    <td className="px-4 py-3 text-[#475569]">10 searches/mo, 25 saved leads</td>
+                    <td className="px-4 py-3 font-medium text-ink">Free</td>
+                    <td className="px-4 py-3 font-mono text-ink-soft">$0 / month</td>
+                    <td className="px-4 py-3 text-ink-soft">10 searches/mo, 25 saved leads</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-medium text-[#0F172A]">Pro</td>
-                    <td className="px-4 py-3 text-[#475569]">$49 / month</td>
-                    <td className="px-4 py-3 text-[#475569]">Unlimited searches, CSV export, notes</td>
+                    <td className="px-4 py-3 font-medium text-ink">Pro</td>
+                    <td className="px-4 py-3 font-mono text-ink-soft">$49 / month</td>
+                    <td className="px-4 py-3 text-ink-soft">Unlimited searches, CSV export, notes</td>
                   </tr>
                   <tr>
-                    <td className="px-4 py-3 font-medium text-[#0F172A]">Agency</td>
-                    <td className="px-4 py-3 text-[#475569]">$99 / month</td>
-                    <td className="px-4 py-3 text-[#475569]">Unlimited everything, advanced filters</td>
+                    <td className="px-4 py-3 font-medium text-ink">Agency</td>
+                    <td className="px-4 py-3 font-mono text-ink-soft">$99 / month</td>
+                    <td className="px-4 py-3 text-ink-soft">Unlimited everything, advanced filters</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="mt-4">
-              Billing is processed by <span className="font-medium text-[#0F172A]">Stripe</span>.
+              Billing is processed by <span className="font-medium text-ink">Stripe</span>.
               By providing payment information, you authorize us to charge your payment method on a
               recurring monthly basis until you cancel.
             </p>
             <p>
-              <span className="font-medium text-[#0F172A]">Cancellation:</span> You may cancel your
+              <span className="font-medium text-ink">Cancellation:</span> You may cancel your
               subscription at any time from your account settings or by emailing us. Cancellation takes
               effect at the end of your current billing period; you retain access until then.
             </p>
             <p>
-              <span className="font-medium text-[#0F172A]">Refunds:</span> We do not offer refunds for
+              <span className="font-medium text-ink">Refunds:</span> We do not offer refunds for
               partial billing periods. If you believe you were charged in error, contact us at{" "}
-              <a href="mailto:hello@leadzip.com" className="text-[#0369A1] underline underline-offset-2">
+              <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
                 hello@leadzip.com
               </a>{" "}
               within 7 days of the charge.
@@ -182,7 +188,7 @@ export default function TermsPage() {
           <Section title="6. Data & Privacy">
             <p>
               Your use of the Service is also governed by our{" "}
-              <Link href="/privacy" className="text-[#0369A1] underline underline-offset-2">
+              <Link href="/privacy" className="text-signal underline underline-offset-2 hover:text-signal-600">
                 Privacy Policy
               </Link>
               , which is incorporated into these Terms by reference. By using LeadZip, you consent
@@ -192,13 +198,13 @@ export default function TermsPage() {
 
           <Section title="7. Intellectual Property">
             <p>
-              <span className="font-medium text-[#0F172A]">LeadZip platform:</span> All rights, title,
+              <span className="font-medium text-ink">LeadZip platform:</span> All rights, title,
               and interest in the LeadZip platform — including the software, design, branding, and
               underlying technology — are owned exclusively by LeadZip. You may not copy, distribute,
               or create derivative works from our platform without express written permission.
             </p>
             <p>
-              <span className="font-medium text-[#0F172A]">Your exported data:</span> You retain full
+              <span className="font-medium text-ink">Your exported data:</span> You retain full
               ownership of any lead lists you export via CSV. We claim no rights over data you export
               from your account.
             </p>
@@ -211,12 +217,12 @@ export default function TermsPage() {
               of merchantability, fitness for a particular purpose, or non-infringement.
             </p>
             <p>
-              <span className="font-medium text-[#0F172A]">Data accuracy:</span> Business data returned
+              <span className="font-medium text-ink">Data accuracy:</span> Business data returned
               in search results is sourced from public APIs and may be incomplete, outdated, or
               inaccurate. We make no guarantees about the accuracy of lead information.
             </p>
             <p>
-              <span className="font-medium text-[#0F172A]">Outreach compliance:</span> You are solely
+              <span className="font-medium text-ink">Outreach compliance:</span> You are solely
               responsible for ensuring that your outreach to businesses complies with CAN-SPAM, GDPR,
               CCPA, and all other applicable laws. LeadZip is not liable for any legal issues arising
               from your outreach activities.
@@ -262,11 +268,11 @@ export default function TermsPage() {
             <p>
               If you have questions about these Terms, please contact us:
             </p>
-            <div className="mt-3 rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-4">
-              <p className="font-semibold text-[#0F172A]">LeadZip</p>
+            <div className="mt-3 rounded-2xl border border-sand bg-paper-2 p-4">
+              <p className="font-semibold text-ink">LeadZip</p>
               <p className="mt-1">
                 Email:{" "}
-                <a href="mailto:hello@leadzip.com" className="text-[#0369A1] underline underline-offset-2">
+                <a href="mailto:hello@leadzip.com" className="text-signal underline underline-offset-2 hover:text-signal-600">
                   hello@leadzip.com
                 </a>
               </p>
@@ -277,15 +283,15 @@ export default function TermsPage() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-[#1E293B] bg-[#0F172A] py-10">
+      <footer className="border-t border-white/10 bg-forest-900 py-10">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0369A1]">
-                <Zap className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
+                <MapPin className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
               </div>
-              <span className="text-base font-extrabold text-white">
-                Lead<span className="text-[#0EA5E9]">Zip</span>
+              <span className="font-display text-base font-extrabold text-white">
+                LeadZip
               </span>
             </Link>
             <nav className="flex flex-wrap items-center justify-center gap-5">
@@ -299,15 +305,15 @@ export default function TermsPage() {
                 <Link
                   key={link.label}
                   href={link.href}
-                  className="text-sm text-[#64748B] hover:text-white transition-colors"
+                  className="text-sm text-white/60 hover:text-white transition-colors"
                 >
                   {link.label}
                 </Link>
               ))}
             </nav>
           </div>
-          <div className="mt-6 border-t border-[#1E293B] pt-6">
-            <p className="text-center text-xs leading-relaxed text-[#475569]">
+          <div className="mt-6 border-t border-white/10 pt-6">
+            <p className="text-center text-xs leading-relaxed text-white/50">
               &copy; {new Date().getFullYear()} LeadZip. All rights reserved.
             </p>
           </div>

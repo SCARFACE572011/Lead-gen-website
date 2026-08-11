@@ -48,9 +48,9 @@ const PLANS: Plan[] = [
     cta: "Get Started Free",
     ctaHref: "/signup",
     popular: false,
-    accentColor: "#64748B",
+    accentColor: "#79705F",
     features: [
-      { label: "10 searches per month", included: true },
+      { label: "25 searches per month", included: true },
       { label: "25 saved leads", included: true },
       { label: "Basic lead scoring (0-100)", included: true },
       { label: "Lead details & contact info", included: true },
@@ -70,7 +70,7 @@ const PLANS: Plan[] = [
     cta: "Start Pro Trial",
     ctaHref: "/signup?plan=pro",
     popular: true,
-    accentColor: "#0369A1",
+    accentColor: "#FF4D23",
     features: [
       { label: "Unlimited searches", included: true },
       { label: "1,000 saved leads", included: true },
@@ -92,7 +92,7 @@ const PLANS: Plan[] = [
     cta: "Contact Sales",
     ctaHref: "mailto:hello@leadzip.com",
     popular: false,
-    accentColor: "#0F172A",
+    accentColor: "#0C2B24",
     features: [
       { label: "Unlimited searches", included: true },
       { label: "Unlimited saved leads", included: true },
@@ -157,38 +157,37 @@ function PlanCard({
   const planKey = plan.name.toLowerCase() as "pro" | "agency";
   const isLoading = upgradingPlan === planKey;
 
+  /* Pro is the highlighted, dark map-green tier */
+  const onDark = plan.popular;
+
   /* CTA rendering */
-  let ctaButton: React.ReactNode
+  let ctaButton: React.ReactNode;
 
   if (isFree) {
     ctaButton = (
       <Link href="/signup" className="mb-6 block">
-        <Button
-          className="w-full h-10 rounded-xl text-sm font-semibold transition-all border border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]"
-        >
+        <Button className="h-11 w-full rounded-full border border-sand bg-white text-sm font-semibold text-ink transition-all hover:bg-paper-2">
           {plan.cta}
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </Link>
-    )
+    );
   } else if (isAgency) {
     ctaButton = (
       <a href="mailto:hello@leadzip.com" className="mb-6 block">
-        <Button
-          className="w-full h-10 rounded-xl text-sm font-semibold transition-all border border-[#E2E8F0] bg-white text-[#0F172A] hover:bg-[#F8FAFC]"
-        >
+        <Button className="h-11 w-full rounded-full bg-ink text-sm font-semibold text-paper transition-all hover:bg-ink-soft">
           {plan.cta}
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </a>
-    )
+    );
   } else if (isPro) {
     ctaButton = (
       <div className="mb-6">
         <Button
           onClick={() => onUpgrade(planKey, billing)}
           disabled={isLoading}
-          className="w-full h-10 rounded-xl text-sm font-semibold transition-all bg-[#0369A1] text-white hover:bg-[#0284C7] disabled:opacity-70"
+          className="h-11 w-full rounded-full bg-signal text-sm font-semibold text-white transition-all hover:bg-signal-600 disabled:opacity-70"
         >
           {isLoading ? (
             <>
@@ -203,23 +202,23 @@ function PlanCard({
           )}
         </Button>
       </div>
-    )
+    );
   } else {
-    ctaButton = null
+    ctaButton = null;
   }
 
   return (
     <div
       className={cn(
-        "relative flex flex-col rounded-2xl border p-7 transition-shadow hover:shadow-card-hover",
-        plan.popular
-          ? "border-[#0369A1] bg-[#F0F9FF] shadow-card"
-          : "border-[#E2E8F0] bg-white shadow-card"
+        "relative flex flex-col rounded-3xl border p-7 transition-all",
+        onDark
+          ? "border-signal bg-forest text-white signal-glow"
+          : "border-sand bg-white shadow-card card-lift"
       )}
     >
       {plan.popular && (
         <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
-          <Badge className="rounded-full bg-[#0369A1] px-3 py-1 text-xs font-bold text-white border-0">
+          <Badge className="rounded-full border-0 bg-signal px-3 py-1 text-xs font-bold text-white">
             Most Popular
           </Badge>
         </div>
@@ -227,26 +226,53 @@ function PlanCard({
 
       {/* Header */}
       <div className="mb-6">
-        <p className="mb-1 text-xs font-semibold uppercase tracking-widest text-[#94A3B8]">
+        <p className={cn("readout mb-2", onDark ? "text-lime" : "text-signal")}>
           {plan.name}
         </p>
-        <div className="flex items-end gap-1 mb-2">
-          <span className="text-4xl font-extrabold text-[#0F172A]">
+        <div className="mb-2 flex items-end gap-1">
+          <span
+            className={cn(
+              "font-display text-5xl font-extrabold tracking-tight",
+              onDark ? "text-white" : "text-ink"
+            )}
+          >
             ${price}
           </span>
-          <span className="mb-1.5 text-sm text-[#94A3B8]">/mo</span>
+          <span
+            className={cn(
+              "mb-1.5 text-sm",
+              onDark ? "text-white/60" : "text-stone"
+            )}
+          >
+            /mo
+          </span>
         </div>
         {annualSavings > 0 && (
-          <p className="mb-2 text-xs font-semibold text-emerald-600">
+          <p
+            className={cn(
+              "mb-2 font-mono text-xs font-semibold",
+              onDark ? "text-lime" : "text-signal-600"
+            )}
+          >
             Save ${annualSavings}/year with annual billing
           </p>
         )}
         {billing === "annual" && plan.monthlyPrice > 0 && (
-          <p className="text-xs text-[#94A3B8]">
+          <p
+            className={cn(
+              "font-mono text-xs",
+              onDark ? "text-white/50" : "text-stone"
+            )}
+          >
             Billed annually (${plan.annualPrice * 12}/yr)
           </p>
         )}
-        <p className="mt-3 text-sm text-[#64748B] leading-relaxed">
+        <p
+          className={cn(
+            "mt-3 text-sm leading-relaxed",
+            onDark ? "text-white/70" : "text-ink-soft"
+          )}
+        >
           {plan.description}
         </p>
       </div>
@@ -254,32 +280,60 @@ function PlanCard({
       {/* CTA */}
       {ctaButton}
       {isFree && (
-        <p className="mb-4 -mt-4 text-center text-xs text-[#94A3B8]">
+        <p className="mb-4 -mt-4 text-center text-xs text-stone">
           No credit card required
         </p>
       )}
 
       {/* Divider */}
-      <div className="mb-5 border-t border-[#E2E8F0]" />
+      <div
+        className={cn(
+          "mb-5 border-t",
+          onDark ? "border-white/12" : "border-sand"
+        )}
+      />
 
       {/* Features */}
-      <ul className="space-y-3 flex-1">
+      <ul className="flex-1 space-y-3">
         {plan.features.map((f, i) => (
           <li key={i} className="flex items-start gap-2.5">
             {f.included ? (
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+              <Check
+                className={cn(
+                  "mt-0.5 h-4 w-4 shrink-0",
+                  onDark ? "text-lime" : "text-signal"
+                )}
+              />
             ) : (
-              <X className="mt-0.5 h-4 w-4 shrink-0 text-[#CBD5E1]" />
+              <X
+                className={cn(
+                  "mt-0.5 h-4 w-4 shrink-0",
+                  onDark ? "text-white/30" : "text-sand"
+                )}
+              />
             )}
             <span
               className={cn(
                 "text-sm",
-                f.included ? "text-[#374151]" : "text-[#94A3B8]"
+                f.included
+                  ? onDark
+                    ? "text-white/90"
+                    : "text-ink-soft"
+                  : onDark
+                    ? "text-white/40"
+                    : "text-stone"
               )}
             >
               {f.label}
               {f.note && (
-                <span className="ml-1.5 rounded-full bg-[#F1F5F9] px-1.5 py-0.5 text-[10px] font-semibold text-[#64748B]">
+                <span
+                  className={cn(
+                    "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                    onDark
+                      ? "bg-white/10 text-white/70"
+                      : "bg-paper-2 text-stone"
+                  )}
+                >
                   {f.note}
                 </span>
               )}
@@ -308,14 +362,14 @@ function PaymentBanner() {
 
   if (paymentStatus === "success") {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center text-green-700 font-medium mb-8">
+      <div className="mb-8 rounded-2xl border border-forest/20 bg-lime/20 p-4 text-center font-medium text-forest">
         Payment successful! Your plan has been upgraded. Welcome to LeadZip Pro.
       </div>
     );
   }
   if (paymentStatus === "cancelled") {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4 text-center text-yellow-700 mb-8">
+      <div className="mb-8 rounded-2xl border border-signal/25 bg-signal-50 p-4 text-center text-signal-600">
         Payment cancelled. You can upgrade anytime from the pricing page.
       </div>
     );
@@ -356,35 +410,32 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F8FAFC]">
+    <div className="grain relative flex min-h-screen flex-col bg-paper text-ink">
       <Navbar />
 
       {/* ── Header ── */}
-      <section className="bg-white border-b border-[#E2E8F0] py-16 lg:py-20">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
-          <Badge
-            variant="blue"
-            className="mb-4 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
-          >
+      <section className="map-grid relative border-b border-sand bg-paper-2 pb-16 pt-28 lg:pb-20">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+          <span className="readout mb-5 inline-flex items-center gap-2 rounded-full border border-sand bg-white px-3 py-1.5 text-signal">
             <Zap className="h-3 w-3" />
             Transparent pricing
-          </Badge>
-          <h1 className="mb-4 text-4xl font-extrabold text-[#0F172A] sm:text-5xl">
+          </span>
+          <h1 className="mb-4 font-display text-4xl font-extrabold tracking-tight text-ink sm:text-5xl">
             Simple plans that scale with you
           </h1>
-          <p className="mb-8 text-lg text-[#64748B]">
+          <p className="mb-8 text-lg text-ink-soft">
             Start free with no credit card. Upgrade only when you need more.
           </p>
 
           {/* Billing toggle */}
-          <div className="inline-flex items-center rounded-xl border border-[#E2E8F0] bg-[#F8FAFC] p-1">
+          <div className="inline-flex items-center rounded-full border border-sand bg-white p-1">
             <button
               onClick={() => setBilling("monthly")}
               className={cn(
-                "rounded-lg px-5 py-2 text-sm font-semibold transition-all",
+                "rounded-full px-5 py-2 text-sm font-semibold transition-all",
                 billing === "monthly"
-                  ? "bg-white text-[#0F172A] shadow-sm"
-                  : "text-[#64748B] hover:text-[#0F172A]"
+                  ? "bg-ink text-paper"
+                  : "text-ink-soft hover:text-ink"
               )}
             >
               Monthly
@@ -392,14 +443,14 @@ export default function PricingPage() {
             <button
               onClick={() => setBilling("annual")}
               className={cn(
-                "flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-semibold transition-all",
+                "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all",
                 billing === "annual"
-                  ? "bg-white text-[#0F172A] shadow-sm"
-                  : "text-[#64748B] hover:text-[#0F172A]"
+                  ? "bg-ink text-paper"
+                  : "text-ink-soft hover:text-ink"
               )}
             >
               Annual
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-bold text-emerald-700">
+              <span className="rounded-full bg-lime px-2 py-0.5 font-mono text-xs font-bold text-forest">
                 Save 20%
               </span>
             </button>
@@ -415,7 +466,7 @@ export default function PricingPage() {
             <PaymentBanner />
           </Suspense>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 items-start">
+          <div className="grid items-start gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {PLANS.map((plan) => (
               <PlanCard
                 key={plan.name}
@@ -428,10 +479,10 @@ export default function PricingPage() {
           </div>
 
           {/* Stripe powered note */}
-          <div className="mt-8 flex items-center justify-center gap-2 rounded-xl border border-[#E2E8F0] bg-white px-6 py-4 shadow-card max-w-xl mx-auto">
-            <CreditCard className="h-4 w-4 text-[#0369A1] shrink-0" />
-            <p className="text-sm text-[#64748B]">
-              <span className="font-semibold text-[#0F172A]">
+          <div className="mx-auto mt-8 flex max-w-xl items-center justify-center gap-2 rounded-2xl border border-sand bg-white px-6 py-4 shadow-card">
+            <CreditCard className="h-4 w-4 shrink-0 text-signal" />
+            <p className="text-sm text-ink-soft">
+              <span className="font-semibold text-ink">
                 Payments powered by Stripe.
               </span>{" "}
               Secure checkout. Cancel anytime.
@@ -441,23 +492,23 @@ export default function PricingPage() {
       </section>
 
       {/* ── Trust bar ── */}
-      <section className="border-y border-[#E2E8F0] bg-white py-8">
+      <section className="border-y border-sand bg-paper-2 py-8">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-[#64748B]">
+          <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-ink-soft">
             <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-[#0369A1]" />
+              <Shield className="h-4 w-4 text-signal" />
               <span>Public data sources only</span>
             </div>
             <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-signal" />
               <span>Cancel anytime</span>
             </div>
             <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-signal" />
               <span>14-day money-back guarantee</span>
             </div>
             <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-emerald-500" />
+              <Check className="h-4 w-4 text-signal" />
               <span>No credit card for free plan</span>
             </div>
           </div>
@@ -465,21 +516,27 @@ export default function PricingPage() {
       </section>
 
       {/* ── FAQ ── */}
-      <section className="py-16 bg-[#F8FAFC]">
+      <section className="py-16">
         <div className="mx-auto max-w-2xl px-4 sm:px-6 lg:px-8">
-          <h2 className="mb-8 text-center text-2xl font-extrabold text-[#0F172A]">
-            Pricing FAQ
-          </h2>
+          <div className="mb-8 text-center">
+            <span className="readout text-signal">Questions</span>
+            <h2 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">
+              Pricing FAQ
+            </h2>
+          </div>
           <div className="space-y-4">
             {PRICING_FAQS.map((faq, i) => (
               <div
                 key={i}
-                className="rounded-xl border border-[#E2E8F0] bg-white p-5 shadow-card"
+                className="rounded-2xl border border-sand bg-white p-5 shadow-card"
               >
-                <p className="mb-2 text-sm font-semibold text-[#0F172A]">
+                <p className="mb-2 flex items-baseline gap-2.5 text-sm font-semibold text-ink">
+                  <span className="font-mono text-xs font-bold text-signal">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
                   {faq.q}
                 </p>
-                <p className="text-sm leading-relaxed text-[#64748B]">
+                <p className="pl-7 text-sm leading-relaxed text-ink-soft">
                   {faq.a}
                 </p>
               </div>
@@ -489,16 +546,17 @@ export default function PricingPage() {
       </section>
 
       {/* ── CTA ── */}
-      <section className="bg-[#0F172A] py-16">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="mb-4 text-3xl font-extrabold text-white">
+      <section className="topo relative overflow-hidden py-16 text-white">
+        <div className="grain absolute inset-0 opacity-40" />
+        <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="mb-4 font-display text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
             Start finding leads today
           </h2>
-          <p className="mb-7 text-[#94A3B8]">
+          <p className="mb-7 text-white/70">
             Sign up free — no credit card, no commitment.
           </p>
           <Link href="/signup">
-            <Button className="h-12 rounded-xl bg-[#0369A1] px-8 text-base font-semibold text-white hover:bg-[#0284C7]">
+            <Button className="h-12 rounded-full bg-signal px-8 text-base font-semibold text-white transition-all hover:bg-signal-600">
               Get Started Free
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
@@ -507,15 +565,15 @@ export default function PricingPage() {
       </section>
 
       {/* Footer mini */}
-      <footer className="border-t border-[#1E293B] bg-[#0F172A] py-6">
-        <p className="text-center text-xs text-[#475569]">
+      <footer className="border-t border-white/10 bg-forest-900 py-6">
+        <p className="text-center text-xs text-white/50">
           &copy; {new Date().getFullYear()} LeadZip. All rights reserved.
           &nbsp;·&nbsp;
-          <Link href="/privacy" className="hover:text-[#94A3B8] transition-colors">
+          <Link href="/privacy" className="transition-colors hover:text-white">
             Privacy
           </Link>
           &nbsp;·&nbsp;
-          <Link href="/terms" className="hover:text-[#94A3B8] transition-colors">
+          <Link href="/terms" className="transition-colors hover:text-white">
             Terms
           </Link>
         </p>

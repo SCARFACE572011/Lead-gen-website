@@ -7,7 +7,6 @@ import { ThemeProvider } from "next-themes";
 import { CookieConsent } from "@/components/CookieConsent"
 import { OnboardingModal } from "@/components/OnboardingModal";
 import StructuredData from "@/components/seo/StructuredData";
-import { SmoothScroll } from "@/components/SmoothScroll";
 
 // Display — characterful modern grotesque, used with restraint for headlines
 const bricolage = Bricolage_Grotesque({
@@ -115,7 +114,6 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
-        <SmoothScroll />
         {/* SEO — JSON-LD structured data (Organization, WebSite, SoftwareApplication, FAQ) */}
         <StructuredData />
 

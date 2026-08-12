@@ -42,10 +42,13 @@ export async function GET(request: NextRequest) {
 
   let query = db
     .from('users_profile')
+    // usage_limits + subscriptions are fetched separately below and merged in
+    // code — NOT via a PostgREST embed. The embed needs FK constraints between
+    // users_profile and those tables; without them PostgREST returns PGRST200
+    // and the whole Users tab hangs on "Loading…". Separate fetches are robust
+    // regardless of FK state.
     .select(
-      `id, email, full_name, company_name, role, plan, status, created_at, updated_at,
-       usage_limits(searches_this_month, saved_leads_count, exports_count, last_reset_at),
-       subscriptions(stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end)`,
+      `id, email, full_name, company_name, role, plan, status, created_at, updated_at`,
       { count: 'exact' }
     )
 
@@ -74,23 +77,56 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 
-  const users: UserRow[] = (data ?? []).map((u) => {
-    const usage = Array.isArray(u.usage_limits) ? u.usage_limits[0] : u.usage_limits
-    const sub = Array.isArray(u.subscriptions) ? u.subscriptions[0] : u.subscriptions
-    return {
-      id: u.id,
-      email: u.email,
-      full_name: u.full_name ?? null,
-      company_name: u.company_name ?? null,
-      role: u.role,
-      plan: u.plan,
-      status: u.status ?? 'active',
-      created_at: u.created_at,
-      updated_at: u.updated_at,
-      usage: usage ?? null,
-      subscription: sub ?? null,
+  const rows = data ?? []
+  const ids = rows.map((u) => u.id)
+
+  // Fetch usage + subscriptions for just this page of users, then merge.
+  const usageMap = new Map<string, UserRow['usage']>()
+  const subMap = new Map<string, UserRow['subscription']>()
+  if (ids.length) {
+    const [usageRes, subRes] = await Promise.all([
+      db
+        .from('usage_limits')
+        .select('user_id, searches_this_month, saved_leads_count, exports_count, last_reset_at')
+        .in('user_id', ids),
+      db
+        .from('subscriptions')
+        .select('user_id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end')
+        .in('user_id', ids),
+    ])
+    for (const r of usageRes.data ?? []) {
+      usageMap.set(r.user_id, {
+        searches_this_month: r.searches_this_month ?? 0,
+        saved_leads_count: r.saved_leads_count ?? 0,
+        exports_count: r.exports_count ?? 0,
+        last_reset_at: r.last_reset_at,
+      })
     }
-  })
+    for (const r of subRes.data ?? []) {
+      subMap.set(r.user_id, {
+        stripe_customer_id: r.stripe_customer_id ?? null,
+        stripe_subscription_id: r.stripe_subscription_id ?? null,
+        plan: r.plan,
+        status: r.status,
+        current_period_start: r.current_period_start ?? null,
+        current_period_end: r.current_period_end ?? null,
+      })
+    }
+  }
+
+  const users: UserRow[] = rows.map((u) => ({
+    id: u.id,
+    email: u.email,
+    full_name: u.full_name ?? null,
+    company_name: u.company_name ?? null,
+    role: u.role,
+    plan: u.plan,
+    status: u.status ?? 'active',
+    created_at: u.created_at,
+    updated_at: u.updated_at,
+    usage: usageMap.get(u.id) ?? null,
+    subscription: subMap.get(u.id) ?? null,
+  }))
 
   const total = count ?? 0
   return NextResponse.json({

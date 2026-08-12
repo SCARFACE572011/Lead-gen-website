@@ -41,7 +41,7 @@ export async function GET() {
     db.from('search_history').select('category').not('category', 'is', null).neq('category', ''),
     db
       .from('users_profile')
-      .select('email, plan, created_at, usage_limits(searches_this_month, saved_leads_count)')
+      .select('id, email, plan, created_at')
       .order('created_at', { ascending: false })
       .limit(20),
     db.from('users_profile').select('created_at').gte('created_at', thirtyDaysAgo.toISOString()),
@@ -74,14 +74,24 @@ export async function GET() {
     .slice(0, 8)
     .map(([name, searches]) => ({ name, searches }))
 
-  // Recent users — flatten the joined usage_limits
-  const recentUsers = (recentUsersRes.data ?? []).map((u) => {
-    const usage = Array.isArray(u.usage_limits) ? u.usage_limits[0] : u.usage_limits
+  // Recent users — usage fetched separately (no fragile FK embed, which fails
+  // PGRST200 without the users_profile↔usage_limits foreign key).
+  const recentRows = recentUsersRes.data ?? []
+  const recentUsage = new Map<string, { searches_this_month?: number; saved_leads_count?: number }>()
+  if (recentRows.length) {
+    const { data: ru } = await db
+      .from('usage_limits')
+      .select('user_id, searches_this_month, saved_leads_count')
+      .in('user_id', recentRows.map((u) => u.id))
+    for (const r of ru ?? []) recentUsage.set(r.user_id, r)
+  }
+  const recentUsers = recentRows.map((u) => {
+    const usage = recentUsage.get(u.id)
     return {
       email: u.email,
       plan: u.plan ?? 'free',
-      searches: (usage as { searches_this_month?: number } | null)?.searches_this_month ?? 0,
-      savedLeads: (usage as { saved_leads_count?: number } | null)?.saved_leads_count ?? 0,
+      searches: usage?.searches_this_month ?? 0,
+      savedLeads: usage?.saved_leads_count ?? 0,
       joined: u.created_at,
     }
   })

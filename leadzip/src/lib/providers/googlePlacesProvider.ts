@@ -5,6 +5,10 @@ import { geocodeZip } from '@/lib/geocode'
 // Places API (New) — the legacy /maps/api/place endpoints are not enabled for
 // API keys created after March 2025, so all requests go to places.googleapis.com.
 const PLACES_SEARCH_TEXT_URL = 'https://places.googleapis.com/v1/places:searchText'
+// Nearby Search returns the businesses actually around a point — every type,
+// no text matching. Used for "All categories" searches, where a text query
+// would literal-match its own words (e.g. businesses NAMED "business").
+const PLACES_SEARCH_NEARBY_URL = 'https://places.googleapis.com/v1/places:searchNearby'
 
 // Fields requested per place. Phone/website/hours arrive directly in the search
 // response, so no per-place Details calls are needed.
@@ -23,6 +27,10 @@ const FIELD_MASK = [
   'places.regularOpeningHours.weekdayDescriptions',
   'nextPageToken',
 ].join(',')
+
+// searchNearby has no pagination, so its mask must not request nextPageToken
+// (an unknown field in the mask is an INVALID_ARGUMENT error).
+const NEARBY_FIELD_MASK = FIELD_MASK.replace(',nextPageToken', '')
 
 // Place type used as a precise first-pass filter (Places API New, Table A).
 // If this returns < MIN_TYPED_RESULTS we fall back to the broad text search.
@@ -229,6 +237,40 @@ async function fetchPage(body: SearchTextRequest, apiKey: string): Promise<Searc
   return res.json() as Promise<SearchTextResponse>
 }
 
+// Nearby Search: the businesses actually around a point, all types, ranked by
+// prominence. Max 20 per call, no pagination.
+async function fetchNearbyPage(
+  center: { latitude: number; longitude: number },
+  radiusMeters: number,
+  apiKey: string
+): Promise<GooglePlaceNew[]> {
+  const res = await fetch(PLACES_SEARCH_NEARBY_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'X-Goog-Api-Key': apiKey,
+      'X-Goog-FieldMask': NEARBY_FIELD_MASK,
+    },
+    body: JSON.stringify({
+      maxResultCount: 20,
+      rankPreference: 'POPULARITY',
+      locationRestriction: { circle: { center, radius: radiusMeters } },
+    }),
+  })
+  if (!res.ok) {
+    let detail = ''
+    try {
+      const err = (await res.json()) as { error?: { status?: string; message?: string } }
+      detail = ` ${err.error?.status ?? ''}: ${err.error?.message ?? ''}`
+    } catch {
+      /* non-JSON error body */
+    }
+    throw new Error(`Google Places Nearby HTTP ${res.status}${detail}`)
+  }
+  const data = (await res.json()) as { places?: GooglePlaceNew[] }
+  return data.places ?? []
+}
+
 // Fetch up to 3 pages (60 results) for a given request.
 // Places API (New) page tokens are usable immediately — no forced delay.
 async function fetchAllPages(base: SearchTextRequest, apiKey: string): Promise<GooglePlaceNew[]> {
@@ -281,15 +323,12 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 50000)
 
   const queryTerm = CATEGORY_QUERY[params.category] ?? params.category
-  // "All categories" (empty category) must never produce an empty textQuery —
-  // Google's searchText returns nothing for it. Fall back to the keyword, then
-  // to a broad local-business query so category-less searches work.
-  const queryText =
-    (params.category === 'Custom Keyword' && params.keyword
-      ? params.keyword
-      : queryTerm) ||
-    params.keyword ||
-    'local businesses'
+  const rawQuery =
+    params.category === 'Custom Keyword' && params.keyword ? params.keyword : queryTerm
+  // "All categories" (no category, no keyword): a text query would literal-match
+  // its own words, so this mode uses Nearby Search below instead of text search.
+  const allCategoriesMode = !rawQuery && !params.keyword
+  const queryText = rawQuery || params.keyword || 'local businesses'
 
   const baseRequest: SearchTextRequest = {
     textQuery: queryText,
@@ -303,7 +342,15 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   let allResults: GooglePlaceNew[] = []
   const placeType = GOOGLE_PLACES_TYPES[params.category]
 
-  if (placeType) {
+  if (allCategoriesMode) {
+    // Every kind of business around the point, ranked by prominence —
+    // a representative local mix instead of text-matched name hits.
+    allResults = await fetchNearbyPage(
+      { latitude: lat, longitude: lon },
+      radiusMeters,
+      apiKey
+    )
+  } else if (placeType) {
     // Page 1 with type filter to gauge result quality. A rejected type
     // (INVALID_ARGUMENT) falls through to the broad search rather than
     // failing the whole provider.
@@ -360,19 +407,25 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
 
     const ringSearches = await Promise.allSettled(
       ringCenters.map((center) =>
-        fetchPage(
-          {
-            textQuery: queryText,
-            pageSize: 20,
-            locationBias: {
-              circle: {
-                center: { latitude: center.lat, longitude: center.lon },
-                radius: 50000,
+        allCategoriesMode
+          ? fetchNearbyPage(
+              { latitude: center.lat, longitude: center.lon },
+              50000,
+              apiKey
+            )
+          : fetchPage(
+              {
+                textQuery: queryText,
+                pageSize: 20,
+                locationBias: {
+                  circle: {
+                    center: { latitude: center.lat, longitude: center.lon },
+                    radius: 50000,
+                  },
+                },
               },
-            },
-          },
-          apiKey
-        ).then((data) => data.places ?? [])
+              apiKey
+            ).then((data) => data.places ?? [])
       )
     )
 

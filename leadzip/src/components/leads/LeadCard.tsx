@@ -187,9 +187,10 @@ export function LeadCard({
           : 'border-sand'
       )}
     >
-      {/* Selection checkbox */}
+      {/* Selection checkbox — desktop only; the mobile layout renders its own
+          inline checkbox so it can't overlap the business name */}
       {onSelect && (
-        <div className="absolute left-3 top-3">
+        <div className="absolute left-3 top-3 hidden lg:block">
           <input
             type="checkbox"
             checked={isSelected}
@@ -202,23 +203,41 @@ export function LeadCard({
 
       {/* Compact layout — mobile only */}
       <div className="lg:hidden">
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-start gap-2.5">
+          {onSelect && (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => onSelect(lead.id)}
+              aria-label={`Select ${lead.businessName}`}
+              className="mt-1 h-4 w-4 shrink-0 cursor-pointer rounded border-sand accent-signal"
+            />
+          )}
           <div className="flex-1 min-w-0">
-            <h3 className="truncate text-sm font-semibold font-display text-ink">{lead.businessName}</h3>
-            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <h3 className="truncate text-[15px] font-semibold font-display text-ink leading-snug">{lead.businessName}</h3>
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-1.5 gap-y-1">
               {lead.rating !== null && (
-                <span className="text-xs text-amber-600 font-medium font-mono">★ {lead.rating?.toFixed(1)}</span>
+                <span className="text-xs text-amber-600 font-medium font-mono">
+                  ★ {lead.rating?.toFixed(1)}
+                  {lead.reviewCount != null && <span className="text-stone"> ({lead.reviewCount})</span>}
+                </span>
               )}
               {lead.distanceMiles !== null && lead.distanceMiles !== undefined && (
                 <span className="text-xs text-stone font-mono">· {lead.distanceMiles.toFixed(1)} mi</span>
               )}
-              {lead.openNow === true && (
-                <span className="rounded-full bg-forest/10 px-2 py-0.5 text-xs font-medium text-forest">Open</span>
+              {!lead.website && (
+                <span className="rounded-full bg-signal-50 px-2 py-0.5 text-xs font-semibold text-signal-600">No website</span>
               )}
               {lead.openNow === false && (
-                <span className="rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-stone">Closed</span>
+                <span className="rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-stone">Closed now</span>
               )}
             </div>
+            {lead.address && (
+              <p className="mt-1 truncate text-xs text-stone">
+                {lead.address}
+                {lead.city ? `, ${lead.city}` : ''}
+              </p>
+            )}
           </div>
           <LeadScore score={lead.leadScore} size="sm" />
         </div>
@@ -282,7 +301,7 @@ export function LeadCard({
             )}
             {lead.openNow === false && (
               <span className="inline-block rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-stone">
-                Closed
+                Closed now
               </span>
             )}
             {lead.priceLevel != null && lead.priceLevel > 0 && (

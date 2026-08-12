@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -57,6 +58,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const supabase = createClient();
+  const router = useRouter();
 
   function validate(): boolean {
     const newErrors: FormErrors = {};
@@ -88,7 +90,7 @@ export default function SignupPage() {
       return;
     }
 
-    const { error: authError } = await supabase.auth.signUp({
+    const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -100,6 +102,15 @@ export default function SignupPage() {
     if (authError) {
       setError(authError.message);
       setLoading(false);
+      return;
+    }
+
+    // Email confirmation is disabled, so signUp returns a live session and the
+    // user is already logged in. Take them straight into the app. The
+    // check-your-email screen only shows if confirmation is ever re-enabled
+    // (no session returned).
+    if (data.session) {
+      router.push("/dashboard");
       return;
     }
 

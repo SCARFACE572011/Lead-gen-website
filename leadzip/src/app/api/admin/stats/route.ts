@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { requireAdmin } from '@/lib/admin-auth'
 
 function serviceClient() {
   return createSupabaseClient(
@@ -10,20 +11,10 @@ function serviceClient() {
 }
 
 export async function GET() {
-  // Auth check — must be a logged-in admin
+  // Auth check — must be a real admin owner (role + email allowlist)
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: profile } = await supabase
-    .from('users_profile')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (profile?.role !== 'admin') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const admin = await requireAdmin(supabase)
+  if (!admin.ok) return admin.response
 
   const db = serviceClient()
 

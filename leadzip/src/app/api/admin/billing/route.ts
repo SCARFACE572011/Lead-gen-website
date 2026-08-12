@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+import { isAdminEmail } from '@/lib/admin-auth'
 import type { BillingSubscription } from '@/app/(dashboard)/admin/types'
 
 function serviceClient() {
@@ -21,7 +22,7 @@ export async function GET() {
     .eq('id', user.id)
     .maybeSingle()
 
-  if (profile?.role !== 'admin') {
+  if (profile?.role !== 'admin' || !isAdminEmail(user.email)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

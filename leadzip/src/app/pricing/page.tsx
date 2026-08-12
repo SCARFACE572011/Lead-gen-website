@@ -379,10 +379,15 @@ export default function PricingPage() {
   async function handleUpgrade(plan: "pro" | "agency", billingCycle: BillingCycle) {
     setUpgradingPlan(plan)
     try {
+      // Visitors who claimed the 15%-off welcome offer carry a flag in
+      // localStorage; pass it so checkout auto-applies the coupon.
+      const promo =
+        typeof window !== "undefined" &&
+        window.localStorage.getItem("leadzipp_promo15") === "1"
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, billing: billingCycle }),
+        body: JSON.stringify({ plan, billing: billingCycle, promo }),
       })
       if (res.status === 401) {
         // Checkout requires a logged-in account

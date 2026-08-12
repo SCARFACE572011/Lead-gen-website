@@ -32,14 +32,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  let body: { plan?: string; billing?: string }
+  let body: { plan?: string; billing?: string; promo?: boolean }
   try {
     body = await request.json()
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { plan = 'pro', billing = 'monthly' } = body ?? {}
+  const { plan = 'pro', billing = 'monthly', promo = false } = body ?? {}
 
   if (!VALID_PLANS.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
@@ -60,6 +60,15 @@ export async function POST(request: NextRequest) {
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' })
 
+  // New-signup promo: when the visitor came through the 15%-off popup we
+  // auto-apply the coupon (15% off the first charge). Stripe forbids combining
+  // an auto-applied discount with allow_promotion_codes, so it's one or the other.
+  const promoCoupon = process.env.STRIPE_PROMO_COUPON
+  const applyPromo = promo === true && !!promoCoupon
+  const discountConfig = applyPromo
+    ? { discounts: [{ coupon: promoCoupon! }] }
+    : { allow_promotion_codes: true }
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -70,7 +79,7 @@ export async function POST(request: NextRequest) {
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/dashboard?payment=success&plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/pricing?payment=cancelled`,
       metadata: { plan, billing, user_id: user.id },
-      allow_promotion_codes: true,
+      ...discountConfig,
       subscription_data: {
         trial_period_days: 14,
         metadata: { plan, billing, user_id: user.id },

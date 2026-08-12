@@ -6,6 +6,7 @@ import Script from "next/script";
 import { ThemeProvider } from "next-themes";
 import { CookieConsent } from "@/components/CookieConsent"
 import { OnboardingModal } from "@/components/OnboardingModal";
+import { PromoPopup } from "@/components/PromoPopup";
 import StructuredData from "@/components/seo/StructuredData";
 
 // Display — characterful modern grotesque, used with restraint for headlines
@@ -133,6 +134,7 @@ export default function RootLayout({
         <Toaster richColors position="top-center" />
         <CookieConsent />
         <OnboardingModal />
+        <PromoPopup />
 
         {/* GTM script */}
         {process.env.NEXT_PUBLIC_GTM_ID && (

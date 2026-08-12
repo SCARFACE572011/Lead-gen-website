@@ -273,6 +273,29 @@ export function LeadCard({
               <Globe className="h-4 w-4" />
             </a>
           )}
+          {hasWebsite && (
+            emailState === 'found' ? (
+              <a
+                href={`mailto:${foundEmail}`}
+                title={foundEmail}
+                className="flex items-center justify-center rounded-full bg-signal-50 p-2.5 text-signal-600 hover:bg-signal-50 transition-colors min-h-[44px] min-w-[44px]"
+                aria-label={`Email ${lead.businessName}`}
+              >
+                <Mail className="h-4 w-4" />
+              </a>
+            ) : (
+              <button
+                onClick={handleFindEmail}
+                disabled={emailState === 'loading'}
+                className="flex items-center justify-center rounded-full bg-paper-2 p-2.5 text-ink-soft hover:bg-sand transition-colors min-h-[44px] min-w-[44px] disabled:opacity-60"
+                aria-label={emailState === 'not_found' ? 'Email not found' : 'Find email'}
+              >
+                {emailState === 'loading'
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Mail className="h-4 w-4" />}
+              </button>
+            )
+          )}
         </div>
       </div>
 
@@ -444,7 +467,7 @@ export function LeadCard({
       {/* Actions */}
       <div className="mt-1 flex items-center gap-2 border-t border-sand pt-3 flex-wrap">
         <button
-          onClick={() => onSave({ ...lead, notes: noteDraft })}
+          onClick={handleSaveClick}
           aria-label={isSaved ? 'Remove from saved' : 'Save lead'}
           className={cn(
             'flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-all duration-150',

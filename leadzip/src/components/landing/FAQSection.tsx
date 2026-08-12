@@ -23,7 +23,7 @@ const FAQS = [
   {
     question: "Is there a free plan?",
     answer:
-      "Yes. The free plan gives you 10 searches per month and lets you save up to 25 leads. It's a great way to evaluate LeadZipp before upgrading. No credit card is required to sign up.",
+      "Yes. The free plan gives you 25 searches per month and lets you save up to 25 leads. It's a great way to evaluate LeadZipp before upgrading. No credit card is required to sign up.",
   },
   {
     question: "How do I connect my email for outreach?",
@@ -57,7 +57,7 @@ export default function FAQSection() {
               onClick={() => setOpenIndex(isOpen ? null : i)}
               aria-expanded={isOpen}
             >
-              <span className="text-sm font-600 text-[#17130E]">{faq.question}</span>
+              <span className="text-sm font-semibold text-[#17130E]">{faq.question}</span>
               <ChevronDown
                 className={cn(
                   "h-4 w-4 shrink-0 text-[#94A3B8] transition-transform duration-200",

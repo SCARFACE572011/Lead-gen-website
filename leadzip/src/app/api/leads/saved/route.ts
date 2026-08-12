@@ -22,7 +22,7 @@ export async function GET() {
       .from('leads')
       .select('*')
       .eq('user_id', user.id)
-      .order('saved_at', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (error) {
       console.error('Saved leads fetch error:', error)
@@ -48,7 +48,7 @@ export async function GET() {
       leadScore: row.lead_score ?? 0,
       status: row.status ?? 'new',
       notes: row.notes ?? '',
-      savedAt: row.saved_at,
+      savedAt: row.created_at,
       createdAt: row.created_at,
       userId: row.user_id,
       employeeCount: row.employee_count ?? null,

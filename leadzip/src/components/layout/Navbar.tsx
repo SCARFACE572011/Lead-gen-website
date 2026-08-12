@@ -2,18 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { MapPin, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_LINKS = [
-  { label: 'Home',     href: '#hero' },
-  { label: 'Features', href: '#features' },
-  { label: 'Pricing',  href: '#pricing' },
+  { label: 'Home',     href: '/' },
+  { label: 'Features', href: '/#features' },
+  { label: 'Pricing',  href: '/pricing' },
+  { label: 'Blog',     href: '/blog' },
 ]
 
 export default function Navbar() {
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const pathname = usePathname()
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 8)
@@ -21,11 +24,16 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
-  function handleNavClick(href: string) {
+  function handleNavClick(e: React.MouseEvent, href: string) {
     setMobileOpen(false)
-    if (href.startsWith('#')) {
-      const el = document.querySelector(href)
-      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    // On the landing page, same-page anchors smooth-scroll instead of reloading.
+    // On other pages the <Link> navigates home and jumps to the anchor.
+    if (pathname === '/' && href.startsWith('/#')) {
+      const el = document.querySelector(href.slice(1))
+      if (el) {
+        e.preventDefault()
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
     }
   }
 
@@ -59,13 +67,14 @@ export default function Navbar() {
             {/* Desktop nav links */}
             <nav className="hidden md:flex items-center gap-6">
               {NAV_LINKS.map(link => (
-                <button
+                <Link
                   key={link.href}
-                  onClick={() => handleNavClick(link.href)}
-                  className="text-sm font-medium text-ink-soft hover:text-ink transition-colors duration-150 cursor-pointer"
+                  href={link.href}
+                  onClick={e => handleNavClick(e, link.href)}
+                  className="text-sm font-medium text-ink-soft hover:text-ink transition-colors duration-150"
                 >
                   {link.label}
-                </button>
+                </Link>
               ))}
             </nav>
 
@@ -109,13 +118,14 @@ export default function Navbar() {
           <div className="md:hidden fixed top-16 left-0 right-0 z-50 bg-paper border-b border-sand shadow-lg px-4 py-4">
             <nav className="flex flex-col gap-1">
               {NAV_LINKS.map(link => (
-                <button
+                <Link
                   key={link.href}
-                  onClick={() => handleNavClick(link.href)}
+                  href={link.href}
+                  onClick={e => handleNavClick(e, link.href)}
                   className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-ink-soft hover:bg-paper-2 hover:text-signal transition-colors duration-150"
                 >
                   {link.label}
-                </button>
+                </Link>
               ))}
               <hr className="my-2 border-sand" />
               <Link

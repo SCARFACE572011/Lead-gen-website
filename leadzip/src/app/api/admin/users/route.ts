@@ -49,7 +49,12 @@ export async function GET(request: NextRequest) {
     )
 
   if (search) {
-    query = query.or(`email.ilike.%${search}%,full_name.ilike.%${search}%`)
+    // Strip characters that could break out of the PostgREST .or() filter
+    // (comma separates conditions, parens group, %/* are wildcards, \ escapes).
+    const safeSearch = search.replace(/[,()%*\\]/g, '')
+    if (safeSearch) {
+      query = query.or(`email.ilike.%${safeSearch}%,full_name.ilike.%${safeSearch}%`)
+    }
   }
   if (planFilter && ['free', 'pro', 'agency'].includes(planFilter)) {
     query = query.eq('plan', planFilter)

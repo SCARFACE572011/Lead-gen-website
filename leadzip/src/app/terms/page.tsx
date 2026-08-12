@@ -145,16 +145,16 @@ export default function TermsPage() {
                   <tr>
                     <td className="px-4 py-3 font-medium text-ink">Free</td>
                     <td className="px-4 py-3 font-mono text-ink-soft">$0 / month</td>
-                    <td className="px-4 py-3 text-ink-soft">10 searches/mo, 25 saved leads</td>
+                    <td className="px-4 py-3 text-ink-soft">25 searches/mo, 25 saved leads</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3 font-medium text-ink">Pro</td>
-                    <td className="px-4 py-3 font-mono text-ink-soft">$49 / month</td>
+                    <td className="px-4 py-3 font-mono text-ink-soft">$25 / month</td>
                     <td className="px-4 py-3 text-ink-soft">Unlimited searches, CSV export, notes</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3 font-medium text-ink">Agency</td>
-                    <td className="px-4 py-3 font-mono text-ink-soft">$99 / month</td>
+                    <td className="px-4 py-3 font-mono text-ink-soft">$50 / month</td>
                     <td className="px-4 py-3 text-ink-soft">Unlimited everything, advanced filters</td>
                   </tr>
                 </tbody>

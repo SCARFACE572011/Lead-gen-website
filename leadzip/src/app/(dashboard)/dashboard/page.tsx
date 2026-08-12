@@ -93,11 +93,18 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const paymentSuccess = params.payment === 'success'
   const greeting = getGreeting()
 
+  // Mock data is ONLY acceptable when Supabase is not configured (local/dev
+  // without a backend). A real logged-in user must never see fabricated numbers.
   let stats = MOCK_STATS
   let searches: SearchHistory[] = MOCK_SEARCHES
   let firstName = MOCK_PROFILE.fullName.split(' ')[0]
 
   if (isSupabaseConfigured) {
+    // Real instance: start from a clean zero/empty state and only overwrite
+    // with the user's real rows below.
+    stats = { totalLeads: 0, savedLeads: 0, exportedLeads: 0, searchesThisMonth: 0 }
+    searches = []
+    firstName = 'there'
     try {
       const { createClient } = await import('@/lib/supabase/server')
       const supabase = await createClient()
@@ -120,12 +127,15 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       }
 
       if (userId) {
-        const [usageRes, searchRes, profileRes] = await Promise.all([
+        // usage_limits / users_profile use .maybeSingle(): a brand-new user has
+        // no row yet, and .single() errors on zero rows (which previously left
+        // the mock 847/23/5/12 numbers in place). Every metric defaults to 0.
+        const [usageRes, searchRes, profileRes, totalsRes] = await Promise.all([
           supabase
             .from('usage_limits')
             .select('*')
             .eq('user_id', userId)
-            .single(),
+            .maybeSingle(),
           supabase
             .from('search_history')
             .select('*')
@@ -136,41 +146,48 @@ export default async function DashboardPage({ searchParams }: PageProps) {
             .from('users_profile')
             .select('*')
             .eq('id', userId)
-            .single(),
+            .maybeSingle(),
+          supabase
+            .from('search_history')
+            .select('result_count')
+            .eq('user_id', userId),
         ])
 
-        if (usageRes.data) {
-          stats = {
-            totalLeads: (usageRes.data.searches_this_month ?? 0) * 10,
-            savedLeads: usageRes.data.saved_leads_count ?? 0,
-            exportedLeads: usageRes.data.exports_count ?? 0,
-            searchesThisMonth: usageRes.data.searches_this_month ?? 0,
-          }
+        // "Total leads found" is a real aggregate: the sum of result counts
+        // across every search this user has run (0 when they've run none) —
+        // never the old searches_this_month * 10 fabrication.
+        const totalLeads = (totalsRes.data ?? []).reduce(
+          (sum, r) => sum + (r.result_count ?? 0),
+          0,
+        )
+
+        stats = {
+          totalLeads,
+          savedLeads: usageRes.data?.saved_leads_count ?? 0,
+          exportedLeads: usageRes.data?.exports_count ?? 0,
+          searchesThisMonth: usageRes.data?.searches_this_month ?? 0,
         }
 
-        if (searchRes.data && searchRes.data.length > 0) {
-          searches = searchRes.data.map((s) => ({
-            id: s.id,
-            userId: s.user_id,
-            zipCode: s.zip_code,
-            category: s.category ?? '',
-            radius: s.radius ?? 25,
-            keyword: s.keyword ?? '',
-            resultCount: s.result_count ?? 0,
-            createdAt: s.created_at,
-          }))
-        }
+        // Real recent searches, otherwise the empty state — never MOCK_SEARCHES.
+        searches = (searchRes.data ?? []).map((s) => ({
+          id: s.id,
+          userId: s.user_id,
+          zipCode: s.zip_code,
+          category: s.category ?? '',
+          radius: s.radius ?? 25,
+          keyword: s.keyword ?? '',
+          resultCount: s.result_count ?? 0,
+          createdAt: s.created_at,
+        }))
 
-        if (profileRes.data) {
-          const fullName =
-            profileRes.data.full_name || user?.email || 'User'
-          firstName = fullName.split(' ')[0]
-        } else if (user?.email) {
-          firstName = user.email.split('@')[0]
-        }
+        const fullName = profileRes.data?.full_name || user?.email || ''
+        firstName =
+          fullName.split(' ')[0] ||
+          (user?.email ? user.email.split('@')[0] : 'there')
       }
     } catch {
-      // Non-fatal — fall back to mock data
+      // Non-fatal — keep the clean zero/empty state (set above); a configured
+      // instance must not fall back to fabricated numbers.
     }
   }
 
@@ -183,7 +200,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         .sort((a, b) => b[1] - a[1])
         .slice(0, 8)
         .map(([name, value]) => ({ name, value }))
-    : CHART_FALLBACK
+    : isSupabaseConfigured
+      ? [] // Real user with no searches yet → LeadChart shows its empty state.
+      : CHART_FALLBACK
 
   return (
     <div className="mx-auto max-w-7xl space-y-7">

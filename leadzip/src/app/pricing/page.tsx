@@ -89,8 +89,8 @@ const PLANS: Plan[] = [
     monthlyPrice: 50,
     annualPrice: 40,
     description: "Built for scaling agencies with high-volume lead needs.",
-    cta: "Contact Sales",
-    ctaHref: "mailto:hello@leadzipp.com",
+    cta: "Start Agency Trial",
+    ctaHref: "/signup?plan=agency",
     popular: false,
     accentColor: "#0C2B24",
     features: [
@@ -120,7 +120,7 @@ const PRICING_FAQS = [
   },
   {
     q: "Is there a free trial for paid plans?",
-    a: "The Pro plan comes with a 14-day free trial. No credit card required to start. We'll ask for payment details at the end of the trial.",
+    a: "Yes — both Pro and Agency come with a 14-day free trial. Checkout is handled securely by Stripe, and you can cancel anytime before the trial ends and you won't be charged.",
   },
   {
     q: "What payment methods do you accept?",
@@ -152,8 +152,6 @@ function PlanCard({
       : 0;
 
   const isFree = plan.monthlyPrice === 0;
-  const isAgency = plan.name === "Agency";
-  const isPro = plan.name === "Pro";
   const planKey = plan.name.toLowerCase() as "pro" | "agency";
   const isLoading = upgradingPlan === planKey;
 
@@ -165,29 +163,26 @@ function PlanCard({
 
   if (isFree) {
     ctaButton = (
-      <Link href="/signup" className="mb-6 block">
+      <Link href={plan.ctaHref} className="mb-6 block">
         <Button className="h-11 w-full rounded-full border border-sand bg-white text-sm font-semibold text-ink transition-all hover:bg-paper-2">
           {plan.cta}
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
       </Link>
     );
-  } else if (isAgency) {
-    ctaButton = (
-      <a href="mailto:hello@leadzipp.com" className="mb-6 block">
-        <Button className="h-11 w-full rounded-full bg-ink text-sm font-semibold text-paper transition-all hover:bg-ink-soft">
-          {plan.cta}
-          <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-        </Button>
-      </a>
-    );
-  } else if (isPro) {
+  } else {
+    /* Pro and Agency are both self-serve Stripe checkouts */
     ctaButton = (
       <div className="mb-6">
         <Button
           onClick={() => onUpgrade(planKey, billing)}
           disabled={isLoading}
-          className="h-11 w-full rounded-full bg-signal text-sm font-semibold text-white transition-all hover:bg-signal-600 disabled:opacity-70"
+          className={cn(
+            "h-11 w-full rounded-full text-sm font-semibold transition-all disabled:opacity-70",
+            onDark
+              ? "bg-signal text-white hover:bg-signal-600"
+              : "bg-ink text-paper hover:bg-ink-soft"
+          )}
         >
           {isLoading ? (
             <>
@@ -203,8 +198,6 @@ function PlanCard({
         </Button>
       </div>
     );
-  } else {
-    ctaButton = null;
   }
 
   return (

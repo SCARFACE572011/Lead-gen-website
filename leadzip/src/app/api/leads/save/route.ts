@@ -67,11 +67,19 @@ export async function POST(request: NextRequest) {
 
           const { error } = await supabase.from('leads').upsert(enrichedRow)
           if (error) {
-            // DBs without the enrichment columns reject the whole row
-            // (PGRST204 / 42703) — retry with core fields so the save is
-            // never lost.
+            // Enrichment columns exist in prod, so this should normally succeed.
+            // If it fails (e.g. a DB missing those columns — PGRST204 / 42703),
+            // retry with core fields, and this time surface a real failure so the
+            // client isn't told the save succeeded when it didn't.
             console.error('Lead save enriched upsert error:', error.message)
-            await supabase.from('leads').upsert(baseRow)
+            const { error: fallbackError } = await supabase.from('leads').upsert(baseRow)
+            if (fallbackError) {
+              console.error('Lead save fallback upsert error:', fallbackError.message)
+              return NextResponse.json(
+                { success: false, error: 'Failed to save lead' },
+                { status: 500 }
+              )
+            }
           }
         }
       } catch {

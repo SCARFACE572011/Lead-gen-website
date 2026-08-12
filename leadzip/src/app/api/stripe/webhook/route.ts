@@ -82,7 +82,13 @@ export async function POST(request: NextRequest) {
 
     case 'customer.subscription.updated': {
       const subscription = event.data.object as Stripe.Subscription
-      const plan = subscription.metadata?.plan || 'pro'
+      // Only 'active'/'trialing' grant paid access. Any other status
+      // (past_due, unpaid, canceled, incomplete, incomplete_expired, paused)
+      // must drop the user to 'free' so a lapsed sub can't keep full access.
+      const paidPlan = subscription.metadata?.plan || 'pro'
+      const isActive =
+        subscription.status === 'active' || subscription.status === 'trialing'
+      const plan = isActive ? paidPlan : 'free'
       const customerId = subscription.customer as string
       const { periodStart, periodEnd } = subscriptionPeriods(subscription)
 

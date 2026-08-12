@@ -1,7 +1,6 @@
 'use client'
 
-import { TrendingUp, Bookmark, Download, Search, ArrowUpRight } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { TrendingUp, Bookmark, Download, Search } from 'lucide-react'
 
 interface Stats {
   totalLeads: number
@@ -14,11 +13,14 @@ interface StatsCardsProps {
   stats: Stats
 }
 
+// No trend pills: the old "+12% this week" / "8 remaining on plan" strings were
+// hardcoded fiction shown regardless of real data. Cards now show only the real
+// number + label.
 const CARDS = [
-  { key: 'totalLeads' as const, label: 'Total leads found', icon: TrendingUp, trend: '+12% this week', trendUp: true },
-  { key: 'savedLeads' as const, label: 'Saved leads', icon: Bookmark, trend: '+3 today', trendUp: true },
-  { key: 'exportedLeads' as const, label: 'Leads exported', icon: Download, trend: 'Last export 2d ago', trendUp: false },
-  { key: 'searchesThisMonth' as const, label: 'Searches this month', icon: Search, trend: '8 remaining on plan', trendUp: false },
+  { key: 'totalLeads' as const, label: 'Total leads found', icon: TrendingUp },
+  { key: 'savedLeads' as const, label: 'Saved leads', icon: Bookmark },
+  { key: 'exportedLeads' as const, label: 'Leads exported', icon: Download },
+  { key: 'searchesThisMonth' as const, label: 'Searches this month', icon: Search },
 ]
 
 function formatNumber(n: number): string {
@@ -37,26 +39,15 @@ export function StatsCards({ stats }: StatsCardsProps) {
             key={card.key}
             className="group relative overflow-hidden rounded-2xl border border-sand bg-card p-5 card-lift"
           >
-            <div className="flex items-start justify-between">
-              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest text-lime transition-colors group-hover:bg-signal group-hover:text-white">
-                <Icon className="h-5 w-5 shrink-0" />
-              </span>
-              {card.trendUp ? (
-                <span className="inline-flex items-center gap-0.5 rounded-full bg-signal-50 px-2 py-0.5 text-xs font-semibold text-signal-600">
-                  <ArrowUpRight className="h-3 w-3" />
-                  {card.trend.replace(/^\+/, '')}
-                </span>
-              ) : null}
-            </div>
+            <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest text-lime transition-colors group-hover:bg-signal group-hover:text-white">
+              <Icon className="h-5 w-5 shrink-0" />
+            </span>
             <div className="mt-4">
               <span className="font-mono text-3xl font-bold tracking-tight text-ink">
                 {formatNumber(value)}
               </span>
               <p className="mt-1.5 text-sm font-medium text-stone">{card.label}</p>
             </div>
-            {!card.trendUp && (
-              <p className="mt-2 text-xs text-stone">{card.trend}</p>
-            )}
           </div>
         )
       })}

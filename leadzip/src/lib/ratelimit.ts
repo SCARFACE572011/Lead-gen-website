@@ -19,6 +19,23 @@ export const searchLimiterPaid = new Ratelimit({
   prefix: 'rl:search:paid',
 })
 
+// Anonymous (no-account) search limiters, keyed by client IP. These gate the
+// billable provider for logged-out callers: without them an anonymous user could
+// hit the paid Google Places API with no limit at all. The daily cap doubles as a
+// value-first signup gate (5 free searches, then prompt to create an account); the
+// burst guard blocks rapid-fire scraping within the daily allowance.
+export const anonSearchLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(5, '1 d'),
+  prefix: 'rl:search:anon',
+})
+
+export const anonSearchBurstLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(3, '1 m'),
+  prefix: 'rl:search:anon:burst',
+})
+
 export const enrichEmailLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(10, '1 m'),

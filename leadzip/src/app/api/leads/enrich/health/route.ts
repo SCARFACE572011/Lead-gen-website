@@ -131,12 +131,36 @@ export async function POST(request: Request) {
 
   let html = ''
   try {
-    const res = await fetch(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LeadZipp/1.0)' },
-    })
+    // Follow redirects manually and re-validate every hop with isSafeUrl.
+    // With default redirect handling a public URL could 30x to
+    // 169.254.169.254 / localhost (SSRF); bound the chain to a few hops.
+    const MAX_REDIRECTS = 3
+    let currentUrl = url
+    let res: Response | undefined
+    for (let hop = 0; ; hop++) {
+      res = await fetch(currentUrl, {
+        signal: controller.signal,
+        redirect: 'manual',
+        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LeadZipp/1.0)' },
+      })
+      const location = res.headers.get('location')
+      if (res.status >= 300 && res.status < 400 && location) {
+        if (hop >= MAX_REDIRECTS) {
+          clearTimeout(timeoutId)
+          return NextResponse.json({ error: 'unreachable' })
+        }
+        const nextUrl = new URL(location, currentUrl).toString()
+        if (!isSafeUrl(nextUrl)) {
+          clearTimeout(timeoutId)
+          return NextResponse.json({ error: 'unreachable' })
+        }
+        currentUrl = nextUrl
+        continue
+      }
+      break
+    }
     clearTimeout(timeoutId)
-    if (!res.ok) {
+    if (!res || !res.ok) {
       return NextResponse.json({ error: 'unreachable' })
     }
     const MAX_BYTES = 512 * 1024

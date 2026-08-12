@@ -55,16 +55,17 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center px-4">
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm max-w-md w-full p-8">
+    <div className="grain relative min-h-screen bg-paper flex items-center justify-center px-4 text-ink">
+      <div className="bg-white border border-sand rounded-2xl shadow-card card-lift max-w-md w-full p-8">
         <div className="flex justify-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-[#FF4D23]/10 flex items-center justify-center">
-            <Users className="w-7 h-7 text-[#FF4D23]" />
+          <div className="relative w-14 h-14 rounded-2xl bg-signal/10 flex items-center justify-center">
+            <Users className="w-7 h-7 text-signal" />
+            <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-lime ring-2 ring-white" />
           </div>
         </div>
 
         {invite.status === 'loading' && (
-          <div className="flex flex-col items-center gap-3 text-slate-500">
+          <div className="flex flex-col items-center gap-3 text-stone">
             <Loader2 className="w-6 h-6 animate-spin" />
             <p className="text-sm">Loading invitation…</p>
           </div>
@@ -72,12 +73,12 @@ export default function InvitePage() {
 
         {invite.status === 'error' && (
           <div className="text-center space-y-3">
-            <div className="flex items-center justify-center gap-2 text-red-600">
+            <div className="flex items-center justify-center gap-2 text-signal-600">
               <AlertCircle className="w-5 h-5" />
               <p className="font-semibold">Invitation unavailable</p>
             </div>
-            <p className="text-sm text-slate-500">{invite.message}</p>
-            <a href="/dashboard" className="inline-block mt-2 text-sm text-[#FF4D23] hover:underline">
+            <p className="text-sm text-stone">{invite.message}</p>
+            <a href="/dashboard" className="inline-block mt-2 text-sm font-medium text-signal hover:underline">
               Go to Dashboard →
             </a>
           </div>
@@ -85,37 +86,37 @@ export default function InvitePage() {
 
         {invite.status === 'accepted' && (
           <div className="text-center space-y-3">
-            <div className="flex items-center justify-center gap-2 text-emerald-600">
+            <div className="flex items-center justify-center gap-2 text-forest">
               <CheckCircle2 className="w-5 h-5" />
               <p className="font-semibold">You&apos;ve joined the team!</p>
             </div>
-            <p className="text-sm text-slate-500">Redirecting you to the dashboard…</p>
+            <p className="text-sm text-stone">Redirecting you to the dashboard…</p>
           </div>
         )}
 
         {invite.status === 'ready' && (
           <div className="space-y-5">
             <div className="text-center">
-              <h1 className="text-xl font-bold text-[#17130E] mb-1">You&apos;re invited!</h1>
-              <p className="text-sm text-slate-500">
+              <h1 className="font-display text-xl font-extrabold text-ink mb-1">You&apos;re invited!</h1>
+              <p className="text-sm text-stone">
                 You&apos;ve been invited to join{' '}
-                <span className="font-semibold text-[#17130E]">{invite.workspaceName}</span>{' '}
+                <span className="font-semibold text-ink">{invite.workspaceName}</span>{' '}
                 on LeadZipp.
               </p>
             </div>
 
-            <div className="bg-slate-50 rounded-xl p-4 text-sm space-y-1">
+            <div className="bg-paper-2 border border-sand rounded-xl p-4 text-sm space-y-1">
               <div className="flex justify-between">
-                <span className="text-slate-500">Team</span>
-                <span className="font-medium text-[#17130E]">{invite.workspaceName}</span>
+                <span className="text-stone">Team</span>
+                <span className="font-medium text-ink">{invite.workspaceName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Invited email</span>
-                <span className="font-medium text-[#17130E]">{invite.email}</span>
+                <span className="text-stone">Invited email</span>
+                <span className="font-medium text-ink">{invite.email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Expires</span>
-                <span className="text-slate-600">{new Date(invite.expiresAt).toLocaleDateString()}</span>
+                <span className="text-stone">Expires</span>
+                <span className="text-ink-soft">{new Date(invite.expiresAt).toLocaleDateString()}</span>
               </div>
             </div>
 
@@ -123,23 +124,23 @@ export default function InvitePage() {
               <button
                 onClick={handleAccept}
                 disabled={accepting}
-                className="w-full bg-[#FF4D23] hover:bg-[#E23A12] text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
+                className="w-full bg-signal hover:bg-signal-600 text-white font-semibold py-3 rounded-xl transition-colors disabled:opacity-60 flex items-center justify-center gap-2"
               >
                 {accepting && <Loader2 className="w-4 h-4 animate-spin" />}
                 {accepting ? 'Joining…' : 'Accept Invitation'}
               </button>
             ) : (
               <div className="space-y-3">
-                <p className="text-sm text-slate-500 text-center">Sign in or create an account to accept this invitation.</p>
+                <p className="text-sm text-stone text-center">Sign in or create an account to accept this invitation.</p>
                 <a
                   href={`/login?redirectTo=/invite/${token}`}
-                  className="block w-full text-center bg-[#FF4D23] hover:bg-[#E23A12] text-white font-semibold py-3 rounded-xl transition-colors"
+                  className="block w-full text-center bg-signal hover:bg-signal-600 text-white font-semibold py-3 rounded-xl transition-colors"
                 >
                   Sign In
                 </a>
                 <a
                   href={`/signup?redirectTo=/invite/${token}`}
-                  className="block w-full text-center border border-slate-200 hover:bg-slate-50 text-[#17130E] font-semibold py-3 rounded-xl transition-colors"
+                  className="block w-full text-center border border-sand hover:bg-paper-2 text-ink font-semibold py-3 rounded-xl transition-colors"
                 >
                   Create Account
                 </a>

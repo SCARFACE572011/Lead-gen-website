@@ -153,7 +153,11 @@ export async function searchLeadsYelp(params: SearchParams): Promise<SearchResul
         state,
         zipCode,
         phone: b.phone ? formatPhone(b.phone) : '',
-        website: b.url ?? '',
+        // b.url is the Yelp LISTING page (yelp.com/biz/...), NOT the business's
+        // real website. Mapping it here would make every Yelp lead look like it
+        // "has a website", breaking the core no-website signal and lead scoring.
+        // Yelp's search API doesn't return the real site, so leave this blank.
+        website: '',
         rating: b.rating ?? null,
         reviewCount: b.review_count ?? null,
         latitude: b.coordinates?.latitude ?? null,

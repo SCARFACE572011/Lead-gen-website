@@ -255,9 +255,92 @@ function ProfileTab() {
   )
 }
 
+type PlanId = 'free' | 'pro' | 'agency'
+
+// Real plan definitions — matches the public pricing page and the search-route
+// caps (Free = 25 searches/mo + 25 saved leads; Pro = $25 unlimited searches +
+// 1,000 saved; Agency = $50 unlimited). null = unlimited.
+const PLAN_META: Record<PlanId, {
+  name: string
+  price: number
+  searchLimit: number | null
+  savedLimit: number | null
+  tagline: string
+  upgradeLabel?: string
+}> = {
+  free: {
+    name: 'Free',
+    price: 0,
+    searchLimit: 25,
+    savedLimit: 25,
+    tagline: '25 searches / month · 25 saved leads',
+    upgradeLabel: 'Upgrade to Pro',
+  },
+  pro: {
+    name: 'Pro',
+    price: 25,
+    searchLimit: null,
+    savedLimit: 1000,
+    tagline: 'Unlimited searches · 1,000 saved leads',
+    upgradeLabel: 'Upgrade to Agency',
+  },
+  agency: {
+    name: 'Agency',
+    price: 50,
+    searchLimit: null,
+    savedLimit: null,
+    tagline: 'Unlimited searches · Unlimited saved leads',
+  },
+}
+
 function PlanTab() {
+  const [plan, setPlan] = useState<PlanId>('free')
+  const [searchesUsed, setSearchesUsed] = useState(0)
+  const [savedUsed, setSavedUsed] = useState(0)
+  const [loading, setLoading] = useState(true)
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState('')
+
+  useEffect(() => {
+    async function load() {
+      if (!isSupabaseConfigured) {
+        setLoading(false)
+        return
+      }
+      try {
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
+        if (!user) {
+          setLoading(false)
+          return
+        }
+
+        // maybeSingle(): a brand-new user has no usage_limits row yet. The real
+        // plan is the authoritative users_profile.plan (same source the search
+        // route enforces caps against) — never assume paid "Pro".
+        const [profileRes, usageRes] = await Promise.all([
+          supabase.from('users_profile').select('plan').eq('id', user.id).maybeSingle(),
+          supabase
+            .from('usage_limits')
+            .select('searches_this_month, saved_leads_count')
+            .eq('user_id', user.id)
+            .maybeSingle(),
+        ])
+
+        const rawPlan = profileRes.data?.plan
+        setPlan(rawPlan === 'pro' || rawPlan === 'agency' ? rawPlan : 'free')
+        setSearchesUsed(usageRes.data?.searches_this_month ?? 0)
+        setSavedUsed(usageRes.data?.saved_leads_count ?? 0)
+      } catch {
+        // Non-fatal — keep the free/zero defaults rather than fabricating a plan.
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  }, [])
 
   const handleManageBilling = async () => {
     setBillingLoading(true)
@@ -277,7 +360,7 @@ function PlanTab() {
         .from('subscriptions')
         .select('stripe_customer_id')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle()
 
       if (!sub?.stripe_customer_id) {
         setBillingError('No active subscription found.')
@@ -302,6 +385,26 @@ function PlanTab() {
     }
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="font-display text-lg font-bold text-ink">Plan &amp; Usage</h2>
+          <p className="text-sm text-stone mt-0.5">Monitor your usage and manage your subscription</p>
+        </div>
+        <div className="h-40 rounded-2xl bg-paper-2 animate-pulse" />
+        <div className="h-36 rounded-2xl bg-paper-2 animate-pulse" />
+      </div>
+    )
+  }
+
+  const meta = PLAN_META[plan]
+  const isPaid = plan !== 'free'
+  const searchesRemaining =
+    meta.searchLimit !== null ? Math.max(0, meta.searchLimit - searchesUsed) : null
+  const savedRemaining =
+    meta.savedLimit !== null ? Math.max(0, meta.savedLimit - savedUsed) : null
+
   return (
     <div className="space-y-6">
       <div>
@@ -319,28 +422,34 @@ function PlanTab() {
                 <Zap className="w-4 h-4 text-lime" />
                 <span className="readout text-lime">Current Plan</span>
               </div>
-              <h3 className="font-display text-2xl font-bold">Pro</h3>
-              <p className="text-white/80 text-sm mt-1">Unlimited searches · 1,000 saved leads</p>
+              <h3 className="font-display text-2xl font-bold">{meta.name}</h3>
+              <p className="text-white/80 text-sm mt-1">{meta.tagline}</p>
             </div>
-            <span className="font-mono text-2xl font-bold">$49<span className="text-base font-normal text-white/70">/mo</span></span>
+            <span className="font-mono text-2xl font-bold">${meta.price}<span className="text-base font-normal text-white/70">/mo</span></span>
           </div>
-          <div className="mt-4 flex gap-3">
-            <a
-              href="/pricing"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-full transition-colors"
-            >
-              Upgrade to Agency
-              <ChevronRight className="w-3 h-3" />
-            </a>
-            <button
-              onClick={handleManageBilling}
-              disabled={billingLoading}
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-white/70 hover:text-white px-3 py-2 rounded-full transition-colors disabled:opacity-60"
-            >
-              {billingLoading ? 'Opening…' : 'Manage Billing'}
-              <ExternalLink className="w-3 h-3" />
-            </button>
-          </div>
+          {(meta.upgradeLabel || isPaid) && (
+            <div className="mt-4 flex flex-wrap gap-3">
+              {meta.upgradeLabel && (
+                <a
+                  href="/pricing"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold bg-white/20 hover:bg-white/30 text-white px-3 py-2 rounded-full transition-colors"
+                >
+                  {meta.upgradeLabel}
+                  <ChevronRight className="w-3 h-3" />
+                </a>
+              )}
+              {isPaid && (
+                <button
+                  onClick={handleManageBilling}
+                  disabled={billingLoading}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-white/70 hover:text-white px-3 py-2 rounded-full transition-colors disabled:opacity-60"
+                >
+                  {billingLoading ? 'Opening…' : 'Manage Billing'}
+                  <ExternalLink className="w-3 h-3" />
+                </button>
+              )}
+            </div>
+          )}
           {billingError && (
             <p className="mt-3 text-xs text-red-300">{billingError}</p>
           )}
@@ -359,12 +468,16 @@ function PlanTab() {
                 <span className="text-sm font-medium text-ink">Searches</span>
               </div>
               <div className="text-right">
-                <span className="font-mono text-sm font-bold text-ink">12</span>
-                <span className="text-xs text-stone"> / Unlimited</span>
+                <span className="font-mono text-sm font-bold text-ink">{searchesUsed}</span>
+                <span className="text-xs text-stone"> / {meta.searchLimit ?? 'Unlimited'}</span>
               </div>
             </div>
-            <UsageBar used={12} total={null} />
-            <p className="text-xs text-stone mt-1.5">Unlimited searches on Pro plan</p>
+            <UsageBar used={searchesUsed} total={meta.searchLimit} />
+            <p className="text-xs text-stone mt-1.5">
+              {meta.searchLimit === null
+                ? `Unlimited searches on ${meta.name}`
+                : `${searchesRemaining} of ${meta.searchLimit} remaining this month`}
+            </p>
           </div>
 
           <div className="border-t border-sand" />
@@ -376,31 +489,52 @@ function PlanTab() {
                 <span className="text-sm font-medium text-ink">Saved Leads</span>
               </div>
               <div className="text-right">
-                <span className="font-mono text-sm font-bold text-ink">23</span>
-                <span className="text-xs text-stone"> / 1,000</span>
+                <span className="font-mono text-sm font-bold text-ink">{savedUsed}</span>
+                <span className="text-xs text-stone"> / {meta.savedLimit?.toLocaleString() ?? 'Unlimited'}</span>
               </div>
             </div>
-            <UsageBar used={23} total={1000} />
-            <p className="text-xs text-stone mt-1.5">977 slots remaining</p>
+            <UsageBar used={savedUsed} total={meta.savedLimit} />
+            <p className="text-xs text-stone mt-1.5">
+              {meta.savedLimit === null
+                ? 'Unlimited saved leads'
+                : `${savedRemaining?.toLocaleString()} slots remaining`}
+            </p>
           </div>
         </div>
 
-        {/* Billing info */}
-        <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
-          <CreditCard className="w-5 h-5 text-stone shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <p className="text-sm font-medium text-ink-soft">Payments powered by Stripe</p>
-            <p className="text-xs text-stone mt-0.5">Click &quot;Manage Billing&quot; above to update payment method, view invoices, or cancel your plan.</p>
+        {/* Billing / upgrade info */}
+        {isPaid ? (
+          <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
+            <CreditCard className="w-5 h-5 text-stone shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-ink-soft">Payments powered by Stripe</p>
+              <p className="text-xs text-stone mt-0.5">Click &quot;Manage Billing&quot; above to update payment method, view invoices, or cancel your plan.</p>
+            </div>
+            <button
+              onClick={handleManageBilling}
+              disabled={billingLoading}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-signal hover:text-signal-600 transition-colors disabled:opacity-60 shrink-0"
+            >
+              {billingLoading ? 'Opening…' : 'Open Portal'}
+              <ExternalLink className="w-3 h-3" />
+            </button>
           </div>
-          <button
-            onClick={handleManageBilling}
-            disabled={billingLoading}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-signal hover:text-signal-600 transition-colors disabled:opacity-60 shrink-0"
-          >
-            {billingLoading ? 'Opening…' : 'Open Portal'}
-            <ExternalLink className="w-3 h-3" />
-          </button>
-        </div>
+        ) : (
+          <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
+            <CreditCard className="w-5 h-5 text-stone shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-ink-soft">You&apos;re on the Free plan</p>
+              <p className="text-xs text-stone mt-0.5">Upgrade to Pro for unlimited searches, the email finder, and 1,000 saved leads.</p>
+            </div>
+            <a
+              href="/pricing"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-signal hover:text-signal-600 transition-colors shrink-0"
+            >
+              View Plans
+              <ChevronRight className="w-3 h-3" />
+            </a>
+          </div>
+        )}
       </div>
     </div>
   )

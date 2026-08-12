@@ -34,10 +34,14 @@ export async function resolveUserId(
   if (!customerId) {
     return { userId: null, dbError: null }
   }
+  // Tolerate duplicate rows for the same customer: order newest-first and take
+  // one, so a legacy double-insert never makes this throw "multiple rows".
   const { data, error } = await supabase
     .from('subscriptions')
     .select('user_id')
     .eq('stripe_customer_id', customerId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
   if (error) {
     return { userId: null, dbError: error.message }
@@ -72,10 +76,14 @@ export async function syncSubscriptionRow(
     updated_at: new Date().toISOString(),
   }
 
+  // Order newest-first + limit(1) so a duplicate row (no unique constraint yet)
+  // never makes .maybeSingle() throw "multiple rows"; we just update the latest.
   const { data: byCustomer, error: customerSelectError } = await supabase
     .from('subscriptions')
     .select('id')
     .eq('stripe_customer_id', sync.customerId)
+    .order('updated_at', { ascending: false })
+    .limit(1)
     .maybeSingle()
   if (customerSelectError) return customerSelectError.message
 
@@ -86,6 +94,8 @@ export async function syncSubscriptionRow(
       .from('subscriptions')
       .select('id')
       .eq('user_id', sync.userId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
       .maybeSingle()
     if (userSelectError) return userSelectError.message
     existingId = byUser?.id as string | undefined

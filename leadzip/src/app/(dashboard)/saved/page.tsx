@@ -17,7 +17,9 @@ import {
   Plug,
   CheckCircle2,
   AlertCircle,
+  RefreshCw,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { Lead, LeadStatus, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
 import { exportToCSV } from '@/lib/export'
 import { cn } from '@/lib/utils'
@@ -268,6 +270,9 @@ export default function SavedLeadsPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState<SortOption>('score')
   const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
+  const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false)
   const [connectedCrms, setConnectedCrms] = useState<CrmType[]>([])
   const [crmModal, setCrmModal] = useState(false)
   const [pushingCrm, setPushingCrm] = useState<CrmType | null>(null)
@@ -282,74 +287,93 @@ export default function SavedLeadsPage() {
     }
   }, [])
 
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true)
-
-    async function loadLeads() {
+  const loadLeads = useCallback(async () => {
+    setLoading(true)
+    setLoadError(false)
+    try {
       if (isSupabaseConfigured) {
-        try {
-          const supabase = createClient()
-          const {
-            data: { user },
-          } = await supabase.auth.getUser()
+        const supabase = createClient()
+        const {
+          data: { user },
+        } = await supabase.auth.getUser()
 
-          if (user) {
-            const { data } = await supabase
-              .from('leads')
-              .select('*')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false })
+        if (user) {
+          const { data, error } = await supabase
+            .from('leads')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false })
 
-            if (data && data.length > 0) {
-              setLeads(
-                data.map((l) => ({
-                  id: l.id,
-                  businessName: l.business_name,
-                  category: l.category,
-                  address: l.address ?? '',
-                  city: l.city ?? '',
-                  state: l.state ?? '',
-                  zipCode: l.zip_code ?? '',
-                  phone: l.phone ?? '',
-                  website: l.website ?? '',
-                  rating: l.rating ?? null,
-                  reviewCount: l.review_count ?? null,
-                  latitude: null,
-                  longitude: null,
-                  distanceMiles: null,
-                  leadScore: l.lead_score ?? 0,
-                  status: (l.status as LeadStatus) ?? 'new',
-                  notes: l.notes ?? '',
-                  savedAt: l.saved_at,
-                  employeeCount: l.employee_count ?? null,
-                  revenueEstimate: l.revenue_estimate ?? null,
-                  facebookUrl: l.facebook_url ?? null,
-                  instagramUrl: l.instagram_url ?? null,
-                  linkedinUrl: l.linkedin_url ?? null,
-                }))
-              )
-              return
-            }
+          if (error) throw error
+
+          if (data && data.length > 0) {
+            setLeads(
+              data.map((l) => ({
+                id: l.id,
+                businessName: l.business_name,
+                category: l.category,
+                address: l.address ?? '',
+                city: l.city ?? '',
+                state: l.state ?? '',
+                zipCode: l.zip_code ?? '',
+                phone: l.phone ?? '',
+                website: l.website ?? '',
+                rating: l.rating ?? null,
+                reviewCount: l.review_count ?? null,
+                latitude: null,
+                longitude: null,
+                distanceMiles: null,
+                leadScore: l.lead_score ?? 0,
+                status: (l.status as LeadStatus) ?? 'new',
+                notes: l.notes ?? '',
+                savedAt: l.saved_at,
+                employeeCount: l.employee_count ?? null,
+                revenueEstimate: l.revenue_estimate ?? null,
+                facebookUrl: l.facebook_url ?? null,
+                instagramUrl: l.instagram_url ?? null,
+                linkedinUrl: l.linkedin_url ?? null,
+              }))
+            )
+            return
           }
-        } catch {
-          // Non-fatal — fall back to localStorage
+          // Signed in but no server-side leads yet — fall through to localStorage
         }
       }
 
-      // Fallback: load from localStorage
+      // Fallback: load from localStorage (Supabase not configured / no user / empty)
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         try {
-          setLeads(JSON.parse(raw))
+          setLeads(JSON.parse(raw) as Lead[])
         } catch {
           setLeads([])
         }
+      } else {
+        setLeads([])
       }
+    } catch {
+      // Genuine failure — try localStorage before surfacing an error so a
+      // transient network blip doesn't hide an existing pipeline
+      const raw = localStorage.getItem(STORAGE_KEY)
+      if (raw) {
+        try {
+          setLeads(JSON.parse(raw) as Lead[])
+          return
+        } catch {
+          // corrupt cache — fall through to the error state
+        }
+      }
+      setLoadError(true)
+    } finally {
+      setLoading(false)
     }
-
-    loadLeads()
   }, [])
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true)
+    loadLeads()
+  }, [loadLeads])
 
   const saveToStorage = useCallback((updated: Lead[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
@@ -384,14 +408,73 @@ export default function SavedLeadsPage() {
     }
   }
 
-  const handleDelete = (id: string) => {
+  const restoreLead = useCallback(async (lead: Lead) => {
+    setLeads((prev) => {
+      const next = [lead, ...prev.filter((l) => l.id !== lead.id)]
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
+      return next
+    })
+    if (isSupabaseConfigured) {
+      try {
+        await fetch('/api/leads/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ lead }),
+        })
+      } catch {
+        // Non-fatal — localStorage is already restored
+      }
+    }
+  }, [])
+
+  const handleDelete = async (id: string) => {
+    const removed = leads.find((l) => l.id === id)
+    const snapshot = leads
     saveToStorage(leads.filter((l) => l.id !== id))
     setSelectedIds((prev) => { const s = new Set(prev); s.delete(id); return s })
+
+    if (isSupabaseConfigured) {
+      try {
+        const supabase = createClient()
+        const { error } = await supabase.from('leads').delete().eq('id', id)
+        if (error) throw error
+      } catch {
+        // Persisting the delete failed — roll back so the row doesn't reappear
+        // out of sync on the next load
+        saveToStorage(snapshot)
+        toast.error('Failed to delete lead')
+        return
+      }
+    }
+
+    toast.success('Lead deleted', removed ? {
+      action: { label: 'Undo', onClick: () => restoreLead(removed) },
+    } : undefined)
   }
 
-  const handleBulkDelete = () => {
+  const handleBulkDelete = async () => {
+    const ids = Array.from(selectedIds)
+    if (ids.length === 0) return
+    const count = ids.length
+    const snapshot = leads
     saveToStorage(leads.filter((l) => !selectedIds.has(l.id)))
     setSelectedIds(new Set())
+    setConfirmingBulkDelete(false)
+
+    if (isSupabaseConfigured) {
+      try {
+        const supabase = createClient()
+        const { error } = await supabase.from('leads').delete().in('id', ids)
+        if (error) throw error
+      } catch {
+        // Persisting the deletes failed — roll back the whole batch
+        saveToStorage(snapshot)
+        toast.error('Failed to delete leads')
+        return
+      }
+    }
+
+    toast.success(`${count} lead${count !== 1 ? 's' : ''} deleted`)
   }
 
   const handlePushToCrm = async (crm: CrmType) => {
@@ -432,15 +515,20 @@ export default function SavedLeadsPage() {
 
   const handleSelectAll = (checked: boolean) => {
     setSelectedIds(checked ? new Set(filtered.map((l) => l.id)) : new Set())
+    setConfirmingBulkDelete(false)
   }
 
   const handleExportAll = () => {
+    if (leads.length === 0) return
     exportToCSV(leads, `leadzip-saved-${Date.now()}`)
+    toast.success(`Exported ${leads.length} lead${leads.length !== 1 ? 's' : ''}`)
   }
 
   const handleExportSelected = () => {
     const sel = leads.filter((l) => selectedIds.has(l.id))
+    if (sel.length === 0) return
     exportToCSV(sel, `leadzip-selected-${Date.now()}`)
+    toast.success(`Exported ${sel.length} lead${sel.length !== 1 ? 's' : ''}`)
   }
 
   const filtered = leads
@@ -498,12 +586,11 @@ export default function SavedLeadsPage() {
         </div>
 
         {someSelected && (
-          <div className="mb-4 flex items-center gap-3 bg-signal text-white px-4 py-3 rounded-2xl">
+          <div className="mb-4 flex flex-wrap items-center gap-2 bg-signal text-white px-4 py-3 rounded-2xl">
             <span className="text-sm font-medium"><span className="font-mono">{selectedIds.size}</span> lead{selectedIds.size !== 1 ? 's' : ''} selected</span>
-            <div className="flex-1" />
             <button
               onClick={handleExportSelected}
-              className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+              className="inline-flex items-center gap-2 bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors sm:ml-auto"
             >
               <Download className="w-4 h-4" />
               Export Selected
@@ -549,15 +636,34 @@ export default function SavedLeadsPage() {
                 )}
               </div>
             )}
+            {confirmingBulkDelete ? (
+              <div className="inline-flex items-center gap-2">
+                <button
+                  onClick={handleBulkDelete}
+                  className="inline-flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white text-sm font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Delete {selectedIds.size}?
+                </button>
+                <button
+                  onClick={() => setConfirmingBulkDelete(false)}
+                  className="bg-white/20 hover:bg-white/30 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmingBulkDelete(true)}
+                className="inline-flex items-center gap-2 bg-red-500/80 hover:bg-red-500 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                Delete Selected
+              </button>
+            )}
             <button
-              onClick={handleBulkDelete}
-              className="inline-flex items-center gap-2 bg-red-500/80 hover:bg-red-500 text-white text-sm font-medium px-3 py-1.5 rounded-lg transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete Selected
-            </button>
-            <button
-              onClick={() => setSelectedIds(new Set())}
+              onClick={() => { setSelectedIds(new Set()); setConfirmingBulkDelete(false) }}
+              aria-label="Clear selection"
               className="p-1 hover:bg-white/20 rounded-lg transition-colors"
             >
               <X className="w-4 h-4" />
@@ -602,7 +708,42 @@ export default function SavedLeadsPage() {
           </span>
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="bg-card border border-sand rounded-2xl overflow-hidden">
+            <div className="divide-y divide-sand">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 px-4 py-4">
+                  <div className="h-4 w-4 shrink-0 rounded bg-paper-2 animate-pulse" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-40 max-w-full rounded bg-paper-2 animate-pulse" />
+                    <div className="h-3 w-24 rounded bg-paper-2 animate-pulse" />
+                  </div>
+                  <div className="hidden sm:block h-6 w-16 rounded-md bg-paper-2 animate-pulse" />
+                  <div className="h-6 w-10 rounded-md bg-paper-2 animate-pulse" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : loadError ? (
+          <div className="bg-card border border-sand rounded-2xl">
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-signal-50 flex items-center justify-center mb-4">
+                <AlertCircle className="w-8 h-8 text-signal" />
+              </div>
+              <h3 className="font-display text-lg font-bold text-ink mb-1">Couldn&apos;t load your leads</h3>
+              <p className="text-sm text-stone max-w-xs">
+                Something went wrong while loading your pipeline. Check your connection and try again.
+              </p>
+              <button
+                onClick={() => loadLeads()}
+                className="mt-5 inline-flex items-center gap-2 bg-signal text-white text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-signal-600 transition-all active:scale-95"
+              >
+                <RefreshCw className="w-4 h-4" />
+                Retry
+              </button>
+            </div>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="bg-card border border-sand rounded-2xl">
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 rounded-2xl bg-signal-50 flex items-center justify-center mb-4">

@@ -34,12 +34,12 @@ export function CookieConsent() {
       role="dialog"
       aria-modal="false"
       aria-label="Cookie consent"
-      className="fixed bottom-0 left-0 right-0 z-[60] border-t border-slate-700 bg-[#17130E] px-5 py-4 shadow-2xl md:bottom-4 md:left-4 md:right-auto md:max-w-sm md:rounded-xl md:border md:border-slate-700"
+      className="fixed bottom-0 left-0 right-0 z-[60] border-t border-sand bg-white px-5 py-4 shadow-2xl md:bottom-4 md:left-4 md:right-auto md:max-w-sm md:rounded-xl md:border md:border-sand"
     >
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#FF4D23]/20">
+        <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal/10">
           <svg
-            className="h-4 w-4 text-[#FF7A5A]"
+            className="h-4 w-4 text-signal"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -54,12 +54,12 @@ export function CookieConsent() {
           </svg>
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white">Cookie Preferences</p>
-          <p className="mt-1 text-xs leading-relaxed text-slate-400">
+          <p className="text-sm font-semibold text-ink">Cookie Preferences</p>
+          <p className="mt-1 text-xs leading-relaxed text-stone">
             We use cookies for analytics and to improve your experience. See our{' '}
             <a
               href="/privacy"
-              className="font-medium text-[#FF7A5A] hover:text-white transition-colors underline underline-offset-2"
+              className="font-medium text-signal hover:text-signal-600 transition-colors underline underline-offset-2"
             >
               Privacy Policy
             </a>
@@ -71,13 +71,13 @@ export function CookieConsent() {
       <div className="mt-4 flex items-center gap-2">
         <button
           onClick={() => accept('all')}
-          className="flex-1 rounded-lg bg-[#FF4D23] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#E23A12] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FF7A5A]"
+          className="flex-1 rounded-lg bg-signal px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-signal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
         >
           Accept All
         </button>
         <button
           onClick={() => accept('necessary')}
-          className="flex-1 rounded-lg border border-slate-600 px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:border-slate-400 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+          className="flex-1 rounded-lg border border-sand px-3 py-2 text-sm font-medium text-ink-soft transition-colors hover:border-stone hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sand"
         >
           Necessary Only
         </button>

@@ -1,7 +1,7 @@
 // src/components/SaveSearchModal.tsx
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { X } from 'lucide-react'
 import type { SavedSearch } from '@/types/saved-search'
 
@@ -34,6 +34,42 @@ export function SaveSearchModal({
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [prevDefaultName, setPrevDefaultName] = useState(defaultName)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Focus the name input on open, and trap focus / close on Escape while open
+  useEffect(() => {
+    if (!isOpen) return
+    const dialog = dialogRef.current
+    inputRef.current?.focus()
+    inputRef.current?.select()
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        onClose()
+        return
+      }
+      if (e.key === 'Tab' && dialog) {
+        const focusable = dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable[focusable.length - 1]
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault()
+          last.focus()
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault()
+          first.focus()
+        }
+      }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [isOpen, onClose])
 
   // Sync name when defaultName changes (new search performed) — adjust state during render
   if (prevDefaultName !== defaultName) {
@@ -79,9 +115,15 @@ export function SaveSearchModal({
       className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 backdrop-blur-sm p-4"
       onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
     >
-      <div className="w-full max-w-sm rounded-3xl border border-sand bg-card p-6 shadow-xl">
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-search-title"
+        className="w-full max-w-sm rounded-3xl border border-sand bg-card p-6 shadow-xl"
+      >
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-display text-base font-bold text-ink">Save this search</h2>
+          <h2 id="save-search-title" className="font-display text-base font-bold text-ink">Save this search</h2>
           <button
             onClick={onClose}
             aria-label="Close"
@@ -101,6 +143,7 @@ export function SaveSearchModal({
             </label>
             <input
               id="save-search-name"
+              ref={inputRef}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}

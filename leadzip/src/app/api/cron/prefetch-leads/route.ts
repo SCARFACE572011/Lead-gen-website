@@ -66,6 +66,7 @@ export async function GET(request: NextRequest) {
 
   let prefetched = 0
   let errors = 0
+  let skipped = 0
 
   for (const { zipCode, category } of top20) {
     try {
@@ -76,6 +77,14 @@ export async function GET(request: NextRequest) {
       }
 
       const result = await searchLeadsCombined(params)
+
+      // Never cache an EMPTY pool: an empty result is usually a transient provider
+      // failure, and caching it would pin "0 results" on this key for the full TTL.
+      // Matches the interactive search route's never-cache-empty rule.
+      if (result.leads.length === 0) {
+        skipped++
+        continue
+      }
 
       const cacheKey = `${zipCode}|${category}|25`
       const { error: upsertError } = await supabase.from('leads_cache').upsert({
@@ -99,5 +108,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ prefetched, errors, total: top20.length })
+  return NextResponse.json({ prefetched, errors, skipped, total: top20.length })
 }

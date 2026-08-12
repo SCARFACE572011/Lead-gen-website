@@ -58,6 +58,8 @@ export async function searchLeadsCombined(params: SearchParams): Promise<SearchR
     }
   }
 
-  // 5. OSM (falls back to dynamic internally, which sets source: 'demo')
+  // 5. OSM (free, no key). Returns real OSM businesses, or an honest empty result
+  // (source: 'osm') when the area is sparse or the category has no OSM mapping — it
+  // never fabricates leads or falls back to demo/dynamic data.
   return searchLeadsOSM(params)
 }

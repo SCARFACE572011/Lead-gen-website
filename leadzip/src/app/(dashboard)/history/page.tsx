@@ -11,114 +11,30 @@ import {
   SearchX,
 } from 'lucide-react'
 import { SearchHistory } from '@/types/lead'
-import { createClient } from '@/lib/supabase/client'
 
-const HISTORY_KEY = 'leadzip_search_history'
-const isSupabaseConfigured =
-  process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+interface SearchHistoryRow {
+  id: string
+  user_id: string
+  zip_code: string
+  radius: number | null
+  category: string | null
+  keyword: string | null
+  result_count: number | null
+  created_at: string
+}
 
-const MOCK_HISTORY: SearchHistory[] = [
-  {
-    id: 'h1',
-    userId: 'demo',
-    zipCode: '10019',
-    radius: 10,
-    category: 'Restaurants',
-    keyword: '',
-    resultCount: 18,
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h2',
-    userId: 'demo',
-    zipCode: '90210',
-    radius: 25,
-    category: 'Hair & Beauty Salons',
-    keyword: 'blowout',
-    resultCount: 7,
-    createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h3',
-    userId: 'demo',
-    zipCode: '60601',
-    radius: 15,
-    category: 'Contractors',
-    keyword: '',
-    resultCount: 12,
-    createdAt: new Date(Date.now() - 8 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h4',
-    userId: 'demo',
-    zipCode: '77001',
-    radius: 25,
-    category: 'Plumbers',
-    keyword: '',
-    resultCount: 9,
-    createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h5',
-    userId: 'demo',
-    zipCode: '85001',
-    radius: 50,
-    category: 'HVAC Services',
-    keyword: 'repair',
-    resultCount: 15,
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h6',
-    userId: 'demo',
-    zipCode: '30301',
-    radius: 10,
-    category: 'Dentists',
-    keyword: '',
-    resultCount: 22,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h7',
-    userId: 'demo',
-    zipCode: '98101',
-    radius: 25,
-    category: 'Gyms & Fitness',
-    keyword: 'crossfit',
-    resultCount: 5,
-    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h8',
-    userId: 'demo',
-    zipCode: '33101',
-    radius: 15,
-    category: 'Auto Shops',
-    keyword: '',
-    resultCount: 11,
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h9',
-    userId: 'demo',
-    zipCode: '75201',
-    radius: 25,
-    category: 'Landscaping',
-    keyword: '',
-    resultCount: 8,
-    createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-  {
-    id: 'h10',
-    userId: 'demo',
-    zipCode: '19101',
-    radius: 10,
-    category: 'Law Firms',
-    keyword: 'real estate',
-    resultCount: 4,
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
-  },
-]
+function mapRow(h: SearchHistoryRow): SearchHistory {
+  return {
+    id: h.id,
+    userId: h.user_id,
+    zipCode: h.zip_code,
+    radius: h.radius ?? 25,
+    category: h.category ?? '',
+    keyword: h.keyword ?? '',
+    resultCount: h.result_count ?? 0,
+    createdAt: h.created_at,
+  }
+}
 
 function formatRelativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -140,71 +56,25 @@ function formatDate(dateStr: string): string {
   })
 }
 
-function loadFromLocalStorage(): SearchHistory[] {
-  const raw = localStorage.getItem(HISTORY_KEY)
-  if (raw) {
-    try {
-      const stored = JSON.parse(raw) as SearchHistory[]
-      if (stored.length) return stored
-    } catch {
-      // ignore
-    }
-  }
-  // Seed with mock data on first visit
-  localStorage.setItem(HISTORY_KEY, JSON.stringify(MOCK_HISTORY))
-  return MOCK_HISTORY
-}
-
 export default function SearchHistoryPage() {
   const router = useRouter()
   const [history, setHistory] = useState<SearchHistory[]>([])
-  const [mounted, setMounted] = useState(false)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setMounted(true)
-
     async function loadHistory() {
-      if (isSupabaseConfigured) {
-        try {
-          const supabase = createClient()
-          const {
-            data: { user },
-          } = await supabase.auth.getUser()
-
-          if (user) {
-            const { data } = await supabase
-              .from('search_history')
-              .select('*')
-              .eq('user_id', user.id)
-              .order('created_at', { ascending: false })
-              .limit(50)
-
-            if (data && data.length > 0) {
-              setHistory(
-                data.map((h) => ({
-                  id: h.id,
-                  userId: h.user_id,
-                  zipCode: h.zip_code,
-                  radius: h.radius ?? 25,
-                  category: h.category ?? '',
-                  keyword: h.keyword ?? '',
-                  resultCount: h.result_count ?? 0,
-                  createdAt: h.created_at,
-                }))
-              )
-              return
-            }
-          }
-        } catch {
-          // Non-fatal — fall back to localStorage
+      try {
+        const res = await fetch('/api/history')
+        const data = await res.json()
+        if (res.ok && Array.isArray(data.history)) {
+          setHistory((data.history as SearchHistoryRow[]).map(mapRow))
         }
+      } catch {
+        // Non-fatal — show the empty state rather than fabricated rows.
+      } finally {
+        setLoading(false)
       }
-
-      // Fallback to localStorage
-      setHistory(loadFromLocalStorage())
     }
-
     loadHistory()
   }, [])
 
@@ -218,18 +88,21 @@ export default function SearchHistoryPage() {
     router.push(`/search?${params.toString()}`)
   }
 
+  // Deletes persist server-side (service-role endpoint) so they don't reappear
+  // on reload. Optimistic update, then fire the request.
   const handleDelete = (id: string) => {
-    const updated = history.filter((h) => h.id !== id)
-    setHistory(updated)
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(updated))
+    setHistory((prev) => prev.filter((h) => h.id !== id))
+    fetch('/api/history', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    }).catch(() => {})
   }
 
   const handleClearAll = () => {
     setHistory([])
-    localStorage.setItem(HISTORY_KEY, JSON.stringify([]))
+    fetch('/api/history', { method: 'DELETE' }).catch(() => {})
   }
-
-  if (!mounted) return null
 
   return (
     <div className="min-h-screen bg-paper">
@@ -251,7 +124,13 @@ export default function SearchHistoryPage() {
           )}
         </div>
 
-        {history.length === 0 ? (
+        {loading ? (
+          <div className="bg-card border border-sand rounded-2xl p-6 space-y-3">
+            {[0, 1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-12 rounded-xl bg-paper-2 animate-pulse" />
+            ))}
+          </div>
+        ) : history.length === 0 ? (
           <div className="bg-card border border-sand rounded-2xl">
             <div className="flex flex-col items-center justify-center py-20 text-center">
               <div className="w-16 h-16 rounded-2xl bg-signal-50 flex items-center justify-center mb-4">
@@ -341,6 +220,7 @@ export default function SearchHistoryPage() {
                           </button>
                           <button
                             onClick={() => handleDelete(entry.id)}
+                            aria-label="Delete search"
                             className="p-1.5 rounded-lg text-stone hover:text-red-500 hover:bg-red-50 transition-all"
                           >
                             <Trash2 className="w-3.5 h-3.5" />

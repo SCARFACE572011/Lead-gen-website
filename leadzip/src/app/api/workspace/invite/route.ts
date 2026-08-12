@@ -5,6 +5,15 @@ import nodemailer from 'nodemailer'
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function serviceClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
@@ -62,6 +71,11 @@ export async function POST(request: NextRequest) {
         .single()
 
       const inviterName = inviterProfile?.full_name || inviterProfile?.email || 'Someone'
+      // Escape before templating into the email HTML — inviterName and
+      // workspace.name are user-controlled and would otherwise allow
+      // HTML/phishing injection into the message body.
+      const safeInviterName = escapeHtml(inviterName)
+      const safeWorkspaceName = escapeHtml(workspace.name)
 
       await mailer().sendMail({
         from: `"LeadZipp" <${process.env.GMAIL_USER}>`,
@@ -83,8 +97,8 @@ export async function POST(request: NextRequest) {
           <td style="padding:36px 32px 28px;">
             <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#17130E;">You're invited to join a team</h1>
             <p style="margin:0 0 24px;font-size:15px;color:#64748B;line-height:1.6;">
-              <strong style="color:#17130E;">${inviterName}</strong> has invited you to join
-              <strong style="color:#17130E;">${workspace.name}</strong> on LeadZipp — the local SMB lead generation platform.
+              <strong style="color:#17130E;">${safeInviterName}</strong> has invited you to join
+              <strong style="color:#17130E;">${safeWorkspaceName}</strong> on LeadZipp — the local SMB lead generation platform.
             </p>
             <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
               <tr>

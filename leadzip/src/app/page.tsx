@@ -1,8 +1,11 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
   MapPin, ArrowRight, Search, Target, Send, Database, Gauge, Mail,
-  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Menu,
+  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Menu, X,
 } from 'lucide-react'
 import { HeroSearchWidget } from '@/components/landing/HeroSearchWidget'
 import { HeroMap } from '@/components/landing/HeroMap'
@@ -52,9 +55,9 @@ const STATS = [
 ]
 
 const PLANS = [
-  { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'CSV export'], cta: 'Start free', href: '/signup', highlight: false },
-  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'PDF & CRM export', 'Map view'], cta: 'Go Pro', href: '/signup', highlight: true },
-  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces', 'White-label PDFs', 'Priority support'], cta: 'Start Agency', href: '/signup', highlight: false },
+  { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'Basic lead scoring'], cta: 'Start free', href: '/signup', highlight: false },
+  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'CSV, PDF & CRM export', 'Map view'], cta: 'Go Pro', href: '/signup', highlight: true },
+  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces (coming soon)', 'White-label PDFs', 'Priority support'], cta: 'Start Agency', href: '/signup', highlight: false },
 ]
 
 const FAQS = [
@@ -66,6 +69,7 @@ const FAQS = [
 ]
 
 export default function Home() {
+  const [mobileOpen, setMobileOpen] = useState(false)
   return (
     <div className="grain relative min-h-screen bg-paper text-ink">
       {/* ================= NAV ================= */}
@@ -89,9 +93,38 @@ export default function Home() {
             <Link href="/signup" className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-paper transition-transform hover:scale-[1.03] active:scale-95">
               Start free
             </Link>
-            <button className="md:hidden" aria-label="Menu"><Menu className="h-5 w-5" /></button>
+            <button
+              onClick={() => setMobileOpen((v) => !v)}
+              className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-paper-2 md:hidden"
+              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileOpen}
+            >
+              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
           </div>
         </nav>
+
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <>
+            <div
+              className="fixed inset-x-0 bottom-0 top-16 z-40 bg-ink/20 backdrop-blur-sm md:hidden"
+              onClick={() => setMobileOpen(false)}
+              aria-hidden="true"
+            />
+            <div className="absolute inset-x-0 top-16 z-50 border-b border-sand bg-paper px-5 py-4 shadow-lg md:hidden">
+              <nav className="flex flex-col gap-1">
+                <a href="#how" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">How it works</a>
+                <a href="#features" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Features</a>
+                <Link href="/pricing" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Pricing</Link>
+                <Link href="/blog" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Blog</Link>
+                <hr className="my-2 border-sand" />
+                <Link href="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2">Log in</Link>
+                <Link href="/signup" onClick={() => setMobileOpen(false)} className="mt-1 rounded-full bg-ink px-3 py-2.5 text-center text-sm font-semibold text-paper transition-transform hover:scale-[1.02] active:scale-95">Start free</Link>
+              </nav>
+            </div>
+          </>
+        )}
       </header>
 
       {/* ================= HERO ================= */}

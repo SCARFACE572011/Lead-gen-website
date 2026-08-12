@@ -63,10 +63,15 @@ function LzLogo({ size = 'md' }: { size?: 'sm' | 'md' }) {
 }
 
 function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
-  const [isAdmin, setIsAdmin] = useState<boolean>(MOCK_PROFILE.role === 'admin')
-  const [plan, setPlan] = useState<string>(MOCK_PROFILE.plan)
-  const [name, setName] = useState<string>(MOCK_PROFILE.fullName)
-  const [email, setEmail] = useState<string>(MOCK_PROFILE.email)
+  // For a real (Supabase-configured) instance, start with NO admin link and
+  // empty identity — the Admin nav item and the user's name/email only appear
+  // once the real profile fetch resolves, so a normal user never briefly sees
+  // an "Admin" link or the "Demo User"/"demo@leadzipp.com" placeholder. The
+  // mock identity is used solely when Supabase is not configured.
+  const [isAdmin, setIsAdmin] = useState<boolean>(!isSupabaseConfigured && MOCK_PROFILE.role === 'admin')
+  const [plan, setPlan] = useState<string>(isSupabaseConfigured ? 'free' : MOCK_PROFILE.plan)
+  const [name, setName] = useState<string>(isSupabaseConfigured ? '' : MOCK_PROFILE.fullName)
+  const [email, setEmail] = useState<string>(isSupabaseConfigured ? '' : MOCK_PROFILE.email)
 
   useEffect(() => {
     if (!isSupabaseConfigured) return
@@ -146,14 +151,22 @@ function SidebarContent({ pathname, onLinkClick }: SidebarContentProps) {
           </div>
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="flex items-center gap-1.5">
-              <span className="truncate text-sm font-semibold text-ink">{name}</span>
+              {name ? (
+                <span className="truncate text-sm font-semibold text-ink">{name}</span>
+              ) : (
+                <span className="h-3.5 w-24 animate-pulse rounded bg-sand" aria-hidden="true" />
+              )}
               {isPaid && (
                 <span className="shrink-0 rounded-md bg-signal-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-signal-600">
                   {plan}
                 </span>
               )}
             </div>
-            <span className="truncate text-xs text-stone">{email}</span>
+            {email ? (
+              <span className="truncate text-xs text-stone">{email}</span>
+            ) : (
+              <span className="mt-1 h-2.5 w-32 animate-pulse rounded bg-sand" aria-hidden="true" />
+            )}
           </div>
           <button
             aria-label="Sign out"

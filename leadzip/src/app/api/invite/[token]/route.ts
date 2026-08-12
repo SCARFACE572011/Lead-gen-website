@@ -53,7 +53,17 @@ export async function POST(
   if (invite.accepted_at) return NextResponse.json({ error: 'Already accepted' }, { status: 410 })
   if (new Date(invite.expires_at) < new Date()) return NextResponse.json({ error: 'Invite expired' }, { status: 410 })
 
-  // Check user email matches invite (soft check — allow any authed user to accept)
+  // The accepting user MUST be the invitee: otherwise anyone holding the invite
+  // link would be added to the workspace and inherit the owner's (agency) plan.
+  const acceptingEmail = (user.email ?? '').trim().toLowerCase()
+  const invitedEmail = (invite.email ?? '').trim().toLowerCase()
+  if (!acceptingEmail || acceptingEmail !== invitedEmail) {
+    return NextResponse.json(
+      { error: 'This invite was sent to a different email address.' },
+      { status: 403 }
+    )
+  }
+
   const { data: existingMember } = await db
     .from('workspace_members')
     .select('id')

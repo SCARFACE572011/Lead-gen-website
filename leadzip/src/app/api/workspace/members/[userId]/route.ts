@@ -28,7 +28,13 @@ export async function DELETE(
   if (userId === user.id) return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 })
 
   await db.from('workspace_members').delete().eq('workspace_id', workspace.id).eq('user_id', userId)
-  await db.from('users_profile').update({ workspace_id: null }).eq('id', userId)
+  // Scope to this workspace so an owner can only detach a member of their OWN
+  // workspace — never null another tenant's user.
+  await db
+    .from('users_profile')
+    .update({ workspace_id: null })
+    .eq('id', userId)
+    .eq('workspace_id', workspace.id)
 
   return new NextResponse(null, { status: 204 })
 }

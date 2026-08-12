@@ -82,7 +82,7 @@ export function RecentSearches({ searches, onRerun }: RecentSearchesProps) {
             <button
               onClick={() => onRerun(search)}
               aria-label={`Rerun search for ZIP ${search.zipCode}`}
-              className="shrink-0 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-stone transition-all opacity-0 group-hover:opacity-100 hover:bg-signal-50 hover:text-signal"
+              className="shrink-0 flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium text-stone transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 hover:bg-signal-50 hover:text-signal"
             >
               <RotateCcw className="h-3.5 w-3.5 shrink-0" />
               Rerun

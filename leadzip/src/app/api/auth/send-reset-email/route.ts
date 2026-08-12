@@ -91,14 +91,14 @@ export async function POST(request: NextRequest) {
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:#F8FAFC;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F8FAFC;padding:40px 16px;">
+<body style="margin:0;padding:0;background:#FBFAF6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#FBFAF6;padding:40px 16px;">
     <tr><td align="center">
-      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid #E2E8F0;overflow:hidden;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="max-width:520px;background:#ffffff;border-radius:16px;border:1px solid #E7E1D4;overflow:hidden;">
 
         <!-- Header -->
         <tr>
-          <td style="background:#1D4ED8;padding:28px 32px;text-align:center;">
+          <td style="background:#FF4D23;padding:28px 32px;text-align:center;">
             <table cellpadding="0" cellspacing="0" style="margin:0 auto;">
               <tr>
                 <td style="background:rgba(255,255,255,0.15);border-radius:10px;padding:8px 12px;">
@@ -113,17 +113,17 @@ export async function POST(request: NextRequest) {
         <tr>
           <td style="padding:36px 32px 28px;">
             <h1 style="margin:0 0 8px;font-size:22px;font-weight:700;color:#17130E;">Reset your password</h1>
-            <p style="margin:0 0 24px;font-size:15px;color:#64748B;line-height:1.6;">
+            <p style="margin:0 0 24px;font-size:15px;color:#423B32;line-height:1.6;">
               We received a request to reset the password for your LeadZipp account associated with <strong style="color:#17130E;">${safeEmail}</strong>.
             </p>
-            <p style="margin:0 0 28px;font-size:15px;color:#64748B;line-height:1.6;">
+            <p style="margin:0 0 28px;font-size:15px;color:#423B32;line-height:1.6;">
               Click the button below to set a new password. This link expires in <strong style="color:#17130E;">60 minutes</strong>.
             </p>
 
             <!-- CTA Button -->
             <table cellpadding="0" cellspacing="0" style="margin:0 auto 28px;">
               <tr>
-                <td style="background:#1D4ED8;border-radius:10px;">
+                <td style="background:#FF4D23;border-radius:10px;">
                   <a href="${resetLink}" style="display:block;padding:14px 32px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;letter-spacing:-0.2px;">
                     Reset Password →
                   </a>
@@ -131,26 +131,26 @@ export async function POST(request: NextRequest) {
               </tr>
             </table>
 
-            <p style="margin:0 0 8px;font-size:13px;color:#94A3B8;line-height:1.6;">
+            <p style="margin:0 0 8px;font-size:13px;color:#79705F;line-height:1.6;">
               If the button doesn't work, copy and paste this link into your browser:
             </p>
-            <p style="margin:0;font-size:12px;color:#3B82F6;word-break:break-all;">
-              <a href="${resetLink}" style="color:#3B82F6;">${resetLink}</a>
+            <p style="margin:0;font-size:12px;color:#E23A12;word-break:break-all;">
+              <a href="${resetLink}" style="color:#E23A12;">${resetLink}</a>
             </p>
           </td>
         </tr>
 
         <!-- Divider -->
-        <tr><td style="padding:0 32px;"><div style="height:1px;background:#F1F5F9;"></div></td></tr>
+        <tr><td style="padding:0 32px;"><div style="height:1px;background:#E7E1D4;"></div></td></tr>
 
         <!-- Footer -->
         <tr>
           <td style="padding:20px 32px 28px;">
-            <p style="margin:0;font-size:12px;color:#CBD5E1;line-height:1.6;">
+            <p style="margin:0;font-size:12px;color:#79705F;line-height:1.6;">
               If you didn't request a password reset, you can safely ignore this email. Your password will not change.
             </p>
-            <p style="margin:8px 0 0;font-size:12px;color:#CBD5E1;">
-              © ${new Date().getFullYear()} LeadZipp · <a href="${siteUrl}" style="color:#CBD5E1;">leadzipp.com</a>
+            <p style="margin:8px 0 0;font-size:12px;color:#79705F;">
+              © ${new Date().getFullYear()} LeadZipp · <a href="${siteUrl}" style="color:#E23A12;">leadzipp.com</a>
             </p>
           </td>
         </tr>

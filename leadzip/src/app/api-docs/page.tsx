@@ -1,8 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Copy, Check, ChevronDown, ChevronRight } from 'lucide-react'
+import Link from 'next/link'
+import { Copy, Check, ChevronDown, ChevronRight, ArrowLeft } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { SiteHeader, SiteFooter } from '@/components/marketing/MarketingChrome'
 
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false)
@@ -14,17 +16,18 @@ function CopyButton({ text }: { text: string }) {
   return (
     <button
       onClick={copy}
-      className="absolute top-3 right-3 p-1.5 rounded bg-slate-700 hover:bg-slate-600 text-slate-300 hover:text-white transition-colors"
+      aria-label={copied ? 'Copied to clipboard' : 'Copy code'}
+      className="absolute top-3 right-3 rounded-lg bg-white/10 p-1.5 text-paper transition-colors hover:bg-white/20"
     >
-      {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+      {copied ? <Check className="h-3.5 w-3.5 text-lime" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
   )
 }
 
-function CodeBlock({ code, language = 'bash' }: { code: string; language?: string }) {
+function CodeBlock({ code }: { code: string; language?: string }) {
   return (
     <div className="relative mt-3">
-      <pre className="bg-slate-900 text-slate-200 rounded-lg p-4 text-sm overflow-x-auto font-mono leading-relaxed pr-12">
+      <pre className="overflow-x-auto rounded-xl bg-forest p-4 pr-12 font-mono text-sm leading-relaxed text-paper">
         <code>{code}</code>
       </pre>
       <CopyButton text={code} />
@@ -34,7 +37,7 @@ function CodeBlock({ code, language = 'bash' }: { code: string; language?: strin
 
 function Badge({ children, color }: { children: React.ReactNode; color: string }) {
   return (
-    <span className={cn('inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold', color)}>
+    <span className={cn('inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold', color)}>
       {children}
     </span>
   )
@@ -46,10 +49,10 @@ function Section({ title, children, id }: { title: string; children: React.React
     <div className="mb-8" id={id}>
       <button
         onClick={() => setOpen(o => !o)}
-        className="flex items-center gap-2 w-full text-left mb-4"
+        className="mb-4 flex w-full items-center gap-2 text-left"
       >
-        {open ? <ChevronDown className="w-4 h-4 text-slate-400" /> : <ChevronRight className="w-4 h-4 text-slate-400" />}
-        <h2 className="text-lg font-semibold text-[#17130E]">{title}</h2>
+        {open ? <ChevronDown className="h-4 w-4 text-stone" /> : <ChevronRight className="h-4 w-4 text-stone" />}
+        <h2 className="font-display text-lg font-bold text-ink">{title}</h2>
       </button>
       {open && children}
     </div>
@@ -71,44 +74,45 @@ function Endpoint({
   response: string
   curl: string
 }) {
-  const methodColor = method === 'GET' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+  const methodColor =
+    method === 'GET' ? 'bg-forest/10 text-forest' : 'bg-signal-50 text-signal-600'
   return (
-    <div className="border border-slate-200 rounded-xl mb-6 overflow-hidden">
-      <div className="bg-slate-50 px-5 py-4 flex items-center gap-3 border-b border-slate-200">
+    <div className="mb-6 overflow-hidden rounded-xl border border-sand">
+      <div className="flex items-center gap-3 border-b border-sand bg-paper-2 px-5 py-4">
         <Badge color={methodColor}>{method}</Badge>
-        <code className="text-sm font-mono text-slate-800">{path}</code>
+        <code className="font-mono text-sm text-ink">{path}</code>
       </div>
-      <div className="px-5 py-4 space-y-4">
-        <p className="text-sm text-slate-600">{description}</p>
+      <div className="space-y-4 bg-white px-5 py-4">
+        <p className="text-sm text-ink-soft">{description}</p>
 
         {params && params.length > 0 && (
           <div>
-            <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-2">Parameters</h4>
+            <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-stone">Parameters</h4>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-slate-100">
-                    <th className="text-left py-1.5 pr-4 font-medium text-slate-600 w-32">Name</th>
-                    <th className="text-left py-1.5 pr-4 font-medium text-slate-600 w-20">Type</th>
-                    <th className="text-left py-1.5 pr-4 font-medium text-slate-600 w-20">Required</th>
-                    <th className="text-left py-1.5 font-medium text-slate-600">Description</th>
+                  <tr className="border-b border-sand">
+                    <th className="w-32 py-1.5 pr-4 text-left font-medium text-ink-soft">Name</th>
+                    <th className="w-20 py-1.5 pr-4 text-left font-medium text-ink-soft">Type</th>
+                    <th className="w-20 py-1.5 pr-4 text-left font-medium text-ink-soft">Required</th>
+                    <th className="py-1.5 text-left font-medium text-ink-soft">Description</th>
                   </tr>
                 </thead>
                 <tbody>
                   {params.map(p => (
-                    <tr key={p.name} className="border-b border-slate-50 last:border-0">
+                    <tr key={p.name} className="border-b border-sand last:border-0">
                       <td className="py-1.5 pr-4">
-                        <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">{p.name}</code>
+                        <code className="rounded bg-paper-2 px-1.5 py-0.5 text-xs text-ink">{p.name}</code>
                       </td>
-                      <td className="py-1.5 pr-4 text-slate-500 text-xs">{p.type}</td>
+                      <td className="py-1.5 pr-4 text-xs text-stone">{p.type}</td>
                       <td className="py-1.5 pr-4">
                         {p.required ? (
-                          <span className="text-xs text-rose-600 font-medium">required</span>
+                          <span className="text-xs font-medium text-signal">required</span>
                         ) : (
-                          <span className="text-xs text-slate-400">optional</span>
+                          <span className="text-xs text-stone">optional</span>
                         )}
                       </td>
-                      <td className="py-1.5 text-slate-600 text-xs">{p.desc}</td>
+                      <td className="py-1.5 text-xs text-ink-soft">{p.desc}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -118,12 +122,12 @@ function Endpoint({
         )}
 
         <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Example request</h4>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone">Example request</h4>
           <CodeBlock code={curl} />
         </div>
 
         <div>
-          <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Response</h4>
+          <h4 className="mb-1 text-xs font-semibold uppercase tracking-wide text-stone">Response</h4>
           <CodeBlock code={response} language="json" />
         </div>
       </div>
@@ -133,75 +137,86 @@ function Endpoint({
 
 export default function ApiDocsPage() {
   return (
-    <div className="min-h-screen bg-[#F8FAFC]">
-      <div className="max-w-3xl mx-auto px-6 py-12">
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-3">
-            <h1 className="text-3xl font-bold text-[#17130E]">LeadZipp API</h1>
-            <Badge color="bg-emerald-100 text-emerald-700">v1</Badge>
-          </div>
-          <p className="text-slate-500 text-base">
-            Programmatic access to your leads, search history, and search engine. All endpoints
-            require an API key generated from{' '}
-            <a href="/settings" className="text-[#FF4D23] hover:underline">
-              Settings → API
-            </a>
-            .
-          </p>
-        </div>
+    <div className="grain relative flex min-h-screen flex-col bg-paper text-ink">
+      <SiteHeader />
 
-        <Section title="Authentication" id="auth">
-          <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-800 mb-4">
-            Keep your API key secret — it grants full access to your account data.
-          </div>
-          <p className="text-sm text-slate-600 mb-2">
-            Pass your key as a Bearer token in the <code className="bg-slate-100 px-1 rounded">Authorization</code> header:
-          </p>
-          <CodeBlock code={`Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx`} />
-        </Section>
+      <main className="flex-1">
+        <div className="mx-auto max-w-3xl px-6 py-12">
+          <Link
+            href="/"
+            className="mb-8 inline-flex items-center gap-1.5 text-sm font-medium text-stone transition-colors hover:text-signal"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to home
+          </Link>
 
-        <Section title="Rate Limits" id="rate-limits">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-slate-600">Plan</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-slate-600">Daily requests</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-t border-slate-100">
-                  <td className="px-4 py-2.5 text-slate-700">Free</td>
-                  <td className="px-4 py-2.5 text-slate-700">100</td>
-                </tr>
-                <tr className="border-t border-slate-100">
-                  <td className="px-4 py-2.5 text-slate-700">Pro</td>
-                  <td className="px-4 py-2.5 text-slate-700">1,000</td>
-                </tr>
-                <tr className="border-t border-slate-100">
-                  <td className="px-4 py-2.5 text-slate-700">Agency</td>
-                  <td className="px-4 py-2.5 text-slate-700">10,000</td>
-                </tr>
-              </tbody>
-            </table>
+          <div className="mb-10">
+            <div className="mb-3 flex items-center gap-3">
+              <h1 className="font-display text-3xl font-extrabold tracking-tight text-ink">LeadZipp API</h1>
+              <Badge color="bg-lime text-forest">v1</Badge>
+            </div>
+            <p className="text-base text-ink-soft">
+              Programmatic access to your leads, search history, and search engine. All endpoints
+              require an API key generated from{' '}
+              <Link href="/settings" className="font-medium text-signal hover:underline">
+                Settings → API
+              </Link>
+              .
+            </p>
           </div>
-          <p className="text-xs text-slate-500 mt-3">
-            When rate limited, the API returns HTTP 429 with a <code className="bg-slate-100 px-1 rounded">retryAfter</code> timestamp (Unix seconds).
-          </p>
-        </Section>
 
-        <Section title="Endpoints" id="endpoints">
-          <Endpoint
-            method="GET"
-            path="/api/v1/leads"
-            description="Retrieve your saved leads, paginated newest-first."
-            params={[
-              { name: 'page', type: 'integer', desc: 'Page number (default: 1)' },
-              { name: 'limit', type: 'integer', desc: 'Results per page, max 100 (default: 25)' },
-            ]}
-            curl={`curl https://leadzipp.com/api/v1/leads \\
+          <Section title="Authentication" id="auth">
+            <div className="mb-4 rounded-lg border border-signal/20 bg-signal-50 px-4 py-3 text-sm text-ink">
+              Keep your API key secret — it grants full access to your account data.
+            </div>
+            <p className="mb-2 text-sm text-ink-soft">
+              Pass your key as a Bearer token in the <code className="rounded bg-paper-2 px-1 text-ink">Authorization</code> header:
+            </p>
+            <CodeBlock code={`Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx`} />
+          </Section>
+
+          <Section title="Rate Limits" id="rate-limits">
+            <div className="overflow-x-auto">
+              <table className="w-full overflow-hidden rounded-lg border border-sand text-sm">
+                <thead className="bg-paper-2">
+                  <tr>
+                    <th className="px-4 py-2.5 text-left font-semibold text-ink-soft">Plan</th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-ink-soft">Daily requests</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-t border-sand">
+                    <td className="px-4 py-2.5 text-ink-soft">Free</td>
+                    <td className="px-4 py-2.5 text-ink-soft">100</td>
+                  </tr>
+                  <tr className="border-t border-sand">
+                    <td className="px-4 py-2.5 text-ink-soft">Pro</td>
+                    <td className="px-4 py-2.5 text-ink-soft">1,000</td>
+                  </tr>
+                  <tr className="border-t border-sand">
+                    <td className="px-4 py-2.5 text-ink-soft">Agency</td>
+                    <td className="px-4 py-2.5 text-ink-soft">10,000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p className="mt-3 text-xs text-stone">
+              When rate limited, the API returns HTTP 429 with a <code className="rounded bg-paper-2 px-1 text-ink">retryAfter</code> timestamp (Unix seconds).
+            </p>
+          </Section>
+
+          <Section title="Endpoints" id="endpoints">
+            <Endpoint
+              method="GET"
+              path="/api/v1/leads"
+              description="Retrieve your saved leads, paginated newest-first."
+              params={[
+                { name: 'page', type: 'integer', desc: 'Page number (default: 1)' },
+                { name: 'limit', type: 'integer', desc: 'Results per page, max 100 (default: 25)' },
+              ]}
+              curl={`curl https://leadzipp.com/api/v1/leads \\
   -H "Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx"`}
-            response={`{
+              response={`{
   "leads": [
     {
       "id": "uuid",
@@ -217,19 +232,19 @@ export default function ApiDocsPage() {
   ],
   "meta": { "page": 1, "limit": 25, "total": 142, "totalPages": 6 }
 }`}
-          />
+            />
 
-          <Endpoint
-            method="GET"
-            path="/api/v1/history"
-            description="Retrieve your past searches, paginated newest-first."
-            params={[
-              { name: 'page', type: 'integer', desc: 'Page number (default: 1)' },
-              { name: 'limit', type: 'integer', desc: 'Results per page, max 100 (default: 25)' },
-            ]}
-            curl={`curl https://leadzipp.com/api/v1/history \\
+            <Endpoint
+              method="GET"
+              path="/api/v1/history"
+              description="Retrieve your past searches, paginated newest-first."
+              params={[
+                { name: 'page', type: 'integer', desc: 'Page number (default: 1)' },
+                { name: 'limit', type: 'integer', desc: 'Results per page, max 100 (default: 25)' },
+              ]}
+              curl={`curl https://leadzipp.com/api/v1/history \\
   -H "Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx"`}
-            response={`{
+              response={`{
   "history": [
     {
       "id": "uuid",
@@ -241,22 +256,22 @@ export default function ApiDocsPage() {
   ],
   "meta": { "page": 1, "limit": 25, "total": 37, "totalPages": 2 }
 }`}
-          />
+            />
 
-          <Endpoint
-            method="POST"
-            path="/api/v1/search"
-            description="Run a new lead search programmatically. Counts against your plan's search quota."
-            params={[
-              { name: 'query', type: 'string', required: true, desc: 'Business type or keyword (e.g. "plumbers")' },
-              { name: 'location', type: 'string', required: true, desc: 'City, state, or zip code' },
-              { name: 'radius', type: 'integer', desc: 'Search radius in miles (default: 10, max: 50)' },
-            ]}
-            curl={`curl -X POST https://leadzipp.com/api/v1/search \\
+            <Endpoint
+              method="POST"
+              path="/api/v1/search"
+              description="Run a new lead search programmatically. Counts against your plan's search quota."
+              params={[
+                { name: 'query', type: 'string', required: true, desc: 'Business type or keyword (e.g. "plumbers")' },
+                { name: 'location', type: 'string', required: true, desc: 'City, state, or zip code' },
+                { name: 'radius', type: 'integer', desc: 'Search radius in miles (default: 10, max: 50)' },
+              ]}
+              curl={`curl -X POST https://leadzipp.com/api/v1/search \\
   -H "Authorization: Bearer lz_live_xxxxxxxxxxxxxxxxxxxx" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "plumbers", "location": "Austin, TX", "radius": 15}'`}
-            response={`{
+              response={`{
   "results": [
     {
       "place_id": "ChIJ...",
@@ -275,47 +290,50 @@ export default function ApiDocsPage() {
   "query": "plumbers",
   "location": "Austin, TX"
 }`}
-          />
-        </Section>
+            />
+          </Section>
 
-        <Section title="Error codes" id="errors">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm border border-slate-200 rounded-lg overflow-hidden">
-              <thead className="bg-slate-50">
-                <tr>
-                  <th className="text-left px-4 py-2.5 font-semibold text-slate-600 w-20">Status</th>
-                  <th className="text-left px-4 py-2.5 font-semibold text-slate-600">Meaning</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[
-                  ['401', 'Missing or invalid API key'],
-                  ['403', 'Account deactivated'],
-                  ['422', 'Missing required parameters'],
-                  ['429', 'Daily rate limit exceeded — check retryAfter'],
-                  ['500', 'Internal server error — try again shortly'],
-                ].map(([status, meaning]) => (
-                  <tr key={status} className="border-t border-slate-100">
-                    <td className="px-4 py-2.5">
-                      <code className="text-xs bg-slate-100 px-1.5 py-0.5 rounded text-slate-700">{status}</code>
-                    </td>
-                    <td className="px-4 py-2.5 text-slate-600">{meaning}</td>
+          <Section title="Error codes" id="errors">
+            <div className="overflow-x-auto">
+              <table className="w-full overflow-hidden rounded-lg border border-sand text-sm">
+                <thead className="bg-paper-2">
+                  <tr>
+                    <th className="w-20 px-4 py-2.5 text-left font-semibold text-ink-soft">Status</th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-ink-soft">Meaning</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Section>
+                </thead>
+                <tbody>
+                  {[
+                    ['401', 'Missing or invalid API key'],
+                    ['403', 'Account deactivated'],
+                    ['422', 'Missing required parameters'],
+                    ['429', 'Daily rate limit exceeded — check retryAfter'],
+                    ['500', 'Internal server error — try again shortly'],
+                  ].map(([status, meaning]) => (
+                    <tr key={status} className="border-t border-sand">
+                      <td className="px-4 py-2.5">
+                        <code className="rounded bg-paper-2 px-1.5 py-0.5 text-xs text-ink">{status}</code>
+                      </td>
+                      <td className="px-4 py-2.5 text-ink-soft">{meaning}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Section>
 
-        <div className="mt-10 pt-6 border-t border-slate-200 text-center">
-          <p className="text-sm text-slate-400">
-            Need help?{' '}
-            <a href="mailto:support@leadzipp.com" className="text-[#FF4D23] hover:underline">
-              support@leadzipp.com
-            </a>
-          </p>
+          <div className="mt-10 border-t border-sand pt-6 text-center">
+            <p className="text-sm text-stone">
+              Need help?{' '}
+              <a href="mailto:support@leadzipp.com" className="font-medium text-signal hover:underline">
+                support@leadzipp.com
+              </a>
+            </p>
+          </div>
         </div>
-      </div>
+      </main>
+
+      <SiteFooter />
     </div>
   )
 }

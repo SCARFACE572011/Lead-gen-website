@@ -1,8 +1,8 @@
 // src/app/(dashboard)/saved-searches/page.tsx
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Bell, Trash2, Search } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Bell, Trash2, Search, AlertCircle, RefreshCw } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import type { SavedSearch } from '@/types/saved-search'
 
@@ -19,35 +19,42 @@ function formatRelativeTime(dateStr: string): string {
 export default function SavedSearchesPage() {
   const [searches, setSearches] = useState<SavedSearch[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [loadError, setLoadError] = useState(false)
   const [isPaidUser, setIsPaidUser] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const supabase = createClient()
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          const { data: profile } = await supabase
-            .from('users_profile')
-            .select('plan')
-            .eq('id', user.id)
-            .maybeSingle()
-          setIsPaidUser((profile?.plan ?? 'free') !== 'free')
-        }
-
-        const res = await fetch('/api/saved-searches')
-        if (res.ok) {
-          const data = await res.json() as { searches: SavedSearch[] }
-          setSearches(data.searches)
-        }
-      } catch { /* non-fatal */ } finally {
-        setIsLoading(false)
+  const load = useCallback(async () => {
+    setIsLoading(true)
+    setLoadError(false)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('users_profile')
+          .select('plan')
+          .eq('id', user.id)
+          .maybeSingle()
+        setIsPaidUser((profile?.plan ?? 'free') !== 'free')
       }
+
+      const res = await fetch('/api/saved-searches')
+      if (!res.ok) throw new Error('Failed to load saved searches')
+      const data = await res.json() as { searches: SavedSearch[] }
+      setSearches(data.searches)
+    } catch {
+      // Surface a distinct error state so a failed fetch is not mistaken for
+      // an empty list
+      setLoadError(true)
+    } finally {
+      setIsLoading(false)
     }
-    load()
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
 
   async function handleToggleAlert(search: SavedSearch) {
     if (!isPaidUser && !search.alertEnabled) return
@@ -102,6 +109,36 @@ export default function SavedSearchesPage() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-14 animate-pulse rounded-2xl bg-paper-2" />
           ))}
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="mx-auto max-w-4xl space-y-6">
+        <div>
+          <span className="readout text-signal">Alerts</span>
+          <h1 className="mt-1 font-display text-2xl font-extrabold tracking-tight text-ink">Saved Searches</h1>
+          <p className="mt-1.5 text-sm text-ink-soft">Get daily email alerts when new businesses match your search</p>
+        </div>
+        <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-sand bg-card py-20 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-signal-50">
+            <AlertCircle className="h-7 w-7 text-signal" aria-hidden="true" />
+          </div>
+          <div>
+            <p className="font-display text-base font-bold text-ink">Couldn&rsquo;t load your saved searches</p>
+            <p className="mt-1 max-w-xs text-sm text-stone">
+              Something went wrong. Check your connection and try again.
+            </p>
+          </div>
+          <button
+            onClick={() => load()}
+            className="inline-flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-signal-600 active:scale-95"
+          >
+            <RefreshCw className="h-4 w-4 shrink-0" />
+            Retry
+          </button>
         </div>
       </div>
     )

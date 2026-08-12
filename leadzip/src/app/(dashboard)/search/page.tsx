@@ -855,7 +855,7 @@ function SearchPageInner() {
               <span>
                 {dataSource === 'demo' ? (
                   <>
-                    <span className="font-semibold">Demo data</span> — these are sample businesses, not real leads.{' '}
+                    <span className="font-semibold">Demo data:</span> these are sample businesses, not real leads.{' '}
                     Add a <span className="font-medium">GOOGLE_PLACES_API_KEY</span> in your Vercel environment variables to get real results.
                   </>
                 ) : (

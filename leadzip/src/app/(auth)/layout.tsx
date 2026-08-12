@@ -5,7 +5,7 @@ const BRAND_BULLETS = [
   "Search any ZIP by category and radius",
   "Every lead scored 0–100 automatically",
   "Real phones, websites & owner emails",
-  "Export to CSV — or straight into your CRM",
+  "Export to CSV or straight into your CRM",
 ];
 
 // Live-data readouts (honest capability tiles, not invented vanity numbers)
@@ -75,8 +75,8 @@ export default function AuthLayout({
           </h2>
           <p className="mb-8 max-w-sm text-base leading-relaxed text-white/70">
             LeadZipp turns any ZIP code into a scored list of real local
-            businesses — from live Google and Yelp data. Spend your time on
-            outreach, not research.
+            businesses, built from live Google and Yelp data. Spend your time
+            on outreach, not research.
           </p>
 
           <ul className="space-y-3">

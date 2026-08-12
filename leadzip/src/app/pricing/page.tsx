@@ -120,7 +120,7 @@ const PRICING_FAQS = [
   },
   {
     q: "Is there a free trial for paid plans?",
-    a: "The Pro plan comes with a 14-day free trial. No credit card required to start — you'll be prompted to add payment details at the end of the trial.",
+    a: "The Pro plan comes with a 14-day free trial. No credit card required to start. We'll ask for payment details at the end of the trial.",
   },
   {
     q: "What payment methods do you accept?",
@@ -553,7 +553,7 @@ export default function PricingPage() {
             Start finding leads today
           </h2>
           <p className="mb-7 text-white/70">
-            Sign up free — no credit card, no commitment.
+            Sign up free. No credit card, no commitment.
           </p>
           <Link href="/signup">
             <Button className="h-12 rounded-full bg-signal px-8 text-base font-semibold text-white transition-all hover:bg-signal-600">

@@ -6,7 +6,7 @@ LeadZipp turns any US ZIP code into a scored list of real local businesses to se
 
 ## What it does
 
-LeadZipp maps every local business in a ZIP code or radius using live data from Google Places and Yelp, then scores each result by how likely it is to need your services. You get verified names, addresses, phone numbers, ratings, and websites, plus a one-tap email finder for reaching the decision-maker. Results export to CSV, branded PDF, or directly into your CRM. A search runs against current data in under ten seconds — it is not a static scraped database.
+LeadZipp maps every local business in a ZIP code or radius using live data from Google Places and Yelp, then scores each result by how likely it is to need your services. You get verified names, addresses, phone numbers, ratings, and websites, plus a one-tap email finder for reaching the decision-maker. Results export to CSV, branded PDF, or directly into your CRM. A search runs against current data in under ten seconds. It is not a static scraped database.
 
 ## Who it's for
 
@@ -16,8 +16,8 @@ LeadZipp maps every local business in a ZIP code or radius using live data from 
 
 ## Key features
 
-- Real business data pulled live from Google Places and Yelp — verified names, addresses, phones, ratings, and websites.
-- Lead scoring (0–100) that surfaces the best opportunities first — businesses with no website, few reviews, or a low rating rank highest.
+- Real business data pulled live from Google Places and Yelp: verified names, addresses, phones, ratings, and websites.
+- Lead scoring (0–100) that surfaces the best opportunities first. Businesses with no website, few reviews, or a low rating rank highest.
 - Decision-maker email finder that returns the best contact email for any business with a domain, with a confidence badge.
 - One-click export to CSV, branded PDF, or CRM (HubSpot, Pipedrive, GoHighLevel).
 - Map view to see every lead across a neighborhood and plan a route.
@@ -25,15 +25,15 @@ LeadZipp maps every local business in a ZIP code or radius using live data from 
 
 ## Pricing
 
-- Starter — Free forever. 25 searches per month, real business data, CSV export.
-- Pro — $25/month. Unlimited searches, email finder, lead scoring, PDF and CRM export, map view.
-- Agency — $50/month. Everything in Pro plus team workspaces, white-label PDFs, and priority support.
+- Starter: Free forever. 25 searches per month, real business data, CSV export.
+- Pro: $25/month. Unlimited searches, email finder, lead scoring, PDF and CRM export, map view.
+- Agency: $50/month. Everything in Pro plus team workspaces, white-label PDFs, and priority support.
 
 ## Key pages
 
 - [Home](https://leadzipp.com/): Product overview, how it works, features, and pricing.
 - [Pricing](https://leadzipp.com/pricing): Full plan comparison for Starter, Pro, and Agency.
-- [Search](https://leadzipp.com/search): The core app — search a ZIP and trade to generate a scored lead list (requires an account).
+- [Search](https://leadzipp.com/search): The core app. Search a ZIP and trade to generate a scored lead list (requires an account).
 - [API docs](https://leadzipp.com/api-docs): Reference for the LeadZipp API and lead data endpoints.
 - [Log in](https://leadzipp.com/login): Sign in to an existing account.
 - [Sign up](https://leadzipp.com/signup): Create a free Starter account, no credit card required.

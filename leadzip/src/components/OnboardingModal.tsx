@@ -19,10 +19,10 @@ interface Preset {
 }
 
 const PRESETS: Preset[] = [
-  { id: 'no_website', icon: <span className="text-2xl">🚫</span>, label: 'No Website', description: 'Businesses with no online presence — perfect for web design & local SEO agencies.', params: { noWebsite: 'true' } },
+  { id: 'no_website', icon: <span className="text-2xl">🚫</span>, label: 'No Website', description: 'Businesses with no online presence. Perfect for web design & local SEO agencies.', params: { noWebsite: 'true' } },
   { id: 'needs_seo', icon: <span className="text-2xl">📈</span>, label: 'Needs SEO', description: 'Established businesses with a website but weak digital marketing.', params: { hasWebsite: 'true', minRating: '3.5' } },
-  { id: 'established', icon: <span className="text-2xl">⭐</span>, label: 'Established', description: 'High-rated businesses with lots of reviews — ideal for premium services.', params: { minRating: '4', minReviews: '25' } },
-  { id: 'all', icon: <span className="text-2xl">🔍</span>, label: 'Show Everything', description: 'No filters — see all businesses in the area.', params: {} },
+  { id: 'established', icon: <span className="text-2xl">⭐</span>, label: 'Established', description: 'High-rated businesses with lots of reviews. Ideal for premium services.', params: { minRating: '4', minReviews: '25' } },
+  { id: 'all', icon: <span className="text-2xl">🔍</span>, label: 'Show Everything', description: 'No filters, see all businesses in the area.', params: {} },
 ]
 
 export function OnboardingModal() {
@@ -124,7 +124,7 @@ export function OnboardingModal() {
           <div className="relative space-y-4 p-6">
             <div>
               <h2 className="font-display text-xl font-extrabold text-ink">What kind of leads?</h2>
-              <p className="mt-1 text-sm text-stone">Pick your focus — you can always change filters later.</p>
+              <p className="mt-1 text-sm text-stone">Pick your focus. You can always change filters later.</p>
             </div>
             <div className="grid grid-cols-2 gap-2.5">
               {PRESETS.map((preset) => (
@@ -174,7 +174,7 @@ export function OnboardingModal() {
               <Bell className="mt-0.5 h-4 w-4 shrink-0 text-forest" />
               <p className="text-xs leading-relaxed text-ink-soft">
                 <span className="font-semibold text-ink">We&apos;ll watch this territory for you.</span>{' '}
-                Save any search and we&apos;ll email you when new businesses appear — so you reach
+                Save any search and we&apos;ll email you when new businesses appear, so you reach
                 them before your competitors do.
               </p>
             </div>

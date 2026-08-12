@@ -8,7 +8,7 @@ const FAQ: { question: string; answer: string }[] = [
   {
     question: "Where does the lead data come from?",
     answer:
-      "LeadZipp pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. Every search runs against current data.",
+      "LeadZipp pulls live business listings from Google Places and Yelp: real names, addresses, phone numbers, ratings, and websites. Every search runs against current data.",
   },
   {
     question: "What makes a lead high-scoring?",
@@ -66,7 +66,7 @@ const softwareApplicationSchema = {
   operatingSystem: "Web",
   url: SITE_URL,
   description:
-    "Type a ZIP code and get the whole street — live, scored local business leads you can enrich and export.",
+    "Type a ZIP code and get the whole street: live, scored local business leads you can enrich and export.",
   offers: [
     {
       "@type": "Offer",
@@ -74,7 +74,7 @@ const softwareApplicationSchema = {
       price: "0",
       priceCurrency: "USD",
       description:
-        "Free forever. 25 searches a month against real data — no credit card required.",
+        "Free forever. 25 searches a month against real data, no credit card required.",
     },
     {
       "@type": "Offer",

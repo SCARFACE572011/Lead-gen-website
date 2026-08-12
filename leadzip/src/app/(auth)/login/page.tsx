@@ -78,7 +78,7 @@ export default function LoginPage() {
 
     // Check if Supabase is configured
     if (!isSupabaseConfigured()) {
-      toast.error("Supabase not configured yet — add real credentials to .env.local");
+      toast.error("Supabase not configured yet. Add real credentials to .env.local");
       setLoading(false);
       return;
     }

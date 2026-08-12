@@ -16,7 +16,7 @@ const TRADES = [
 const STEPS = [
   {
     n: '01', icon: MapPin, title: 'Drop a pin',
-    body: 'Type a ZIP code and pick a trade — plumbers, dentists, roofers, anything. Set your radius and go.',
+    body: 'Type a ZIP code and pick a trade: plumbers, dentists, roofers, anything. Set your radius and go.',
   },
   {
     n: '02', icon: Target, title: 'We map the block',
@@ -29,12 +29,12 @@ const STEPS = [
 ]
 
 const FEATURES = [
-  { icon: Database, title: 'Real businesses, not scraped junk', body: 'Live data from Google Places & Yelp — verified names, addresses, phones, and websites. Every lead is a business you can actually call today.' },
-  { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top — the businesses most likely to say yes to you.' },
+  { icon: Database, title: 'Real businesses, not scraped junk', body: 'Live data from Google Places & Yelp, with verified names, addresses, phones, and websites. Every lead is a business you can actually call today.' },
+  { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top, because those are the businesses most likely to say yes to you.' },
   { icon: Mail, title: 'Decision-maker email finder', body: 'One tap surfaces the best contact email for any business with a domain, with a confidence badge so you know what you’re working with.' },
-  { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Pipedrive & GoHighLevel. Your pipeline, your format — no copy-paste.' },
-  { icon: MapIcon, title: 'Own the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Claim a zip and get emailed when new businesses open in your area — so you reach them first, before competitors even know they exist.' },
-  { icon: SlidersHorizontal, title: 'Filter down to your buyer', body: 'Radius, rating, review count, has-website, category — dial in exactly the businesses that fit before you spend a minute reaching out.' },
+  { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Pipedrive & GoHighLevel. Your pipeline, your format. No copy-paste.' },
+  { icon: MapIcon, title: 'Own the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Claim a zip and get emailed when new businesses open in your area, so you reach them first, before competitors even know they exist.' },
+  { icon: SlidersHorizontal, title: 'Filter down to your buyer', body: 'Radius, rating, review count, has-website, category. Dial in exactly the businesses that fit before you spend a minute reaching out.' },
 ]
 
 const SHOWCASE = [
@@ -58,7 +58,7 @@ const PLANS = [
 ]
 
 const FAQS = [
-  { q: 'Where does the lead data come from?', a: 'LeadZipp pulls live business listings from Google Places and Yelp — real names, addresses, phone numbers, ratings, and websites. It is not a static scraped database; every search runs against current data.' },
+  { q: 'Where does the lead data come from?', a: 'LeadZipp pulls live business listings from Google Places and Yelp: real names, addresses, phone numbers, ratings, and websites. It is not a static scraped database. Every search runs against current data.' },
   { q: 'What makes a lead “high-scoring”?', a: 'We rank each business by how likely it is to need your services. Signals like having no website, few reviews, or a low rating push a business up your list, because those are the owners most open to help.' },
   { q: 'Can I find email addresses?', a: 'Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).' },
   { q: 'How do exports work?', a: 'Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel. Email, phone, score, and every field come along.' },
@@ -110,7 +110,7 @@ export default function Home() {
               </span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/75">
-              Find and score every local business in any ZIP code — with real phones, websites,
+              Find and score every local business in any ZIP code, with real phones, websites,
               and owner emails. Live Google &amp; Yelp data, not a scraped demo. The businesses
               that need you most, first.
             </p>
@@ -195,12 +195,12 @@ export default function Home() {
           <Reveal>
             <span className="readout text-signal">The output</span>
             <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
-              These are real businesses in one ZIP — ranked and ready.
+              These are real businesses in one ZIP, ranked and ready.
             </h2>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-soft">
               Every card is a live listing with a real address, phone, and score. The ones with
               <span className="font-semibold text-ink"> no website</span> or
-              <span className="font-semibold text-ink"> thin reviews</span> rise to the top —
+              <span className="font-semibold text-ink"> thin reviews</span> rise to the top,
               because those owners are the easiest yes you’ll have all week.
             </p>
             <Link href="/signup" className="mt-8 inline-flex items-center gap-2 rounded-full bg-signal px-6 py-3 font-semibold text-white transition-all hover:bg-signal-600 active:scale-95">
@@ -320,7 +320,7 @@ export default function Home() {
             Your next 50 clients are<br className="hidden sm:block" /> already on the map.
           </h2>
           <p className="mx-auto mt-5 max-w-lg text-lg text-white/85">
-            Run your first search free — no card, no demo data. Just type a ZIP and watch your territory light up.
+            Run your first search free. No card, no demo data. Just type a ZIP and watch your territory light up.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-semibold text-signal transition-transform hover:scale-[1.03] active:scale-95">

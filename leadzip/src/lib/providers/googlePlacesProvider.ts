@@ -32,6 +32,34 @@ const FIELD_MASK = [
 // (an unknown field in the mask is an INVALID_ARGUMENT error).
 const NEARBY_FIELD_MASK = FIELD_MASK.replace(',nextPageToken', '')
 
+// Curated SELLABLE business types for "All categories" nearby searches.
+// Without includedTypes, Nearby Search returns every prominent place — schools,
+// parks, malls, government buildings — none of which are prospects anyone can
+// pitch. Grouped so we can fire the groups in parallel (20 results max per
+// call → 3 groups ≈ up to 60 diverse leads). All names are long-established
+// place types, valid in Places API (New) Table A.
+const NEARBY_SMB_TYPE_GROUPS: string[][] = [
+  // Food & retail storefronts
+  [
+    'restaurant', 'cafe', 'bakery', 'bar', 'florist', 'jewelry_store',
+    'clothing_store', 'shoe_store', 'furniture_store', 'hardware_store',
+    'pet_store', 'convenience_store', 'book_store', 'bicycle_store',
+  ],
+  // Health & personal care
+  [
+    'hair_care', 'beauty_salon', 'spa', 'gym', 'dentist', 'doctor',
+    'physiotherapist', 'veterinary_care', 'pharmacy', 'laundry',
+  ],
+  // Professional services & trades
+  [
+    'lawyer', 'accounting', 'insurance_agency', 'real_estate_agency',
+    'plumber', 'electrician', 'roofing_contractor', 'general_contractor',
+    'painter', 'moving_company', 'storage', 'car_repair', 'car_dealer',
+    'car_wash', 'locksmith', 'travel_agency',
+  ],
+]
+const NEARBY_SMB_TYPES_ALL = NEARBY_SMB_TYPE_GROUPS.flat()
+
 // Place type used as a precise first-pass filter (Places API New, Table A).
 // If this returns < MIN_TYPED_RESULTS we fall back to the broad text search.
 const GOOGLE_PLACES_TYPES: Record<string, string> = {
@@ -242,7 +270,8 @@ async function fetchPage(body: SearchTextRequest, apiKey: string): Promise<Searc
 async function fetchNearbyPage(
   center: { latitude: number; longitude: number },
   radiusMeters: number,
-  apiKey: string
+  apiKey: string,
+  includedTypes?: string[]
 ): Promise<GooglePlaceNew[]> {
   const res = await fetch(PLACES_SEARCH_NEARBY_URL, {
     method: 'POST',
@@ -255,6 +284,7 @@ async function fetchNearbyPage(
       maxResultCount: 20,
       rankPreference: 'POPULARITY',
       locationRestriction: { circle: { center, radius: radiusMeters } },
+      ...(includedTypes?.length ? { includedTypes } : {}),
     }),
   })
   if (!res.ok) {
@@ -343,13 +373,28 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   const placeType = GOOGLE_PLACES_TYPES[params.category]
 
   if (allCategoriesMode) {
-    // Every kind of business around the point, ranked by prominence —
-    // a representative local mix instead of text-matched name hits.
-    allResults = await fetchNearbyPage(
-      { latitude: lat, longitude: lon },
-      radiusMeters,
-      apiKey
+    // Sellable businesses around the point, ranked by prominence. Three
+    // type-group calls in parallel (20 max each) give a diverse pool of up to
+    // 60 actual prospects — and the whitelist keeps schools, parks, and other
+    // non-business places out entirely.
+    const groups = await Promise.allSettled(
+      NEARBY_SMB_TYPE_GROUPS.map((types) =>
+        fetchNearbyPage({ latitude: lat, longitude: lon }, radiusMeters, apiKey, types)
+      )
     )
+    const seenIds = new Set<string>()
+    for (const g of groups) {
+      if (g.status !== 'fulfilled') {
+        console.warn('[googlePlacesProvider] nearby type-group failed:', g.reason)
+        continue
+      }
+      for (const r of g.value) {
+        if (!seenIds.has(r.id)) {
+          seenIds.add(r.id)
+          allResults.push(r)
+        }
+      }
+    }
   } else if (placeType) {
     // Page 1 with type filter to gauge result quality. A rejected type
     // (INVALID_ARGUMENT) falls through to the broad search rather than
@@ -411,7 +456,8 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
           ? fetchNearbyPage(
               { latitude: center.lat, longitude: center.lon },
               50000,
-              apiKey
+              apiKey,
+              NEARBY_SMB_TYPES_ALL
             )
           : fetchPage(
               {

@@ -67,7 +67,10 @@ export async function POST(request: NextRequest) {
           .gt('expires_at', new Date().toISOString())
           .maybeSingle()
 
-        if (cached) {
+        // An empty cached pool is treated as a MISS: empty results usually mean
+        // a transient provider failure, and serving them for the full TTL would
+        // pin "0 results" on a working search (self-heals old empty entries too).
+        if (cached && ((cached.leads as Lead[])?.length ?? 0) > 0) {
           // The cache stores the raw, filter-agnostic pool. Apply the caller's
           // refinement filters here so refining a search is a cache HIT and never
           // re-bills the paid provider.
@@ -232,7 +235,9 @@ export async function POST(request: NextRequest) {
         // public-read / service-role-write under RLS, so the session client's
         // write would be silently denied and the cache would never warm.
         const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
-        if (serviceRoleKey && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        // Never cache an EMPTY pool: a transient provider failure would otherwise
+        // serve "0 results" for the whole TTL to everyone on this key.
+        if (poolLeads.length > 0 && serviceRoleKey && process.env.NEXT_PUBLIC_SUPABASE_URL) {
           const { createClient: createAdminClient } = await import('@supabase/supabase-js')
           const admin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceRoleKey, {
             auth: { autoRefreshToken: false, persistSession: false },

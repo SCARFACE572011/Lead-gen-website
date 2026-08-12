@@ -281,10 +281,15 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 50000)
 
   const queryTerm = CATEGORY_QUERY[params.category] ?? params.category
+  // "All categories" (empty category) must never produce an empty textQuery —
+  // Google's searchText returns nothing for it. Fall back to the keyword, then
+  // to a broad local-business query so category-less searches work.
   const queryText =
-    params.category === 'Custom Keyword' && params.keyword
+    (params.category === 'Custom Keyword' && params.keyword
       ? params.keyword
-      : queryTerm
+      : queryTerm) ||
+    params.keyword ||
+    'local businesses'
 
   const baseRequest: SearchTextRequest = {
     textQuery: queryText,

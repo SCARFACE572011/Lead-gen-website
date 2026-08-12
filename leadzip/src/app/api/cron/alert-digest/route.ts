@@ -103,7 +103,9 @@ export async function GET(request: NextRequest) {
         .gt('expires_at', new Date().toISOString())
         .maybeSingle()
 
-      if (cached) {
+      // Empty cached pools are treated as a MISS (transient provider failures
+      // must not pin "0 results" for the TTL) — same rule as the search route.
+      if (cached && ((cached.leads as Lead[])?.length ?? 0) > 0) {
         const cachedLeads = (cached.leads as Lead[]) ?? []
         result = {
           leads: cachedLeads,
@@ -113,13 +115,16 @@ export async function GET(request: NextRequest) {
       } else {
         result = await searchLeadsCombined(params)
         // Write-through to the cache (service-role client bypasses RLS).
-        await supabase.from('leads_cache').upsert({
-          cache_key: cacheKey,
-          leads: result.leads,
-          total: result.total,
-          source: result.source ?? 'osm',
-          expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
-        })
+        // Never cache an empty pool — see the empty-MISS rule above.
+        if (result.leads.length > 0) {
+          await supabase.from('leads_cache').upsert({
+            cache_key: cacheKey,
+            leads: result.leads,
+            total: result.total,
+            source: result.source ?? 'osm',
+            expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
+          })
+        }
       }
 
       const newIds = result.leads.map((l) => l.id)

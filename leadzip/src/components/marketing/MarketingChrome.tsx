@@ -76,7 +76,7 @@ export function SiteFooter() {
               <span className="font-display text-xl font-extrabold text-white">LeadZipp</span>
             </div>
             <p className="mt-4 text-sm leading-relaxed">
-              Turn any ZIP code into a map of local businesses that need what you sell.
+              Find and score local business leads by ZIP code, city, category, and radius.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
@@ -95,6 +95,8 @@ export function SiteFooter() {
               <p className="readout text-lime">Learn</p>
               <ul className="mt-4 space-y-2.5 text-sm">
                 <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
+                <li><Link href="/lead-scoring-methodology" className="hover:text-white">Scoring methodology</Link></li>
+                <li><Link href="/about" className="hover:text-white">About LeadZipp</Link></li>
                 <li><Link href="/#how" className="hover:text-white">How it works</Link></li>
                 <li><Link href="/#faq" className="hover:text-white">FAQ</Link></li>
               </ul>

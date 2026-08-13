@@ -1,25 +1,36 @@
 import JsonLd from "./JsonLd";
 import { SITE_NAME, SITE_URL } from "./site";
 
-// Branded image produced by the dynamic /og route (carries the LeadZipp mark).
-const LOGO_URL = `${SITE_URL}/og?title=${encodeURIComponent(SITE_NAME)}`;
+const ORGANIZATION_ID = `${SITE_URL}/#organization`;
+const WEBSITE_ID = `${SITE_URL}/#website`;
+const LOGO_URL = `${SITE_URL}/apple-icon.png`;
 
 const organizationSchema = {
   "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": ORGANIZATION_ID,
   name: SITE_NAME,
+  alternateName: ["LeadZip", "Lead Zipp"],
   url: SITE_URL,
-  logo: LOGO_URL,
+  logo: {
+    "@type": "ImageObject",
+    url: LOGO_URL,
+    width: 180,
+    height: 180,
+  },
   description:
     "LeadZipp finds local business leads by ZIP code from live Google Places and Yelp data, then scores, enriches, and exports them.",
-  sameAs: [],
 };
 
 const websiteSchema = {
   "@context": "https://schema.org",
   "@type": "WebSite",
+  "@id": WEBSITE_ID,
   name: SITE_NAME,
+  alternateName: ["LeadZip", "Lead Zipp"],
   url: SITE_URL,
+  publisher: { "@id": ORGANIZATION_ID },
+  inLanguage: "en-US",
 };
 
 /**

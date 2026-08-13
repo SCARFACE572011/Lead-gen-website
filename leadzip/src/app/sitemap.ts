@@ -48,6 +48,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
   return [
     { url: baseUrl, lastModified: now, changeFrequency: 'weekly', priority: 1.0 },
     { url: `${baseUrl}/pricing`, lastModified: now, changeFrequency: 'monthly', priority: 0.9 },
+    { url: `${baseUrl}/about`, lastModified: now, changeFrequency: 'monthly', priority: 0.7 },
+    { url: `${baseUrl}/lead-scoring-methodology`, lastModified: now, changeFrequency: 'monthly', priority: 0.8 },
     { url: `${baseUrl}/blog`, lastModified: newestPostDate, changeFrequency: 'weekly', priority: 0.8 },
     ...posts,
     { url: `${baseUrl}${LEADS_INDEX_PATH}`, lastModified: now, changeFrequency: 'weekly', priority: 0.8 },

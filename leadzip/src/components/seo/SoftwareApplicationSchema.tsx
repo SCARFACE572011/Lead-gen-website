@@ -9,12 +9,23 @@ import { SITE_NAME, SITE_URL } from "./site";
 const schema = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
+  "@id": `${SITE_URL}/#software`,
   name: SITE_NAME,
+  alternateName: ["LeadZip", "Lead Zipp"],
   applicationCategory: "BusinessApplication",
+  applicationSubCategory: "Lead generation software",
   operatingSystem: "Web",
   url: SITE_URL,
+  brand: { "@id": `${SITE_URL}/#organization` },
   description:
     "Type a ZIP code and get a scored list of real local businesses from live Google Places and Yelp data, with phones, websites, and owner emails, ready to export to CSV, PDF, or your CRM.",
+  featureList: [
+    "Local business search by ZIP code, city, category, and radius",
+    "Opportunity scoring from 0 to 100",
+    "Business phone, website, rating, and review data",
+    "Decision-maker email finder",
+    "CSV, PDF, HubSpot, Pipedrive, and GoHighLevel export",
+  ],
   offers: [
     {
       "@type": "Offer",

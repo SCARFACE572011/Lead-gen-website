@@ -147,7 +147,7 @@ export default function Home() {
               <span className="h-1.5 w-1.5 rounded-full bg-lime" /> Local lead intelligence
             </span>
             <h1 className="mt-6 font-display text-[2.7rem] font-extrabold leading-[0.98] tracking-tight sm:text-6xl">
-              Drop a pin.<br />
+              Find local business leads.<br />
               Fill your <span className="relative whitespace-nowrap text-signal">pipeline.
                 <svg className="absolute -bottom-2 left-0 w-full" height="10" viewBox="0 0 200 10" fill="none" aria-hidden>
                   <path d="M2 7C40 3 160 3 198 7" stroke="#CBF23F" strokeWidth="3" strokeLinecap="round" />
@@ -410,7 +410,7 @@ export default function Home() {
                 <span className="font-display text-xl font-extrabold text-white">LeadZipp</span>
               </div>
               <p className="mt-4 text-sm leading-relaxed">
-                Turn any ZIP code into a map of local businesses that need what you sell.
+                Find and score local business leads by ZIP code, city, category, and radius.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
@@ -428,6 +428,8 @@ export default function Home() {
               <div>
                 <p className="readout text-lime">Company</p>
                 <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><Link href="/about" className="hover:text-white">About LeadZipp</Link></li>
+                  <li><Link href="/lead-scoring-methodology" className="hover:text-white">Scoring methodology</Link></li>
                   <li><a href="#how" className="hover:text-white">How it works</a></li>
                   <li><a href="#faq" className="hover:text-white">FAQ</a></li>
                   <li><Link href="/login" className="hover:text-white">Log in</Link></li>

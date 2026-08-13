@@ -42,10 +42,10 @@ const spaceMono = Space_Mono({
 });
 
 const SITE_TITLE =
-  "Local Business Lead Generation for Agencies by ZIP Code | LeadZipp";
+  "Local Business Leads by ZIP Code | LeadZipp";
 const SITE_DESCRIPTION =
-  "Find local businesses without websites and turn them into clients. LeadZipp builds scored lead lists by ZIP code from live Google Places and Yelp data, with phones and owner emails, for web design agencies, freelancers, and sales teams.";
-const OG_IMAGE = "/og?title=Drop+a+pin.+Fill+your+pipeline.&subtitle=Scored+local+business+leads,+by+ZIP+code";
+  "Find and score local business leads by ZIP code or city with live Google and Yelp data. Get phones, websites and emails, then export to your CRM.";
+const OG_IMAGE = "/og?title=Find+local+business+leads.&subtitle=Scored+prospects+by+ZIP+code,+city,+category,+and+radius";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),

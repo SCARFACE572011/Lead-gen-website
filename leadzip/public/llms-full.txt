@@ -66,8 +66,14 @@ A: No. The Starter plan is free forever and includes 25 searches a month against
 ## Key pages
 
 - Home: https://leadzipp.com/ (Product overview, how it works, features, and pricing.)
+- About LeadZipp: https://leadzipp.com/about (Product identity, audience, data approach, and official brand spelling.)
+- Lead scoring methodology: https://leadzipp.com/lead-scoring-methodology (The exact public signals and weights behind the 0–100 opportunity score.)
 - Pricing: https://leadzipp.com/pricing (Full plan comparison for Starter, Pro, and Agency.)
 - Search: https://leadzipp.com/search (The core app. Search a ZIP and trade to generate a scored lead list; requires an account.)
 - API docs: https://leadzipp.com/api-docs (Reference for the LeadZipp API and lead data endpoints.)
 - Log in: https://leadzipp.com/login (Sign in to an existing account.)
 - Sign up: https://leadzipp.com/signup (Create a free Starter account, no credit card required.)
+
+## Brand name
+
+LeadZipp is the official spelling and leadzipp.com is the official website. “LeadZip” and “Lead Zipp” are common search variations for the same product.

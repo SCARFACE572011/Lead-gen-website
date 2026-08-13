@@ -51,6 +51,11 @@ export function PromoPopup() {
 
   const [ready, setReady] = useState(false)
   const [open, setOpen] = useState(false)
+  // Dismissal has to live in state, not only in localStorage. The reveal effect
+  // below re-runs whenever `open` changes, so without this it saw the timer
+  // still armed the instant `open` went false and reopened the popup in the
+  // same tick, which made the close button and "Maybe later" look dead.
+  const [dismissed, setDismissed] = useState(false)
 
   const audioRef = useRef<AudioContext | null>(null)
   const pingedRef = useRef(false)
@@ -129,7 +134,7 @@ export function PromoPopup() {
 
   // Only surface on a marketing route. If the timer fired while the visitor was
   // deeper in the app, it waits and appears when they return to a public page.
-  const shouldShow = ready && !isAppRoute(pathname)
+  const shouldShow = ready && !dismissed && !isAppRoute(pathname)
 
   useEffect(() => {
     if (shouldShow && !open) {
@@ -151,12 +156,14 @@ export function PromoPopup() {
 
   const dismiss = () => {
     persist(DISMISS_KEY)
+    setDismissed(true)
     setOpen(false)
   }
 
   const claim = () => {
     persist(CLAIM_KEY)
     persist(DISMISS_KEY)
+    setDismissed(true)
     setOpen(false)
     router.push('/signup')
   }

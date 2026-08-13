@@ -19,6 +19,7 @@ export default function robots(): MetadataRoute.Robots {
           '/search',
           '/saved',
           '/saved-searches',
+          '/market-gaps',
           '/history',
           '/exports',
           '/settings',

@@ -8,6 +8,7 @@ const NOINDEX_PATHS = [
   "/search",
   "/saved",
   "/saved-searches",
+  "/market-gaps",
   "/history",
   "/exports",
   "/settings",

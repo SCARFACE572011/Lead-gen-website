@@ -1,11 +1,22 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 const CONSENT_KEY = 'leadzip_cookie_consent'
 
+/**
+ * Height of this banner, published to the page so other bottom-anchored UI can
+ * sit above it. The chat launcher shares this corner (bottom-4 left-4 on
+ * desktop, and the banner is full width on mobile), so without this it was
+ * completely covered and untappable until a first-time visitor accepted
+ * cookies. Measuring beats a hardcoded offset because the banner wraps to
+ * different heights across viewports.
+ */
+const BANNER_HEIGHT_VAR = '--consent-banner-h'
+
 export function CookieConsent() {
   const [visible, setVisible] = useState(false)
+  const bannerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     try {
@@ -17,6 +28,30 @@ export function CookieConsent() {
       // SSR / privacy mode guard
     }
   }, [])
+
+  useEffect(() => {
+    const root = document.documentElement
+    if (!visible) {
+      root.style.setProperty(BANNER_HEIGHT_VAR, '0px')
+      return
+    }
+
+    const publish = () => {
+      const h = bannerRef.current?.offsetHeight ?? 0
+      root.style.setProperty(BANNER_HEIGHT_VAR, `${h}px`)
+    }
+    publish()
+
+    const observer = new ResizeObserver(publish)
+    if (bannerRef.current) observer.observe(bannerRef.current)
+    window.addEventListener('resize', publish)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', publish)
+      root.style.setProperty(BANNER_HEIGHT_VAR, '0px')
+    }
+  }, [visible])
 
   if (!visible) return null
 
@@ -31,6 +66,7 @@ export function CookieConsent() {
 
   return (
     <div
+      ref={bannerRef}
       role="dialog"
       aria-modal="false"
       aria-label="Cookie consent"

@@ -209,9 +209,16 @@ export function ChatWidget() {
 
   return (
     <>
-      {/* Collapsed launcher, bottom-left */}
+      {/* Collapsed launcher, bottom-left. The cookie banner shares this corner
+          (full width on mobile, bottom-4 left-4 on desktop) and outranks the
+          launcher in z-order, so it used to bury the button completely on a
+          first visit. The banner publishes its measured height, and the
+          launcher rides above it, falling back to 0 once consent is given. */}
       {!open && (
-        <div className="fixed bottom-4 left-4 z-[55] flex items-center gap-2.5">
+        <div
+          className="fixed left-4 z-[55] flex items-center gap-2.5"
+          style={{ bottom: 'calc(1rem + var(--consent-banner-h, 0px))' }}
+        >
           <button
             ref={launcherRef}
             onClick={openChat}

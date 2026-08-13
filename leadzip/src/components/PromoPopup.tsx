@@ -179,7 +179,10 @@ export function PromoPopup() {
               ? { duration: 0.15 }
               : { type: 'spring', stiffness: 360, damping: 30, mass: 0.9 }
           }
-          className="fixed bottom-4 right-4 left-4 z-[70] sm:left-auto sm:w-[340px]"
+          // On phones this card spans the full width, so it is lifted clear of
+          // the chat launcher (a 56px circle at bottom-4 left-4) instead of
+          // covering it. From sm up the two sit in opposite corners.
+          className="fixed bottom-24 right-4 left-4 z-[70] sm:bottom-4 sm:left-auto sm:w-[340px]"
         >
           <div className="relative overflow-hidden rounded-2xl border border-sand bg-white shadow-[0_12px_40px_-12px_rgba(23,19,14,0.35)]">
             {/* thin signal rule at the very top */}

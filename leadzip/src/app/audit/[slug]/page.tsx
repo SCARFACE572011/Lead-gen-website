@@ -7,11 +7,15 @@ import { getHealthGrade, type HealthScoreResult } from '@/lib/healthScore'
 /**
  * Public, shareable Digital Presence Audit — /audit/[slug].
  *
- * Read-only report page opened from a link an agency sends a prospect. Reads
- * the audit_reports row by slug: with SUPABASE_SERVICE_ROLE_KEY set it uses the
- * service role, otherwise it relies on the anon public-read policy from the
- * audit_reports migration. Every report footer links back to LeadZipp, which
- * turns each shared audit into a marketing channel.
+ * Read-only report page opened from a link an agency sends a prospect. Every
+ * report footer links back to LeadZipp, which turns each shared audit into a
+ * marketing channel.
+ *
+ * Reads the audit_reports row by slug using the SERVICE ROLE key, which
+ * bypasses RLS. This is deliberate: the table grants anon nothing, because an
+ * anon-readable policy would let anyone enumerate every report and learn which
+ * businesses each customer is prospecting. The slug is the capability, and the
+ * server is the only thing that can redeem it.
  */
 
 export const dynamic = 'force-dynamic'
@@ -37,8 +41,17 @@ interface AuditRow {
 
 function reportClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  if (!url || !key || url === 'https://placeholder.supabase.co') return null
+  // Service role only. The anon key cannot read this table by design, so
+  // falling back to it would silently 404 every shared report.
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key || url === 'https://placeholder.supabase.co') {
+    if (!key) {
+      console.error(
+        '[audit] SUPABASE_SERVICE_ROLE_KEY is missing, so shared audit report links cannot be read.'
+      )
+    }
+    return null
+  }
   return createClient(url, key, { auth: { persistSession: false } })
 }
 

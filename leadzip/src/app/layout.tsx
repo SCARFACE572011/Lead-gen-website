@@ -11,6 +11,12 @@ import { ChatWidget } from "@/components/chat/ChatWidget";
 import StructuredData from "@/components/seo/StructuredData";
 import { SITE_URL } from "@/components/seo/site";
 
+// Both names are read because the deployed environment defines
+// NEXT_PUBLIC_GA while the code was originally written against
+// NEXT_PUBLIC_GA4_ID. Each must be referenced literally, since Next inlines
+// NEXT_PUBLIC_* at build time and cannot resolve a computed lookup.
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || process.env.NEXT_PUBLIC_GA;
+
 // Display — characterful modern grotesque, used with restraint for headlines
 const bricolage = Bricolage_Grotesque({
   variable: "--font-display",
@@ -155,15 +161,15 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
         )}
 
         {/* GA4 fallback (only when no GTM) */}
-        {process.env.NEXT_PUBLIC_GA4_ID && !process.env.NEXT_PUBLIC_GTM_ID && (
+        {GA4_ID && !process.env.NEXT_PUBLIC_GTM_ID && (
           <>
             <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${process.env.NEXT_PUBLIC_GA4_ID}`}
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
               strategy="afterInteractive"
             />
             <Script id="ga4" strategy="afterInteractive">
               {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('js',new Date());gtag('config','${process.env.NEXT_PUBLIC_GA4_ID}');`}
+gtag('js',new Date());gtag('config','${GA4_ID}');`}
             </Script>
           </>
         )}

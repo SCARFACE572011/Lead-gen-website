@@ -1,13 +1,6 @@
 // Canonical site origin for SEO metadata and structured data.
-// NEXT_PUBLIC_SITE_URL is inlined at build time, but *.vercel.app values are
-// rejected: deployment hosts must never leak into canonicals, sitemaps, or
-// structured data (production env still carried the legacy leadzip.vercel.app
-// domain long after leadzipp.com went live).
-const envUrl = (process.env.NEXT_PUBLIC_SITE_URL || "").replace(/\/$/, "");
-
-export const SITE_URL =
-  envUrl.startsWith("https://") && !/\.vercel\.app(\/|$)/i.test(envUrl)
-    ? envUrl
-    : "https://leadzipp.com";
+// The resolution rule (and why *.vercel.app values are rejected) lives in
+// @/lib/siteUrl, which the Stripe, auth, and email routes share.
+export { SITE_URL } from "@/lib/siteUrl";
 
 export const SITE_NAME = "LeadZipp";

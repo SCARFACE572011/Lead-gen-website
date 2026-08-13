@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
+import { SITE_URL } from '@/lib/siteUrl'
 
 const PLAN_PRICE_IDS: Record<string, { monthly: string | undefined; annual: string | undefined }> = {
   pro: {
@@ -130,8 +131,8 @@ export async function POST(request: NextRequest) {
         ? { customer: existingCustomerId }
         : { customer_email: user.email || undefined }),
       client_reference_id: user.id,
-      success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/dashboard?payment=success&plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/pricing?payment=cancelled`,
+      success_url: `${SITE_URL}/dashboard?payment=success&plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${SITE_URL}/pricing?payment=cancelled`,
       metadata: { plan, billing, user_id: user.id },
       ...discountConfig,
       subscription_data: {

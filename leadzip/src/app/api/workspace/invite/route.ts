@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
+import { SITE_URL } from '@/lib/siteUrl'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
+const siteUrl = SITE_URL
 
 function escapeHtml(value: string): string {
   return value

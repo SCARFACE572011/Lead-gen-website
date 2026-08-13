@@ -9,10 +9,11 @@ import {
   syncSubscriptionRow,
   syncProfilePlan,
 } from '@/lib/stripe/subscriptionSync'
+import { SITE_URL } from '@/lib/siteUrl'
 
 export const runtime = 'nodejs'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
+const siteUrl = SITE_URL
 
 // Reminder sent on customer.subscription.trial_will_end (fires ~3 days before
 // the trial ends). Same nodemailer + Gmail SMTP pattern as send-reset-email.

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import nodemailer from 'nodemailer'
 import { createClient } from '@supabase/supabase-js'
+import { SITE_URL } from '@/lib/siteUrl'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
+const siteUrl = SITE_URL
 
 // Log misconfiguration once per server instance instead of on every request
 let loggedMissingGmailConfig = false

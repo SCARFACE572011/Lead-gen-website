@@ -3,8 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import { searchLeadsCombined } from '@/lib/providers/combinedProvider'
 import type { SearchParams, SearchResult, Lead } from '@/types/lead'
+import { SITE_URL } from '@/lib/siteUrl'
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'
+const siteUrl = SITE_URL
 
 // Cache TTL — keep in sync with src/app/api/leads/search/route.ts (12h). Every
 // cache MISS bills the paid Google Places API, so alert diffs must reuse the same

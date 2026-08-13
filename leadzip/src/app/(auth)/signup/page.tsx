@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Loader2, CheckCircle } from "lucide-react";
@@ -57,8 +57,20 @@ export default function SignupPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  // Plan carried in from a "Start 7-day free trial" CTA. Read from
+  // window.location rather than useSearchParams so this page keeps its static
+  // prerender and needs no Suspense boundary.
+  const [trialPlan, setTrialPlan] = useState<"pro" | "agency" | null>(null);
+  const [trialBilling, setTrialBilling] = useState<"monthly" | "annual">("monthly");
   const supabase = createClient();
   const router = useRouter();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const plan = params.get("plan");
+    if (plan === "pro" || plan === "agency") setTrialPlan(plan);
+    if (params.get("billing") === "annual") setTrialBilling("annual");
+  }, []);
 
   function validate(): boolean {
     const newErrors: FormErrors = {};
@@ -106,10 +118,40 @@ export default function SignupPage() {
     }
 
     // Email confirmation is disabled, so signUp returns a live session and the
-    // user is already logged in. Take them straight into the app. The
-    // check-your-email screen only shows if confirmation is ever re-enabled
-    // (no session returned).
+    // user is already logged in. The check-your-email screen only shows if
+    // confirmation is ever re-enabled (no session returned).
     if (data.session) {
+      // Arrived from a trial CTA: hand off to Stripe so the card is collected
+      // and the 7-day trial actually starts. Without this the visitor lands on
+      // the dashboard with a free account, having been promised a trial.
+      if (trialPlan) {
+        try {
+          let promo = false;
+          try {
+            promo = window.localStorage.getItem("leadzipp_promo15") === "1";
+          } catch {
+            // private mode, treat as unclaimed
+          }
+          const res = await fetch("/api/stripe/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ plan: trialPlan, billing: trialBilling, promo }),
+          });
+          const payload = await res.json().catch(() => ({}));
+          if (res.ok && payload?.url) {
+            window.location.href = payload.url;
+            return;
+          }
+          toast.error(
+            payload?.error ||
+              "Your account is ready, but checkout did not open. You can start the trial from the pricing page."
+          );
+        } catch {
+          toast.error(
+            "Your account is ready, but checkout did not open. You can start the trial from the pricing page."
+          );
+        }
+      }
       router.push("/dashboard");
       return;
     }
@@ -168,6 +210,21 @@ export default function SignupPage() {
           Start finding local business leads in minutes.
         </p>
       </div>
+
+      {/* Say plainly that a card comes next, before the visitor fills the form.
+          They clicked a trial CTA, so the handoff to Stripe should not surprise
+          them. */}
+      {trialPlan && (
+        <div className="mb-6 rounded-xl border border-sand bg-paper-2 p-4">
+          <p className="text-sm font-semibold text-ink">
+            Starting your 7-day {trialPlan === "pro" ? "Pro" : "Agency"} trial
+          </p>
+          <p className="mt-1 text-sm text-ink-soft">
+            After this step we will take you to Stripe to add a card. You are not charged
+            today. Cancel any time before day 7 and you pay nothing.
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         {/* Full name */}

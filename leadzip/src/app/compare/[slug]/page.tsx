@@ -239,7 +239,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
               ))}
             </ul>
             <Link
-              href="/signup"
+              href="/signup?plan=pro"
               className="mt-7 inline-flex items-center gap-2 rounded-full bg-signal px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-signal-600 active:scale-95"
             >
               Start your 7-day free trial <ArrowRight className="h-4 w-4" />
@@ -356,7 +356,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/signup"
+              href="/signup?plan=pro"
               className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-semibold text-signal transition-transform hover:scale-[1.03] active:scale-95"
             >
               <Search className="h-4 w-4" /> Start free

@@ -58,8 +58,8 @@ const STATS = [
 
 const PLANS = [
   { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'Basic lead scoring'], cta: 'Start free', href: '/signup', highlight: false },
-  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'CSV, PDF & CRM export', 'Map view'], cta: 'Start 7-day free trial', href: '/signup', highlight: true },
-  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces (coming soon)', 'White-label PDFs', 'Priority support'], cta: 'Start 7-day free trial', href: '/signup', highlight: false },
+  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'CSV, PDF & CRM export', 'Map view'], cta: 'Start 7-day free trial', href: '/signup?plan=pro', highlight: true },
+  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces (coming soon)', 'White-label PDFs', 'Priority support'], cta: 'Start 7-day free trial', href: '/signup?plan=agency', highlight: false },
 ]
 
 const FAQS = [

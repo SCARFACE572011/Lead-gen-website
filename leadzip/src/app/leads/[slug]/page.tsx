@@ -107,7 +107,7 @@ export default async function LeadsLocationPage({
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
-                href="/signup"
+                href="/signup?plan=pro"
                 className="inline-flex items-center justify-center gap-2 rounded-full bg-signal px-6 py-3 font-semibold text-white transition-all hover:bg-signal-600 active:scale-95"
               >
                 <Search className="h-4 w-4" /> Start your 7-day free trial
@@ -145,7 +145,7 @@ export default async function LeadsLocationPage({
               ))}
             </dl>
             <Link
-              href="/signup"
+              href="/signup?plan=pro"
               className="mt-5 flex items-center justify-center gap-2 rounded-full bg-lime px-5 py-2.5 text-sm font-bold text-forest-900 transition-transform hover:scale-[1.02] active:scale-95"
             >
               Open this search <ArrowRight className="h-4 w-4" />
@@ -389,7 +389,7 @@ export default async function LeadsLocationPage({
           <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/85">{page.ctaBody}</p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/signup"
+              href="/signup?plan=pro"
               className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-semibold text-signal transition-transform hover:scale-[1.03] active:scale-95"
             >
               <Search className="h-4 w-4" /> Start free

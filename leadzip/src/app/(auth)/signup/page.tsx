@@ -7,6 +7,36 @@ import { Eye, EyeOff, ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { track, readGclid } from "@/lib/analytics";
+
+/**
+ * Attach the stored Google click id to the freshly created profile row so the
+ * Stripe webhook can emit it on the paid invoice later.
+ *
+ * Feature detecting on purpose: the gclid column arrives with
+ * supabase/migrations/20260812_gclid.sql, and a database that has not run it yet
+ * must still be able to sign people up. Any failure here is swallowed.
+ *
+ * Raced against a short timeout so a slow or hanging write can never hold up
+ * the redirect to Stripe Checkout.
+ */
+async function persistGclidToProfile(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<void> {
+  const gclid = readGclid();
+  if (!gclid) return;
+
+  try {
+    await Promise.race([
+      supabase.from("users_profile").update({ gclid }).eq("id", userId),
+      new Promise((resolve) => setTimeout(resolve, 2500)),
+    ]);
+  } catch {
+    // Column missing, RLS, or offline. Attribution is best effort and must
+    // never block account creation.
+  }
+}
 
 interface FormErrors {
   fullName?: string;
@@ -66,8 +96,13 @@ export default function SignupPage() {
   const router = useRouter();
 
   useEffect(() => {
+    // Reading window is only possible after mount, since this client component
+    // still prerenders on the server. useSearchParams would avoid the effect but
+    // forces a Suspense boundary and drops the page's static prerender, which is
+    // a worse trade for a value that only preselects a plan.
     const params = new URLSearchParams(window.location.search);
     const plan = params.get("plan");
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (plan === "pro" || plan === "agency") setTrialPlan(plan);
     if (params.get("billing") === "annual") setTrialBilling("annual");
   }, []);
@@ -115,6 +150,20 @@ export default function SignupPage() {
       setError(authError.message);
       setLoading(false);
       return;
+    }
+
+    // The account exists at this point, on both the live-session path and the
+    // confirm-your-email path, so this is where a signup has "succeeded".
+    // No email and no name are ever sent, only which plan the CTA preselected.
+    track("signup_completed", {
+      trial_selected: !!trialPlan,
+      plan: trialPlan,
+      billing: trialBilling,
+    });
+
+    // Carry the ad click id onto the profile row. Best effort, never fatal.
+    if (data.user) {
+      await persistGclidToProfile(supabase, data.user.id);
     }
 
     // Email confirmation is disabled, so signUp returns a live session and the

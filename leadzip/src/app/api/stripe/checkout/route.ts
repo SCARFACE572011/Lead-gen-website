@@ -159,7 +159,9 @@ export async function POST(request: NextRequest) {
         ? { customer: existingCustomerId }
         : { customer_email: user.email || undefined }),
       client_reference_id: user.id,
-      success_url: `${SITE_URL}/dashboard?payment=success&plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
+      // billing is carried through so the trial_started conversion records the
+      // real period instead of inferring it from the subscription length.
+      success_url: `${SITE_URL}/dashboard?payment=success&plan=${plan}&billing=${billing}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${SITE_URL}/pricing?payment=cancelled`,
       metadata: { plan, billing, user_id: user.id },
       ...discountConfig,

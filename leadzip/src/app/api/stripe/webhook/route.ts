@@ -15,6 +15,90 @@ export const runtime = 'nodejs'
 
 const siteUrl = SITE_URL
 
+/* ------------------------------------------------------------------ *
+ * Google Ads Offline Conversion Import feed
+ *
+ * A paid LeadZipp subscription happens on Stripe's servers, days after the ad
+ * click, so the browser is long gone and no client-side tag can report it. The
+ * bridge is the Google click id: captured from ?gclid=... into a first-party
+ * cookie (src/lib/analytics.ts), written onto users_profile.gclid at signup,
+ * and read back here when money actually moves.
+ *
+ * This emits the structured line. It does NOT upload anything. The upload
+ * integration is deliberately out of scope, but every field Google needs
+ * (gclid, conversion time, value, currency) is in the log from today, so the
+ * data exists before the integration does.
+ *
+ * Two triggers emit a line, both prefixed [offline-conversion]:
+ *   kind=invoice_paid        the revenue event. Upload these.
+ *   kind=subscription_active the same conversion seen from the subscription
+ *                            side. It exists so the signal survives if invoice
+ *                            events are ever disabled on the endpoint. Treat it
+ *                            as a fallback, not as extra revenue.
+ * Deduplicate on dedupe_key within a kind, and on (gclid, day) across kinds.
+ * ------------------------------------------------------------------ */
+
+/**
+ * Read the stored Google click id for a user.
+ *
+ * Feature detects users_profile.gclid. That column arrives with
+ * supabase/migrations/20260812_gclid.sql, and a database that has not run the
+ * migration yet must not break the webhook. A missing column comes back as a
+ * PostgREST error rather than a throw, so every failure mode resolves to null.
+ */
+async function readProfileGclid(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<string | null> {
+  try {
+    const { data, error } = await supabase
+      .from('users_profile')
+      .select('gclid')
+      .eq('id', userId)
+      .maybeSingle()
+
+    if (error) return null
+    const gclid = (data as { gclid?: string | null } | null)?.gclid
+    return typeof gclid === 'string' && gclid.length > 0 ? gclid : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Emit one offline-conversion line. Amounts are in major currency units
+ * (dollars, not cents) because that is what Google Ads expects as a conversion
+ * value. Contains no email and no name: only an internal user id and the click
+ * id, both of which are required to attribute the conversion.
+ */
+function logOfflineConversion(fields: {
+  kind: 'invoice_paid' | 'subscription_active'
+  dedupeKey: string
+  userId: string
+  gclid: string | null
+  amount: number | null
+  currency: string | null
+  /**
+   * Stripe's billing_reason where available. Lets the uploader tell a $0
+   * trial-start invoice (subscription_create) apart from real revenue
+   * (subscription_cycle, subscription_update) without guessing from the amount.
+   */
+  reason?: string | null
+}): void {
+  console.log(
+    `[offline-conversion] ${JSON.stringify({
+      kind: fields.kind,
+      dedupe_key: fields.dedupeKey,
+      user_id: fields.userId,
+      gclid: fields.gclid,
+      amount: fields.amount,
+      currency: fields.currency ? fields.currency.toUpperCase() : null,
+      reason: fields.reason ?? null,
+      timestamp: new Date().toISOString(),
+    })}`
+  )
+}
+
 // Reminder sent on customer.subscription.trial_will_end (fires ~3 days before
 // the trial ends). Same nodemailer + Gmail SMTP pattern as send-reset-email.
 // Failures are logged, never thrown: a bounced email must not 500 the webhook
@@ -271,6 +355,72 @@ export async function POST(request: NextRequest) {
       if (profileError) {
         return NextResponse.json({ error: `Failed to sync profile plan: ${profileError}` }, { status: 500 })
       }
+
+      // Subscription becoming active: either a trial converting to paid, or a
+      // brand-new subscription that skipped the trial. Gated on the transition
+      // so a routine 'updated' event on an already-active subscription (a card
+      // change, a metadata edit) does not re-emit the conversion.
+      const previousStatus = (
+        event.data as { previous_attributes?: { status?: Stripe.Subscription.Status } }
+      ).previous_attributes?.status
+      const becameActive =
+        subscription.status === 'active' &&
+        (event.type === 'customer.subscription.created' ||
+          (previousStatus !== undefined && previousStatus !== 'active'))
+
+      if (becameActive) {
+        const unitAmount = subscription.items.data[0]?.price?.unit_amount ?? null
+        logOfflineConversion({
+          kind: 'subscription_active',
+          dedupeKey: `sub_${subscription.id}_${periodStart}`,
+          userId,
+          gclid: await readProfileGclid(supabase, userId),
+          // List price, so it ignores any coupon. Another reason the
+          // invoice_paid line is the authoritative one for revenue.
+          amount: unitAmount != null ? unitAmount / 100 : null,
+          currency: subscription.items.data[0]?.price?.currency ?? null,
+          reason: `status_${previousStatus ?? 'new'}_to_active`,
+        })
+      }
+      break
+    }
+
+    // The money event. Fires when a trial converts to paid and on every
+    // renewal, and it is the only event carrying a settled amount and currency.
+    case 'invoice.paid': {
+      const invoice = event.data.object as Stripe.Invoice
+      const customerId =
+        typeof invoice.customer === 'string'
+          ? invoice.customer
+          : invoice.customer?.id ?? null
+
+      // Stripe moved the subscription link under parent.subscription_details in
+      // the API version this app pins (2026-04-22.dahlia).
+      const details = invoice.parent?.subscription_details ?? null
+      if (!details) break // Not a subscription invoice, so not a conversion.
+
+      const { userId, dbError } = await resolveUserId(
+        supabase,
+        details.metadata?.user_id,
+        customerId
+      )
+      if (dbError) {
+        return NextResponse.json({ error: `Failed to resolve user: ${dbError}` }, { status: 500 })
+      }
+      if (!userId) {
+        console.error(`stripe/webhook: no user_id resolvable for invoice ${invoice.id}`)
+        break
+      }
+
+      logOfflineConversion({
+        kind: 'invoice_paid',
+        dedupeKey: `invoice_${invoice.id}`,
+        userId,
+        gclid: await readProfileGclid(supabase, userId),
+        amount: invoice.amount_paid / 100,
+        currency: invoice.currency,
+        reason: invoice.billing_reason,
+      })
       break
     }
 

@@ -161,6 +161,9 @@ function osmElementToPartialLead(
     city: tags['addr:city'] ?? fallbackCity,
     state: tags['addr:state'] ?? fallbackState,
     zipCode: tags['addr:postcode'] ?? searchZip,
+    // Country the search resolved to. Carried so a postal-code-only lookup later
+    // (competitor analysis) does not read a non-US postcode as a US ZIP.
+    countryCode: countryCode || undefined,
     phone: formatPhone(phone, countryCode),
     website,
     rating: null,

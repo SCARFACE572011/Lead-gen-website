@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Lead } from '@/types/lead'
 import { buildLeadsCsv } from '@/lib/export'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 export async function POST(request: NextRequest) {
   try {
-    // Require an authenticated Supabase session
+    // Require an authenticated, still-active session. The plan fence below needs
+    // plan + role anyway, so this is the SAME single users_profile round trip.
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireActiveUser(supabase, { columns: ['plan', 'role'] })
+    if (!auth.ok) return auth.response
 
     let body: { leads?: Lead[]; fields?: string[] }
     try {
@@ -30,14 +29,8 @@ export async function POST(request: NextRequest) {
     // (pro/agency) and admins export everything. We cap rather than hard-error
     // so a free user still gets a usable file (preserves activation) while the
     // paywall is visibly enforced via a trailing note + response header.
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('plan, role')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    const plan = profile?.plan ?? 'free'
-    const role = profile?.role ?? 'user'
+    const plan = (auth.profile?.plan as string | undefined) ?? 'free'
+    const role = (auth.profile?.role as string | undefined) ?? 'user'
     const isPaid = role === 'admin' || plan === 'pro' || plan === 'agency'
 
     const FREE_EXPORT_LIMIT = 25

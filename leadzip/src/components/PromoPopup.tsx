@@ -50,11 +50,8 @@ export function PromoPopup() {
   const reduceMotion = useReducedMotion()
 
   const [ready, setReady] = useState(false)
-  const [open, setOpen] = useState(false)
-  // Dismissal has to live in state, not only in localStorage. The reveal effect
-  // below re-runs whenever `open` changes, so without this it saw the timer
-  // still armed the instant `open` went false and reopened the popup in the
-  // same tick, which made the close button and "Maybe later" look dead.
+  // Dismissal lives in state, not only in localStorage, because the stored flag
+  // is read once on mount and so cannot stop a reveal that is already armed.
   const [dismissed, setDismissed] = useState(false)
 
   const audioRef = useRef<AudioContext | null>(null)
@@ -136,15 +133,20 @@ export function PromoPopup() {
   // deeper in the app, it waits and appears when they return to a public page.
   const shouldShow = ready && !dismissed && !isAppRoute(pathname)
 
+  // Visibility is DERIVED from shouldShow, never mirrored into a second piece
+  // of state. An earlier version kept an `open` state and set it from an effect
+  // that also depended on `open`, so dismissing flipped it false and the same
+  // effect immediately set it true again. The close button looked dead. Deriving
+  // removes that whole class of bug rather than patching it.
+  //
+  // The effect below only talks to an external system (the audio context),
+  // which is what effects are for.
   useEffect(() => {
-    if (shouldShow && !open) {
-      setOpen(true)
-      if (!pingedRef.current) {
-        pingedRef.current = true
-        playPing()
-      }
+    if (shouldShow && !pingedRef.current) {
+      pingedRef.current = true
+      playPing()
     }
-  }, [shouldShow, open, playPing])
+  }, [shouldShow, playPing])
 
   const persist = (key: string) => {
     try {
@@ -157,14 +159,12 @@ export function PromoPopup() {
   const dismiss = () => {
     persist(DISMISS_KEY)
     setDismissed(true)
-    setOpen(false)
   }
 
   const claim = () => {
     persist(CLAIM_KEY)
     persist(DISMISS_KEY)
     setDismissed(true)
-    setOpen(false)
     router.push('/signup')
   }
 
@@ -175,7 +175,7 @@ export function PromoPopup() {
 
   return (
     <AnimatePresence>
-      {open && (
+      {shouldShow && (
         <motion.div
           key="promo"
           role="dialog"

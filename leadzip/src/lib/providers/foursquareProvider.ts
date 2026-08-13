@@ -177,6 +177,9 @@ export async function searchLeadsFoursquare(params: SearchParams): Promise<Searc
         city,
         state,
         zipCode,
+        // Country the search resolved to. Carried so a postal-code-only lookup
+        // later (competitor analysis) does not read a non-US postcode as a ZIP.
+        countryCode: loc.countryCode || undefined,
         phone: place.tel ? formatPhone(place.tel, loc.countryCode) : '',
         website: place.website ?? '',
         rating,

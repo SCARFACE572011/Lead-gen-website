@@ -40,6 +40,10 @@ export function CompetitorsPanel({ lead }: { lead: Lead }) {
               latitude: lead.latitude,
               longitude: lead.longitude,
               zipCode: lead.zipCode || lead.sourceZip,
+              // Without the country a 5-digit postal code is read as a US ZIP, so
+              // a Berlin lead with no coordinates resolved to a US location and
+              // came back with competitors from the wrong continent.
+              countryCode: lead.countryCode,
               website: lead.website,
               rating: lead.rating,
               reviewCount: lead.reviewCount,

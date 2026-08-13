@@ -573,6 +573,10 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
         city,
         state,
         zipCode,
+        // Country the search resolved to (same value that feeds regionCode above).
+        // Carried on the lead so a later postal-code-only lookup — competitor
+        // analysis — does not read "10117" as a US ZIP.
+        countryCode: loc.countryCode || undefined,
         phone,
         website: place.websiteUri ?? '',
         rating: place.rating ?? null,

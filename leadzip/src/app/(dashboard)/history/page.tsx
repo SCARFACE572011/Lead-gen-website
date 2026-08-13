@@ -11,6 +11,7 @@ import {
   SearchX,
 } from 'lucide-react'
 import { SearchHistory } from '@/types/lead'
+import { COUNTRIES } from '@/lib/countries'
 
 interface SearchHistoryRow {
   id: string
@@ -21,18 +22,92 @@ interface SearchHistoryRow {
   keyword: string | null
   result_count: number | null
   created_at: string
+  /** Feature-detected: search_history has no country/km columns today, but the
+   *  API selects '*', so prefer them the moment they exist. */
+  country_code?: string | null
+  radius_km?: number | null
+}
+
+const ZIP_RE = /^\d{5}(-\d{4})?$/
+
+/** A worldwide search stores its location text ("Berlin, Germany") in the same
+ *  column a ZIP search stores "30301" in, so shape is the only signal. */
+function isInternational(locationText: string): boolean {
+  return !ZIP_RE.test(locationText.trim())
+}
+
+// Radius options offered in international (km) mode, and the snap used to undo
+// the km -> integer-miles storage conversion (10 km is stored as 6 mi).
+// Mirrors the same constants on the search page.
+const KM_OPTIONS = [1, 5, 10, 25, 50]
+function snapKm(km: number): number {
+  return KM_OPTIONS.reduce(
+    (best, opt) => (Math.abs(opt - km) < Math.abs(best - km) ? opt : best),
+    KM_OPTIONS[0]
+  )
+}
+
+// Common shorthand the country dropdown also accepts, so "London, UK" resolves.
+const COUNTRY_NAME_ALIASES: Record<string, string> = {
+  uk: 'GB',
+  'united kingdom': 'GB',
+  britain: 'GB',
+  'great britain': 'GB',
+  england: 'GB',
+  scotland: 'GB',
+  wales: 'GB',
+  usa: 'US',
+  'united states': 'US',
+  america: 'US',
+  uae: 'AE',
+  emirates: 'AE',
+  holland: 'NL',
+  'south korea': 'KR',
+  'czech republic': 'CZ',
+}
+
+/**
+ * Best-effort ISO country for a stored location string.
+ *
+ * search_history has no country column (the search route writes only the
+ * location text), so the trailing segment of the text is the only signal left:
+ * "Berlin, Germany" -> DE. Matching is EXACT on a full country name or a known
+ * alias — never on a bare two-letter tail, because "Cambridge, MA" would
+ * otherwise resolve to Morocco and "Denver, CO" to Colombia.
+ *
+ * Returns undefined when nothing matches, in which case the rerun link omits the
+ * country exactly as it did before. Closing the remaining gap ("Paris" saved
+ * with FR selected) needs a country_code column on search_history plus a writer
+ * for it in the search route.
+ */
+function inferCountryCode(locationText: string): string | undefined {
+  const parts = locationText.split(',')
+  if (parts.length < 2) return undefined
+  const tail = parts[parts.length - 1].trim().toLowerCase()
+  if (tail.length < 3) return COUNTRY_NAME_ALIASES[tail]
+  return (
+    COUNTRY_NAME_ALIASES[tail] ??
+    COUNTRIES.find((c) => c.name.toLowerCase() === tail)?.code
+  )
 }
 
 function mapRow(h: SearchHistoryRow): SearchHistory {
+  const zipCode = h.zip_code
+  const radius = h.radius ?? 25
+  const intl = isInternational(zipCode)
+  const storedKm = typeof h.radius_km === 'number' && h.radius_km > 0 ? h.radius_km : undefined
+  const storedCountry = (h.country_code ?? '').trim().toUpperCase() || undefined
   return {
     id: h.id,
     userId: h.user_id,
-    zipCode: h.zip_code,
-    radius: h.radius ?? 25,
+    zipCode,
+    radius,
     category: h.category ?? '',
     keyword: h.keyword ?? '',
     resultCount: h.result_count ?? 0,
     createdAt: h.created_at,
+    countryCode: intl ? storedCountry ?? inferCountryCode(zipCode) : undefined,
+    radiusKm: intl ? storedKm ?? snapKm(radius * 1.60934) : undefined,
   }
 }
 
@@ -78,11 +153,19 @@ export default function SearchHistoryPage() {
     loadHistory()
   }, [])
 
+  // The rerun URL has to reproduce the ORIGINAL search, country included: the
+  // cache key for a worldwide search is `intl:{cc}:{location}|{category}|{km}km`,
+  // so rerunning "Berlin, Germany" with no country builds `intl::berlin,germany...`
+  // instead — a guaranteed miss, a second billable fetch, and a duplicate pool
+  // nobody else can read. radiusKm goes along for the same reason: the stored
+  // radius is integer miles and km -> mi -> km is lossy for 1 km and 25 km.
   const handleRerun = (entry: SearchHistory) => {
     const params = new URLSearchParams({
       zip: entry.zipCode,
       radius: String(entry.radius),
       category: entry.category,
+      ...(entry.countryCode ? { country: entry.countryCode } : {}),
+      ...(entry.radiusKm != null ? { radiusKm: String(entry.radiusKm) } : {}),
       ...(entry.keyword ? { keyword: entry.keyword } : {}),
     })
     router.push(`/search?${params.toString()}`)
@@ -154,7 +237,9 @@ export default function SearchHistoryPage() {
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-sand bg-paper-2">
-                    <th className="px-4 py-3 text-left readout font-semibold text-stone">ZIP Code</th>
+                    {/* Worldwide rows store a location like "Berlin, Germany" in
+                        the same column a ZIP search stores "30301" in. */}
+                    <th className="px-4 py-3 text-left readout font-semibold text-stone">Location</th>
                     <th className="px-4 py-3 text-left readout font-semibold text-stone">Category</th>
                     <th className="px-4 py-3 text-left readout font-semibold text-stone">Radius</th>
                     <th className="px-4 py-3 text-left readout font-semibold text-stone">Keyword</th>
@@ -181,8 +266,12 @@ export default function SearchHistoryPage() {
                         <span className="text-sm text-ink-soft">{entry.category}</span>
                       </td>
                       <td className="px-4 py-3.5">
+                        {/* Worldwide searches are run in km but stored in the
+                            integer-miles column, so showing the raw number reads
+                            as "6 mi" for a 10 km search. Show the km the user
+                            actually picked instead. */}
                         <span className="text-xs bg-paper-2 text-ink-soft px-2 py-1 rounded-md font-mono font-medium border border-sand">
-                          {entry.radius} mi
+                          {entry.radiusKm != null ? `${entry.radiusKm} km` : `${entry.radius} mi`}
                         </span>
                       </td>
                       <td className="px-4 py-3.5">

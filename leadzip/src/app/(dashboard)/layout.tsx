@@ -7,6 +7,7 @@ import {
   MapPin,
   LayoutDashboard,
   Search,
+  TrendingUp,
   Bookmark,
   Bell,
   Clock,
@@ -24,6 +25,7 @@ import { MOCK_PROFILE } from '@/lib/mock-auth'
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { label: 'Search Leads', href: '/search', icon: Search },
+  { label: 'Market Gaps', href: '/market-gaps', icon: TrendingUp },
   { label: 'Saved Searches', href: '/saved-searches', icon: Bell },
   { label: 'Saved Leads', href: '/saved', icon: Bookmark },
   { label: 'Search History', href: '/history', icon: Clock },

@@ -9,10 +9,19 @@ interface SaveSearchModalProps {
   isOpen: boolean
   onClose: () => void
   defaultName: string
+  /** US ZIP, or the location text of a worldwide search ("Berlin, Germany"). */
   zip: string
+  /** Radius in MILES — the legacy column the alert digest falls back to. */
   radius: number
   category: string
   keyword?: string
+  /** ISO 3166-1 alpha-2 of a worldwide search. Without it a saved "Cambridge"
+   *  re-geocodes to Cambridge, Massachusetts on the next alert run. */
+  countryCode?: string
+  /** Canonical radius in km for a worldwide search. Sent alongside `radius`
+   *  because km -> integer miles -> km is lossy for 1 km and 25 km, which would
+   *  otherwise re-key the saved search off the shared cache pool. */
+  radiusKm?: number
   savedCount: number
   isPaidUser: boolean
   onSaved: (search: SavedSearch) => void
@@ -26,6 +35,8 @@ export function SaveSearchModal({
   radius,
   category,
   keyword,
+  countryCode,
+  radiusKm,
   savedCount,
   isPaidUser,
   onSaved,
@@ -90,7 +101,18 @@ export function SaveSearchModal({
       const res = await fetch('/api/saved-searches', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), zip, radius, category, keyword }),
+        // countryCode / radiusKm are only sent for worldwide searches. The API
+        // drops them silently if the columns have not been migrated in yet, so
+        // saving keeps working either way.
+        body: JSON.stringify({
+          name: name.trim(),
+          zip,
+          radius,
+          category,
+          keyword,
+          ...(countryCode ? { countryCode } : {}),
+          ...(radiusKm != null ? { radiusKm } : {}),
+        }),
       })
       const data = await res.json() as { search?: SavedSearch; error?: string }
       if (!res.ok) {

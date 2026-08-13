@@ -9,6 +9,7 @@ import {
   ArrowRight,
   Zap,
   Shield,
+  Clock,
   CreditCard,
   Loader2,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import Navbar from "@/components/layout/Navbar";
 import { cn } from "@/lib/utils";
+import { track } from "@/lib/analytics";
 
 /* ─── Types ─── */
 type BillingCycle = "monthly" | "annual";
@@ -38,7 +40,12 @@ interface Plan {
   accentColor: string;
 }
 
-/* ─── Plan data ─── */
+/* ─── Plan data ───
+   Feature lists are derived from the shipped code, not from aspiration:
+   the only limits marked "not included" are the ones a route actually
+   enforces (free monthly search cap in /api/leads/search, the 25-row export
+   cap in /api/leads/export, and the alert-email block in
+   /api/saved-searches/[id]). Everything listed as included is live today. */
 const PLANS: Plan[] = [
   {
     name: "Free",
@@ -52,83 +59,98 @@ const PLANS: Plan[] = [
     features: [
       { label: "25 searches per month", included: true },
       { label: "25 saved leads", included: true },
-      { label: "Basic lead scoring (0-100)", included: true },
-      { label: "Lead details & contact info", included: true },
-      { label: "CSV export", included: false },
-      { label: "Search history", included: false },
-      { label: "Lead notes & status tracking", included: false },
-      { label: "Priority email support", included: false },
-      { label: "Advanced filters", included: false },
-      { label: "Team workspace", included: false, note: "Coming soon" },
+      { label: "Lead scoring and Digital Health Scores", included: true },
+      { label: "Every search filter and quick preset", included: true },
+      { label: "CSV export", included: true, note: "First 25 rows" },
+      { label: "Unlimited searches", included: false },
+      { label: "New-business alert emails", included: false },
     ],
   },
   {
     name: "Pro",
     monthlyPrice: 25,
     annualPrice: 20,
-    description: "For agencies and sales teams ready to grow their pipeline.",
+    description: "For the solo closer working a territory every day.",
     cta: "Start 7-day free trial",
     ctaHref: "/signup?plan=pro",
     popular: true,
     accentColor: "#FF4D23",
     features: [
-      { label: "Unlimited searches", included: true },
-      { label: "1,000 saved leads", included: true },
-      { label: "Advanced lead scoring", included: true },
-      { label: "Lead details & contact info", included: true },
-      { label: "CSV export", included: true },
-      { label: "Search history", included: true },
-      { label: "Lead notes & status tracking", included: true },
-      { label: "Priority email support", included: true },
-      { label: "Advanced filters", included: false },
-      { label: "Team workspace", included: false, note: "Coming soon" },
+      {
+        label: "Unlimited searches in any US ZIP or city worldwide",
+        included: true,
+      },
+      {
+        label: "Decision-maker email finder with confidence scoring",
+        included: true,
+      },
+      {
+        label:
+          "Full CSV, white-label PDF, and CRM push to HubSpot, Pipedrive or GoHighLevel",
+        included: true,
+      },
+      {
+        label: "Shareable audit reports built on Digital Health Scores",
+        included: true,
+      },
+      {
+        label:
+          "Outreach in 5 formats: cold email, proposal, WhatsApp, LinkedIn, call script",
+        included: true,
+      },
+      {
+        label: "Map view, pipeline board, and Market Gap Finder",
+        included: true,
+      },
+      {
+        label: "1,000 saved leads, new-business alerts, priority email support",
+        included: true,
+      },
     ],
   },
   {
     name: "Agency",
     monthlyPrice: 50,
     annualPrice: 40,
-    description: "Built for scaling agencies with high-volume lead needs.",
+    description: "Built for teams working several territories at once.",
     cta: "Start 7-day free trial",
     ctaHref: "/signup?plan=agency",
     popular: false,
     accentColor: "#0C2B24",
     features: [
-      { label: "Unlimited searches", included: true },
+      { label: "Everything in Pro", included: true },
       { label: "Unlimited saved leads", included: true },
-      { label: "Advanced lead scoring", included: true },
-      { label: "Lead details & contact info", included: true },
-      { label: "CSV export", included: true },
-      { label: "Search history", included: true },
-      { label: "Lead notes & status tracking", included: true },
-      { label: "Priority support + onboarding", included: true },
-      { label: "Advanced filters", included: true },
       {
-        label: "Team workspace",
+        label: "Team workspaces with email invites and shared access",
         included: true,
-        note: "Coming soon",
       },
+      { label: "Bulk search up to 25 ZIP codes at once", included: true },
+      { label: "Public API access at the highest daily quota", included: true },
+      { label: "Priority support and onboarding", included: true },
     ],
   },
 ];
 
-/* ─── Pricing FAQ ─── */
+/* ─── Pricing FAQ ───
+   Mirrored verbatim into the FAQPage JSON-LD in src/app/pricing/layout.tsx.
+   If you edit this copy, edit that list too or the rich result drifts from
+   the page. */
 const PRICING_FAQS = [
   {
     q: "Can I switch plans later?",
     a: "Yes. You can upgrade or downgrade your plan at any time. Changes take effect at the start of your next billing cycle.",
   },
   {
-    q: "Is there a free trial for paid plans?",
-    a: "Yes. Both Pro and Agency come with a 7-day free trial. A card is required at signup and checkout is handled securely by Stripe. Cancel anytime before day 7 and you will not be charged.",
+    q: "How does the 7-day free trial work?",
+    a: "Both Pro and Agency start with a 7-day free trial. A card is required at signup and checkout is handled securely by Stripe, but nothing is charged during the trial. Cancel anytime before day 7 and you pay nothing.",
+  },
+  {
+    q: "What if I only decide it is not for me after I have been charged?",
+    a: "That is what the money-back guarantee covers. The trial protects you before your first payment, and the guarantee protects you after it. If you are not satisfied within 14 days of that first charge, email us and we refund it in full, no questions asked.",
   },
   {
     q: "What payment methods do you accept?",
-    a: "We accept all major credit and debit cards via Stripe. ACH transfers are available for Agency annual plans.",
-  },
-  {
-    q: "Do you offer refunds?",
-    a: "If you're not satisfied within the first 14 days of a paid plan, contact us and we'll issue a full refund, no questions asked.",
+    a: "All major credit and debit cards, processed by Stripe. Checkout is card only.",
   },
 ];
 
@@ -393,6 +415,8 @@ export default function PricingPage() {
       const promo =
         typeof window !== "undefined" &&
         window.localStorage.getItem("leadzipp_promo15") === "1"
+      // Fired before the redirect so the push lands while the page is alive.
+      track("checkout_started", { plan, billing: billingCycle, promo })
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -485,8 +509,39 @@ export default function PricingPage() {
             ))}
           </div>
 
+          {/* Two safety nets, in the order you meet them. The trial is the
+              before-you-pay one, the guarantee is the after-you-pay one, so
+              they read as a sequence instead of two competing offers. */}
+          <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-2">
+            <div className="rounded-2xl border border-sand bg-white p-5 shadow-card">
+              <p className="readout mb-2 flex items-center gap-1.5 text-signal">
+                <Clock className="h-3 w-3" />
+                Before you pay
+              </p>
+              <p className="text-sm font-semibold text-ink">7-day free trial</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                Pro and Agency open with 7 days of full access. We take your
+                card at signup and charge nothing until day 7. Cancel before
+                then and you pay nothing at all.
+              </p>
+            </div>
+            <div className="rounded-2xl border border-sand bg-white p-5 shadow-card">
+              <p className="readout mb-2 flex items-center gap-1.5 text-signal">
+                <Shield className="h-3 w-3" />
+                After you pay
+              </p>
+              <p className="text-sm font-semibold text-ink">
+                14-day money-back guarantee
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
+                Once the trial ends and the first charge lands, you still have
+                14 days to change your mind. Email us and we refund it in full.
+              </p>
+            </div>
+          </div>
+
           {/* Stripe powered note */}
-          <div className="mx-auto mt-8 flex max-w-xl items-center justify-center gap-2 rounded-2xl border border-sand bg-white px-6 py-4 shadow-card">
+          <div className="mx-auto mt-4 flex max-w-xl items-center justify-center gap-2 rounded-2xl border border-sand bg-white px-6 py-4 shadow-card">
             <CreditCard className="h-4 w-4 shrink-0 text-signal" />
             <p className="text-sm text-ink-soft">
               <span className="font-semibold text-ink">
@@ -512,7 +567,7 @@ export default function PricingPage() {
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-signal" />
-              <span>14-day money-back guarantee</span>
+              <span>14-day refund after your first charge</span>
             </div>
             <div className="flex items-center gap-2">
               <Check className="h-4 w-4 text-signal" />

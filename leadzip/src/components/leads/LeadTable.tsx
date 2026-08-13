@@ -77,7 +77,10 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
 
   const showZipColumn = leads.some((l) => Boolean(l.sourceZip))
 
-  type EmailState = 'idle' | 'loading' | 'found' | 'not_found'
+  // 'upgrade' is distinct from 'not_found' on purpose: the email finder is a Pro
+  // feature, and showing a free user the "no email" dash would read as "this
+  // business has none" rather than "this plan does not include the lookup".
+  type EmailState = 'idle' | 'loading' | 'found' | 'not_found' | 'upgrade'
   const [emailStates, setEmailStates] = useState<Record<string, EmailState>>({})
   const [emailData, setEmailData] = useState<Record<string, { email: string; confidence: 'verified' | 'likely' | 'guessed' }>>({})
 
@@ -94,6 +97,8 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
       if (res.ok && data.email) {
         setEmailData((prev) => ({ ...prev, [lead.id]: { email: data.email, confidence: data.confidence } }))
         setEmailStates((prev) => ({ ...prev, [lead.id]: 'found' }))
+      } else if (res.status === 403 && data.upgradeRequired) {
+        setEmailStates((prev) => ({ ...prev, [lead.id]: 'upgrade' }))
       } else {
         setEmailStates((prev) => ({ ...prev, [lead.id]: 'not_found' }))
       }
@@ -297,6 +302,13 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
                         {emailData[lead.id]?.confidence}
                       </span>
                     </span>
+                  ) : emailStates[lead.id] === 'upgrade' ? (
+                    <a
+                      href="/pricing"
+                      className="text-xs font-medium text-signal hover:text-signal-600 transition-colors"
+                    >
+                      Pro feature
+                    </a>
                   ) : emailStates[lead.id] === 'not_found' ? (
                     <span className="text-stone text-xs">—</span>
                   ) : (

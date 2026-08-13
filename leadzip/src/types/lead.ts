@@ -6,6 +6,14 @@ export interface Lead {
   city: string
   state: string
   zipCode: string
+  /** ISO 3166-1 alpha-2 (uppercase) of the country this lead was found in, when
+   *  the provider resolved one. Optional and additive: US ZIP searches and leads
+   *  reloaded from the saved-leads table (no country column there) simply omit
+   *  it, and every consumer treats a missing value as US intent — so the legacy
+   *  path is unchanged. It exists so a lookup that only has a postal code, i.e.
+   *  competitor analysis, does not read a 5-digit German postcode as a US ZIP
+   *  and return competitors from the wrong continent. */
+  countryCode?: string
   phone: string
   website: string
   rating: number | null
@@ -106,12 +114,20 @@ export interface SearchResult {
 export interface SearchHistory {
   id: string
   userId: string
+  /** US ZIP, or the location text of a worldwide search ("Berlin, Germany") —
+   *  search_history keeps both in the same text column. */
   zipCode: string
+  /** Always integer MILES, as stored. Worldwide rows are shown in km instead. */
   radius: number
   category: string
   keyword: string
   resultCount: number
   createdAt: string
+  /** ISO 3166-1 alpha-2, when known. search_history has no country column today,
+   *  so this is only ever populated by inference from the location text. */
+  countryCode?: string
+  /** Radius in km for a worldwide row, when known. */
+  radiusKm?: number
 }
 
 export interface DashboardStats {

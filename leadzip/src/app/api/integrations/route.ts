@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 import { validateHubSpotKey } from '@/lib/crm/hubspot'
 import { validateGoHighLevelKey } from '@/lib/crm/gohighlevel'
 import { validatePipedriveKey } from '@/lib/crm/pipedrive'
@@ -14,15 +15,17 @@ function serviceClient() {
   )
 }
 
+// The session client verifies WHO is calling and that the account is still
+// active; the service client above then acts on their own rows only.
 async function getAuthedUser() {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+  return requireActiveUser(supabase)
 }
 
 export async function GET() {
-  const user = await getAuthedUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthedUser()
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const { data, error } = await serviceClient()
     .from('crm_integrations')
@@ -35,8 +38,11 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getAuthedUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Validating a key makes an outbound call to the CRM, so a deactivated
+  // session must not reach it.
+  const auth = await getAuthedUser()
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const body = await request.json().catch(() => ({}))
   const crm_type = body.crm_type as CrmType

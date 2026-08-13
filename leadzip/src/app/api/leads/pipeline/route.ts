@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PIPELINE_STAGES, type PipelineStage } from '@/types/lead'
 import { pipelineLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -38,13 +39,9 @@ export async function PATCH(request: NextRequest) {
 
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const auth = await requireActiveUser(supabase)
+    if (!auth.ok) return auth.response
+    const { user } = auth
 
     try {
       const { success, retryAfter } = await checkRateLimit(pipelineLimiter, user.id)

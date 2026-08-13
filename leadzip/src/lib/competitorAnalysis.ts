@@ -143,6 +143,14 @@ export async function findCompetitors(input: CompetitorInput): Promise<Competito
       ? input.category
       : input.category || 'local businesses'
 
+  // CLDR region hint, exactly as googlePlacesProvider derives it: only for a
+  // valid non-US code, so the US request stays byte-for-byte what it was. Most
+  // leads carry coordinates and skip the geocode above, so this is the only way
+  // the lead's country reaches the query at all — it biases result formatting
+  // and ranking to the lead's own market instead of a US-centric default.
+  const cc = (input.countryCode ?? '').trim().toUpperCase()
+  const regionCode = /^[A-Z]{2}$/.test(cc) && cc !== 'US' ? cc : undefined
+
   let places: GooglePlaceLite[] = []
   try {
     const res = await fetch(PLACES_SEARCH_TEXT_URL, {
@@ -158,6 +166,7 @@ export async function findCompetitors(input: CompetitorInput): Promise<Competito
         locationBias: {
           circle: { center: { latitude: lat, longitude: lon }, radius: DEFAULT_RADIUS_METERS },
         },
+        ...(regionCode ? { regionCode } : {}),
       }),
     })
     if (!res.ok) {

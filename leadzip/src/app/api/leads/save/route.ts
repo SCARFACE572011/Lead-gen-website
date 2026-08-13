@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import type { Lead } from '@/types/lead'
 import { saveLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -18,6 +19,10 @@ interface AuthedUser {
  * user, so the client could never tell a save had silently done nothing.
  * Now an unauthenticated or deactivated caller gets a real status code. The
  * client still keeps its localStorage copy, so a failure here is not data loss.
+ *
+ * The status re-check lives in `requireActiveUser`, shared with every other
+ * authenticated route; `extraBody` keeps this route's `{ success: false }`
+ * envelope, which the client already reads.
  */
 async function requireUser(): Promise<{ user: AuthedUser } | { response: NextResponse }> {
   if (!isSupabaseConfigured) {
@@ -32,30 +37,32 @@ async function requireUser(): Promise<{ user: AuthedUser } | { response: NextRes
 
   const { createClient } = await import('@/lib/supabase/server')
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
-    return {
-      response: NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 }),
-    }
-  }
+  const auth = await requireActiveUser(supabase, { extraBody: { success: false } })
+  if (!auth.ok) return { response: auth.response }
 
-  // Deactivated accounts keep a valid session until it expires, so writes
-  // re-check status instead of trusting middleware alone.
-  const { data: profile } = await supabase
-    .from('users_profile')
-    .select('status')
-    .eq('id', user.id)
-    .maybeSingle()
-  if (profile?.status === 'deactivated') {
-    return {
-      response: NextResponse.json(
-        { success: false, error: 'Account deactivated' },
-        { status: 403 }
-      ),
-    }
-  }
+  return { user: { id: auth.user.id, supabase } }
+}
 
-  return { user: { id: user.id, supabase } }
+/**
+ * Per-user write budget, shared by POST and DELETE (same table, same cost).
+ * `saveLimiter` degrades to an in-process window on a Redis outage rather than
+ * throwing, but the try/catch is here so a future policy change to 'deny' turns
+ * into a served request rather than an unhandled 500: these are cheap own-row
+ * writes and blocking a customer's save over an infra blip is the worse outcome.
+ */
+async function overSaveLimit(userId: string): Promise<NextResponse | null> {
+  try {
+    const { success, retryAfter } = await checkRateLimit(saveLimiter, userId)
+    if (!success) {
+      return NextResponse.json(
+        { success: false, error: 'Too many requests', retryAfter },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  } catch (err) {
+    console.warn('[leads/save] rate limiter unavailable, allowing this write', err)
+  }
+  return null
 }
 
 export async function POST(request: NextRequest) {
@@ -71,13 +78,8 @@ export async function POST(request: NextRequest) {
     if ('response' in auth) return auth.response
     const { id: userId, supabase } = auth.user
 
-    const { success, retryAfter } = await checkRateLimit(saveLimiter, userId)
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests', retryAfter },
-        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-      )
-    }
+    const limited = await overSaveLimit(userId)
+    if (limited) return limited
 
     const baseRow = {
       id: lead.id,
@@ -152,13 +154,8 @@ export async function DELETE(request: NextRequest) {
 
     // DELETE shares POST's limiter: it is the same per-user write budget on the
     // same table, and it used to have no limit at all.
-    const { success, retryAfter } = await checkRateLimit(saveLimiter, userId)
-    if (!success) {
-      return NextResponse.json(
-        { error: 'Too many requests', retryAfter },
-        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-      )
-    }
+    const limited = await overSaveLimit(userId)
+    if (limited) return limited
 
     const { error } = await supabase
       .from('leads')

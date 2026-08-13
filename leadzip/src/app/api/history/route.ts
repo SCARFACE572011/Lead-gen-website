@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
@@ -16,20 +17,20 @@ function serviceClient() {
   )
 }
 
+// The session client verifies WHO is calling and that the account is still
+// active; the service client above then does the work on their own rows only.
 async function getAuthedUser() {
   const supabase = await createServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  return user
+  return requireActiveUser(supabase)
 }
 
 // GET /api/history — the caller's search history, newest first.
 export async function GET() {
   if (!isSupabaseConfigured) return NextResponse.json({ history: [] })
 
-  const user = await getAuthedUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthedUser()
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const { data, error } = await serviceClient()
     .from('search_history')
@@ -50,8 +51,9 @@ export async function GET() {
 export async function DELETE(request: NextRequest) {
   if (!isSupabaseConfigured) return NextResponse.json({ ok: true })
 
-  const user = await getAuthedUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthedUser()
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const body = await request.json().catch(() => ({}))
   const id = typeof body?.id === 'string' ? body.id : null

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { DigitalHealthDetails } from '@/types/lead'
 import { enrichHealthLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 import { safeProbe } from '@/lib/safeFetch'
 
 const SIGNAL_POINTS: Record<keyof DigitalHealthDetails, number> = {
@@ -35,12 +36,11 @@ const MAX_REDIRECTS = 3
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Makes an outbound request to a user-supplied host, so a deactivated session
+  // must not reach it.
+  const auth = await requireActiveUser(supabase)
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   try {
     const { success, retryAfter } = await checkRateLimit(enrichHealthLimiter, user.id)

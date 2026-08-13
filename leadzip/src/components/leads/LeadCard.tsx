@@ -84,9 +84,13 @@ export function LeadCard({
   const [noteDraft, setNoteDraft] = useState(lead.notes ?? '')
   const hasWebsite = Boolean(lead.website && lead.website.trim() !== '')
 
-  type EmailState = 'idle' | 'loading' | 'found' | 'not_found'
+  // 'upgrade' is distinct from 'not_found' on purpose: the email finder is a Pro
+  // feature, and showing a free user "Not found" would read as "this business
+  // has no email" rather than "this plan does not include the lookup".
+  type EmailState = 'idle' | 'loading' | 'found' | 'not_found' | 'upgrade'
   const [emailState, setEmailState] = useState<EmailState>('idle')
   const [foundEmail, setFoundEmail] = useState<string>('')
+  const [emailUpgradeNote, setEmailUpgradeNote] = useState<string>('')
   const [emailConfidence, setEmailConfidence] = useState<'verified' | 'likely' | 'guessed'>('guessed')
 
   async function handleFindEmail() {
@@ -103,6 +107,9 @@ export function LeadCard({
         setFoundEmail(data.email)
         setEmailConfidence(data.confidence)
         setEmailState('found')
+      } else if (res.status === 403 && data.upgradeRequired) {
+        setEmailUpgradeNote(data.error || 'The email finder is part of Pro.')
+        setEmailState('upgrade')
       } else {
         setEmailState('not_found')
       }
@@ -344,8 +351,15 @@ export function LeadCard({
               <button
                 onClick={handleFindEmail}
                 disabled={emailState === 'loading'}
+                title={emailState === 'upgrade' ? emailUpgradeNote : undefined}
                 className="flex items-center justify-center rounded-full bg-paper-2 p-2.5 text-ink-soft hover:bg-sand transition-colors min-h-[44px] min-w-[44px] disabled:opacity-60"
-                aria-label={emailState === 'not_found' ? 'Email not found' : 'Find email'}
+                aria-label={
+                  emailState === 'upgrade'
+                    ? emailUpgradeNote
+                    : emailState === 'not_found'
+                      ? 'Email not found'
+                      : 'Find email'
+                }
               >
                 {emailState === 'loading'
                   ? <Loader2 className="h-4 w-4 animate-spin" />
@@ -648,6 +662,15 @@ export function LeadCard({
               <span className="text-xs text-stone">Not found</span>
             )}
 
+            {emailState === 'upgrade' && (
+              <a
+                href="/pricing"
+                className="text-xs font-medium text-signal hover:text-signal-600 transition-colors"
+              >
+                {emailUpgradeNote}
+              </a>
+            )}
+
             {healthState === 'idle' && (
               <button
                 onClick={handleCheckHealth}
@@ -712,6 +735,13 @@ export function LeadCard({
               {/* Website screenshot */}
               {hasWebsite && (
                 <div className="rounded-lg overflow-hidden border border-sand bg-paper-2 h-28 relative">
+                  {/* Deliberately a plain img, not next/image. The source is a
+                      third-party screenshot service rendering an arbitrary
+                      prospect URL, so the remote host is unbounded and cannot be
+                      declared in remotePatterns, and routing it through the Next
+                      optimizer would bill us for images we neither control nor
+                      cache. Lazy-loaded, and hidden on error. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={`https://api.microlink.io/?url=${encodeURIComponent(lead.website)}&screenshot=true&embed=screenshot.url&type=jpeg&meta=false`}
                     alt={`${lead.businessName} website`}

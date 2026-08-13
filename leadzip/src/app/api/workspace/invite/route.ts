@@ -3,6 +3,7 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import { SITE_URL } from '@/lib/siteUrl'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const siteUrl = SITE_URL
 
@@ -28,8 +29,11 @@ function mailer() {
 
 export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Sends mail from our domain to an address the caller chooses, so a
+  // deactivated session must not reach it.
+  const auth = await requireActiveUser(supabase)
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const body = await request.json().catch(() => ({}))
   const email = (body.email as string)?.trim().toLowerCase()
@@ -139,8 +143,9 @@ export async function POST(request: NextRequest) {
 // DELETE — cancel a pending invitation
 export async function DELETE(request: NextRequest) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await requireActiveUser(supabase)
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const body = await request.json().catch(() => ({}))
   const inviteId = body.id as string

@@ -6,6 +6,7 @@ import {
   type ProposalOutput,
 } from '@/lib/proposalTemplates'
 import { proposalLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -124,23 +125,11 @@ export async function POST(request: NextRequest) {
 
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
     // Deactivated accounts keep a valid session until it expires, so the paid
-    // path re-checks status instead of trusting middleware alone.
-    const { data: profile } = await supabase
-      .from('users_profile')
-      .select('status')
-      .eq('id', user.id)
-      .maybeSingle()
-    if (profile?.status === 'deactivated') {
-      return NextResponse.json({ error: 'Account deactivated' }, { status: 403 })
-    }
+    // path re-checks status instead of trusting the proxy alone.
+    const auth = await requireActiveUser(supabase)
+    if (!auth.ok) return auth.response
+    const { user } = auth
 
     const body = (await request.json()) as { lead?: Partial<ProposalLeadInput> }
     const raw = body.lead

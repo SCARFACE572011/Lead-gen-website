@@ -17,6 +17,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { track, bucketResultCount } from '@/lib/analytics'
 import { Lead, SearchParams, SearchHistory } from '@/types/lead'
 import { exportToCSV, exportToHubSpot, exportToSalesforce } from '@/lib/export'
 import { SearchFilters } from '@/components/leads/SearchFilters'
@@ -214,7 +215,9 @@ function SearchPageInner() {
   const [lastSearchParams, setLastSearchParams] = useState<SearchParams | null>(null)
   const [saveModalOpen, setSaveModalOpen] = useState(false)
   const [savedSearchCount, setSavedSearchCount] = useState(0)
-  const [savedSearches, setSavedSearches] = useState<SavedSearch[]>([])
+  // Only the setter is used: the list itself is never rendered here, it is
+  // kept so the saved-search count and modal stay in sync after a save.
+  const [, setSavedSearches] = useState<SavedSearch[]>([])
   const [healthCheckProgress, setHealthCheckProgress] = useState<{ done: number; total: number } | null>(null)
   const healthCheckAbortRef = useRef(false)
   const [dataSource, setDataSource] = useState<string | null>(null)
@@ -344,6 +347,14 @@ function SearchPageInner() {
       setSourceBannerDismissed(false)
       setLocationLabel(result.locationLabel ?? params.location ?? null)
 
+      // Activation signal. Deliberately carries no ZIP, no location, no
+      // category and no keyword: only whether the shared cache served it and
+      // how many leads came back, bucketed.
+      track('search_run', {
+        from_cache: result.fromCache ?? false,
+        result_bucket: bucketResultCount(enrichedLeads.length),
+      })
+
       // Save to search history in localStorage
       try {
         const entry: SearchHistory = {
@@ -440,6 +451,13 @@ function SearchPageInner() {
       const enrichedBulk = computeCompetitorDensity(filtered)
       setLeads(enrichedBulk)
       setTotalFound(enrichedBulk.length)
+
+      // One event for the whole bulk run. from_cache is null because a bulk run
+      // merges several responses that can individually hit or miss the cache.
+      track('search_run', {
+        from_cache: null,
+        result_bucket: bucketResultCount(enrichedBulk.length),
+      })
 
       try {
         const raw = localStorage.getItem(HISTORY_KEY)
@@ -1045,6 +1063,12 @@ function SearchPageInner() {
           }
           category={lastSearchParams.category ?? ''}
           keyword={lastSearchParams.keyword}
+          /* Worldwide only (both undefined on the US ZIP path). The country stops
+             a saved "Cambridge" re-geocoding to Massachusetts on the nightly alert
+             run, and the km radius avoids the lossy miles round-trip that re-keys
+             1 km and 25 km off the shared cache pool. */
+          countryCode={lastSearchParams.countryCode}
+          radiusKm={lastSearchParams.radiusKm}
           savedCount={savedSearchCount}
           isPaidUser={userPlan !== 'free'}
           onSaved={(search) => {

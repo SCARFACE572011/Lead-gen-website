@@ -24,26 +24,30 @@ const siteUrl = SITE_URL
  * and shared nothing back. Mirroring the search route's own mode detection puts
  * international rows on the "intl:" key instead.
  *
- * countryCode is feature-detected: saved_searches may or may not have the
- * country_code column yet, and this reads whichever is true (the row comes from a
- * `select('*')`, so a missing column is simply absent).
+ * country_code and radius_km are FEATURE-DETECTED: saved_searches may or may not
+ * have those columns yet (20260812_saved_search_country.sql is applied by hand),
+ * and the row comes from a `select('*')`, so a missing column is simply absent.
+ * When they are absent this behaves exactly as it did before they existed.
  */
 function paramsForSavedSearch(row: Record<string, unknown>): SearchParams {
   const locationText = ((row.zip as string | null) ?? '').trim()
   const countryCode = ((row.country_code as string | null | undefined) ?? '').trim().toUpperCase()
   const usIntent = countryCode === '' || countryCode === 'US'
-  // Radius is an integer-MILES column, so the international branch has to convert
-  // back to km. The shared builder does that exactly as the search route does when
-  // no radiusKm is present (round(miles * 1.60934)), so a 6-mile row keys as 10km.
-  // KNOWN LIMITATION: the km -> integer-miles -> km round-trip is lossy for two of
-  // the five radius options the UI offers. 5/10/50 km land back on themselves, but
-  // 1 km saves as 1 mi and keys as 2km, and 25 km saves as 16 mi and keys as 26km.
-  // Those two still miss the interactive pool (they at least share with each other
-  // run to run). A radius_km column on saved_searches would close the gap.
   const radiusMiles = (row.radius as number | null) ?? 25
+  // radius_km is the canonical radius for a worldwide row, because the legacy
+  // `radius` column is integer MILES and km -> miles -> km is LOSSY for two of the
+  // five radius options the UI offers: 1 km saves as 1 mi and re-keys as 2km,
+  // 25 km saves as 16 mi and re-keys as 26km (5/10/50 km land back on themselves).
+  // Those two therefore keyed off the interactive cache pool entirely and re-billed
+  // the provider every night. Rows saved before the migration have no radius_km, so
+  // they keep the old converted-miles behavior rather than changing key mid-life.
+  const rawKm = row.radius_km as number | null | undefined
+  const radiusKm = typeof rawKm === 'number' && rawKm > 0 ? Math.round(rawKm) : undefined
   const keyword = (row.keyword as string | null) ?? undefined
   const category = (row.category as string | null) ?? ''
 
+  // US ZIP fast path — byte-for-byte the legacy params (no radiusKm, no country),
+  // so the legacy cache key `{zip}|{category}|{miles}` is reproduced exactly.
   if (usIntent && isUsZip(locationText)) {
     return { zipCode: locationText, radiusMiles, category, keyword }
   }
@@ -52,6 +56,7 @@ function paramsForSavedSearch(row: Record<string, unknown>): SearchParams {
     location: locationText,
     countryCode: countryCode || undefined,
     radiusMiles,
+    radiusKm,
     category,
     keyword,
   }
@@ -173,15 +178,17 @@ export async function GET(request: NextRequest) {
 
         const firstName = profile.full_name?.split(' ')[0] ?? 'there'
         const n = newLeads.length
-        // The /search page accepts an international location string in ?zip and a
-        // ?country hint, so pass the country through when the row carries one —
-        // otherwise the rerun link resolves to a different place than the alert.
+        // The /search page accepts an international location string in ?zip plus
+        // ?country and ?radiusKm hints, so pass both through when the row carries
+        // them — otherwise the rerun link resolves to a different place (or a
+        // different radius, and so a different cache pool) than the alert itself.
         const searchUrl = [
           `${siteUrl}/search`,
           `?zip=${encodeURIComponent(row.zip as string)}`,
           `&radius=${row.radius}`,
           `&category=${encodeURIComponent(row.category as string)}`,
           params.countryCode ? `&country=${encodeURIComponent(params.countryCode)}` : '',
+          params.radiusKm != null ? `&radiusKm=${params.radiusKm}` : '',
           row.keyword ? `&keyword=${encodeURIComponent(row.keyword as string)}` : '',
         ].join('')
 

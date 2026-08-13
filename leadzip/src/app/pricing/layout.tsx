@@ -5,7 +5,7 @@ import { SITE_URL } from "@/components/seo/site";
 
 const TITLE = "Pricing: Local Lead Generation Plans from $0";
 const DESCRIPTION =
-  "Simple plans that scale with you. Start free with 25 searches a month, then upgrade to Pro ($25/mo) or Agency ($50/mo) for unlimited searches, email finder, and exports. 7-day free trial on paid plans.";
+  "Simple plans that scale with you. Start free with 25 searches a month, then upgrade to Pro ($25/mo) or Agency ($50/mo) for unlimited worldwide searches, the decision-maker email finder, CRM push, and shareable audit reports. 7-day free trial on paid plans.";
 const OG_IMAGE =
   "/og?title=Simple+plans+that+scale+with+you&subtitle=Start+free.+Upgrade+when+the+deals+roll+in.";
 
@@ -40,19 +40,19 @@ const PRICING_FAQ = [
       "Yes. You can upgrade or downgrade your plan at any time. Changes take effect at the start of your next billing cycle.",
   },
   {
-    question: "Is there a free trial for paid plans?",
+    question: "How does the 7-day free trial work?",
     answer:
-      "Yes. Both Pro and Agency come with a 7-day free trial. A card is required at signup and checkout is handled securely by Stripe. Cancel anytime before day 7 and you will not be charged.",
+      "Both Pro and Agency start with a 7-day free trial. A card is required at signup and checkout is handled securely by Stripe, but nothing is charged during the trial. Cancel anytime before day 7 and you pay nothing.",
+  },
+  {
+    question: "What if I only decide it is not for me after I have been charged?",
+    answer:
+      "That is what the money-back guarantee covers. The trial protects you before your first payment, and the guarantee protects you after it. If you are not satisfied within 14 days of that first charge, email us and we refund it in full, no questions asked.",
   },
   {
     question: "What payment methods do you accept?",
     answer:
-      "We accept all major credit and debit cards via Stripe. ACH transfers are available for Agency annual plans.",
-  },
-  {
-    question: "Do you offer refunds?",
-    answer:
-      "If you're not satisfied within the first 14 days of a paid plan, contact us and we'll issue a full refund, no questions asked.",
+      "All major credit and debit cards, processed by Stripe. Checkout is card only.",
   },
 ];
 

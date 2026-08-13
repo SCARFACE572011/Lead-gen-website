@@ -29,13 +29,13 @@ const STEPS = [
   },
   {
     n: '03', icon: Send, title: 'Reach out first',
-    body: 'Find the owner’s email, tap to call, and export straight to your CRM. You’re talking to them before competitors even know they exist.',
+    body: 'Find the decision-maker’s email, tap to call, and export straight to your CRM. You’re talking to them before competitors even know they exist.',
   },
 ]
 
 const FEATURES = [
   { icon: Database, title: 'Real businesses, not scraped junk', body: 'Live data from Google Places & Yelp, with verified names, addresses, phones, and websites. Every lead is a business you can actually call today.' },
-  { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top, because those are the businesses most likely to say yes to you.' },
+  { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top. Every lead also carries a Digital Health Score you can turn into a shareable audit report and send straight to the owner.' },
   { icon: Mail, title: 'Decision-maker email finder', body: 'One tap surfaces the best contact email for any business with a domain, with a confidence badge so you know what you’re working with.' },
   { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Pipedrive & GoHighLevel. Your pipeline, your format. No copy-paste.' },
   { icon: MapIcon, title: 'Own the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Claim a zip and get emailed when new businesses open in your area, so you reach them first, before competitors even know they exist.' },
@@ -50,16 +50,18 @@ const SHOWCASE = [
 ]
 
 const STATS = [
-  { v: '43', l: 'industries covered' },
+  { v: '42', l: 'industries covered' },
   { v: '41k+', l: 'US ZIP codes' },
   { v: 'Live', l: 'Google & Yelp data' },
   { v: '<10s', l: 'to a full lead list' },
 ]
 
+// Feature lines mirror the shipped code and the full pricing page. Anything
+// listed here is live today, not planned.
 const PLANS = [
-  { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'Basic lead scoring'], cta: 'Start free', href: '/signup', highlight: false },
-  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'CSV, PDF & CRM export', 'Map view'], cta: 'Start 7-day free trial', href: '/signup?plan=pro', highlight: true },
-  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces (coming soon)', 'White-label PDFs', 'Priority support'], cta: 'Start 7-day free trial', href: '/signup?plan=agency', highlight: false },
+  { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'Lead scoring + health scores', 'Every search filter'], cta: 'Start free', href: '/signup', highlight: false },
+  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches, any ZIP or city worldwide', 'Decision-maker email finder', 'CSV, white-label PDF & CRM push', 'Shareable audit reports + health scores', 'Outreach in 5 formats', 'Map view, pipeline board & Market Gap Finder'], cta: 'Start 7-day free trial', href: '/signup?plan=pro', highlight: true },
+  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Unlimited saved leads', 'Team workspaces with email invites', 'Bulk search 25 ZIPs at once', 'Priority support & onboarding'], cta: 'Start 7-day free trial', href: '/signup?plan=agency', highlight: false },
 ]
 
 const FAQS = [
@@ -67,7 +69,7 @@ const FAQS = [
   { q: 'What makes a lead “high-scoring”?', a: 'We rank each business by how likely it is to need your services. Signals like having no website, few reviews, or a low rating push a business up your list, because those are the owners most open to help.' },
   { q: 'Can I find email addresses?', a: 'Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).' },
   { q: 'How do exports work?', a: 'Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel. Email, phone, score, and every field come along.' },
-  { q: 'Do I need a credit card to start?', a: 'No. The Starter plan is free forever and includes 25 searches a month against real data. Upgrade to Pro only when you want unlimited searches and the email finder.' },
+  { q: 'Do I need a credit card to start?', a: 'No. The Starter plan is free forever and includes 25 searches a month against real data. Upgrade to Pro when you want unlimited searches, full exports, and email alerts when new businesses open in your patch. Pro and Agency start with a 7-day free trial, which does need a card and charges nothing if you cancel before day 7.' },
 ]
 
 export default function Home() {
@@ -152,8 +154,8 @@ export default function Home() {
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/75">
               Find and score every local business in any ZIP code or city worldwide, with real
-              phones, websites, and owner emails. Live Google &amp; Yelp data, not a scraped demo.
-              The businesses that need you most, first.
+              phones, websites, and decision-maker emails. Live Google &amp; Yelp data, not a
+              scraped demo. The businesses that need you most, first.
             </p>
             <div className="mt-8">
               <HeroSearchWidget />

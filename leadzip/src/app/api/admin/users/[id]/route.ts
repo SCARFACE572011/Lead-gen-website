@@ -82,6 +82,14 @@ export async function PATCH(
 
     if (profileUpdate.error) return NextResponse.json({ error: profileUpdate.error.message }, { status: 500 })
 
+    // The subscriptions row is a mirror of the plan, so a failure here leaves it
+    // drifting from users_profile (the source of truth for gating). Surface it in
+    // the logs rather than discarding it; the profile write already succeeded, so
+    // the admin action itself is not rolled back.
+    if (subUpdate.error) {
+      console.error('[admin/users] plan set on profile but subscriptions mirror failed', subUpdate.error)
+    }
+
     const { data: updated } = await db
       .from('users_profile')
       .select('id, email, plan, status')

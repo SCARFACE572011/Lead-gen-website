@@ -110,6 +110,9 @@ export async function searchLeadsTomTom(params: SearchParams): Promise<SearchRes
         city: r.address.municipality ?? '',
         state: r.address.countrySubdivision ?? '',
         zipCode: r.address.postalCode ?? params.zipCode,
+        // Country the search resolved to. Carried so a postal-code-only lookup
+        // later (competitor analysis) does not read a non-US postcode as a ZIP.
+        countryCode: loc.countryCode || undefined,
         phone: r.poi?.phone ?? '',
         website: r.poi?.url ?? '',
         rating: null,

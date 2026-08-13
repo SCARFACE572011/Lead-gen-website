@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { enrichEmailLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const HOSTNAME_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/
 
@@ -23,15 +24,42 @@ function parseDomain(raw: string): string | null {
   return host
 }
 
-export async function POST(request: Request) {
-  // 1. Auth check
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+/** Copy shown to a free user who taps Find Email. Also the string the lead
+ *  components match on, so keep the `upgradeRequired` flag alongside it. */
+const UPGRADE_MESSAGE =
+  'The email finder is part of Pro. Upgrade to look up decision-maker emails.'
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+export async function POST(request: Request) {
+  // 1. Auth + plan check — signed in, still active, and on a paid plan. ONE
+  //    users_profile round trip covers all three.
+  const supabase = await createClient()
+  const auth = await requireActiveUser(supabase, { columns: ['plan', 'role'] })
+  if (!auth.ok) return auth.response
+  const { user } = auth
+
+  // 1b. Plan fence. Every lookup below spends a Hunter.io credit from a small
+  //     monthly pool, and the email finder is sold as a Pro feature on the
+  //     pricing page, the landing page, the SEO pages and in the chat answers.
+  //     Free accounts were reaching it anyway, which both leaked credits and
+  //     contradicted our own advertising.
+  if (!auth.profile) {
+    // No profile row, or the read failed. Refuse rather than guess: guessing
+    // "paid" spends credits, guessing "free" shows a paying customer an upgrade
+    // wall. Neither is acceptable, so answer honestly and let them retry.
+    console.warn('[enrich/email] users_profile unavailable, refusing rather than spending a credit')
+    return NextResponse.json(
+      { error: 'Email lookup is temporarily unavailable. Please retry in a moment.' },
+      { status: 503, headers: { 'Retry-After': '30' } }
+    )
+  }
+
+  const plan = (auth.profile.plan as string | undefined) ?? 'free'
+  const role = (auth.profile.role as string | undefined) ?? 'user'
+  if (plan === 'free' && role !== 'admin') {
+    return NextResponse.json(
+      { error: UPGRADE_MESSAGE, upgradeRequired: true },
+      { status: 403 }
+    )
   }
 
   // 2. Rate limit

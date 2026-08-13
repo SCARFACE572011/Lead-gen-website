@@ -17,6 +17,7 @@ import {
 } from '@/lib/ratelimit'
 
 import { getClientIp } from '@/lib/clientIp'
+import { requireActiveUser, type RequireActiveUserResult } from '@/lib/requireActiveUser'
 
 // Cache key + TTL now live in src/lib/leadsCache.ts so every reader and writer of
 // leads_cache (this route, /api/v1/search, market-gaps, and both crons) agrees on
@@ -135,8 +136,15 @@ export async function POST(request: NextRequest) {
         const { createClient } = await import('@/lib/supabase/server')
         const supabase = await createClient()
 
-        const { data: { user: cacheUser } } = await supabase.auth.getUser()
-        if (!cacheUser) {
+        // A cache HIT returns leads and never reaches the gate further down, so
+        // the deactivated check has to happen HERE too. Without it a deactivated
+        // account could still pull the product out of every warm cache key.
+        const cacheAuth = await requireActiveUser(supabase)
+        if (!cacheAuth.ok && cacheAuth.reason === 'deactivated') {
+          return cacheAuth.response
+        }
+
+        if (!cacheAuth.ok) {
           const ip = getClientIp(request)
           try {
             const burst = await checkRateLimit(anonSearchBurstLimiter, ip)
@@ -177,10 +185,11 @@ export async function POST(request: NextRequest) {
 
           // Mark leads the current user already saved. This is a per-user
           // annotation, so it must be re-applied on every request rather than
-          // baked into the shared cached pool.
+          // baked into the shared cached pool. Reuses the session resolved above
+          // rather than asking the auth server a second time.
           try {
-            const { data: { user } } = await supabase.auth.getUser()
-            if (user) {
+            if (cacheAuth.ok) {
+              const { user } = cacheAuth
               const { data: savedLeads } = await supabase
                 .from('leads')
                 .select('business_name, zip_code')
@@ -229,18 +238,26 @@ export async function POST(request: NextRequest) {
     if (isSupabaseConfigured) {
       const { createClient } = await import('@/lib/supabase/server')
       let supabase: Awaited<ReturnType<typeof createClient>> | null = null
-      let user: { id: string } | null = null
+      let auth: RequireActiveUserResult | null = null
       try {
         supabase = await createClient()
-        const { data } = await supabase.auth.getUser()
-        user = data.user
+        // One round trip covers the deactivated check AND the plan/role this
+        // route already needed for its caps.
+        auth = await requireActiveUser(supabase, { columns: ['plan', 'role'] })
       } catch {
         // Couldn't establish a session — treat as anonymous (strictest gate).
         supabase = null
-        user = null
+        auth = null
       }
 
-      if (!user || !supabase) {
+      // A deactivated account must NOT fall through to the anonymous branch:
+      // that would hand it the logged-out daily allowance of billable searches.
+      // It is a hard 403. Genuinely logged-out callers are unaffected.
+      if (auth && !auth.ok && auth.reason === 'deactivated') {
+        return auth.response
+      }
+
+      if (!auth?.ok || !supabase) {
         // ── Anonymous caller: value-first signup gate + cost/abuse protection ──
         // Without this a logged-out client could hit the paid provider with NO
         // limit at all. FAIL CLOSED: if the limiter itself errors (e.g. an Upstash
@@ -273,28 +290,22 @@ export async function POST(request: NextRequest) {
         }
       } else {
         // ── Logged-in caller: per-plan caps ───────────────────────────────────
-        let plan = 'free'
-        let role = 'user'
+        const { user } = auth
+        // Defaults are the STRICTEST tier (free) so a profile-read outage can't
+        // silently unlock paid-tier behavior. Caps below still apply.
+        const plan = (auth.profile?.plan as string | undefined) ?? 'free'
+        const role = (auth.profile?.role as string | undefined) ?? 'user'
         let searchCount = 0
         try {
-          const [{ data: usage }, { data: profile }] = await Promise.all([
-            supabase
-              .from('usage_limits')
-              .select('searches_this_month')
-              .eq('user_id', user.id)
-              .maybeSingle(),
-            supabase
-              .from('users_profile')
-              .select('plan, role')
-              .eq('id', user.id)
-              .maybeSingle(),
-          ])
-          plan = profile?.plan ?? 'free'
-          role = profile?.role ?? 'user'
+          const { data: usage } = await supabase
+            .from('usage_limits')
+            .select('searches_this_month')
+            .eq('user_id', user.id)
+            .maybeSingle()
           searchCount = usage?.searches_this_month ?? 0
         } catch {
-          // Profile/usage read failed — default to the STRICTEST tier (free) so an
-          // outage can't silently unlock paid-tier behavior. Caps below still apply.
+          // Usage read failed — treat as 0 used; the rate limiter above and the
+          // daily fair-use cap below still bound the damage.
         }
 
         const FREE_LIMIT = 25

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { auditLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 import { computeHealthScore, probeWebsite, type HealthScoreInput } from '@/lib/healthScore'
 
 /**
@@ -28,32 +29,115 @@ interface LeadSnapshot {
   businessHours: string[] | null
 }
 
-function str(v: unknown, max = 300): string {
-  return typeof v === 'string' ? v.slice(0, max) : ''
+/**
+ * INPUT TRUST MODEL FOR THIS ROUTE
+ * --------------------------------
+ * The `lead` in the body is whatever the caller sent. There is no server-side
+ * row to check it against: the audit button on a lead card fires on SEARCH
+ * RESULTS, which the user has not saved and which may have come from a live
+ * provider call rather than a cached pool, so requiring a matching `leads` or
+ * `leads_cache` row would break the primary flow. See the notes on
+ * `sanitizeWebsite` for what IS constrained instead.
+ */
+
+/** C0 and C1 control characters. The snapshot is rendered on a public page and
+ *  stored as JSON, so NULs, newlines and terminal escapes have no place in it. */
+const CONTROL_CHARS_RE = /[\u0000-\u001F\u007F-\u009F]/g
+
+function clean(v: unknown, max: number): string {
+  if (typeof v !== 'string') return ''
+  return v.replace(CONTROL_CHARS_RE, ' ').trim().slice(0, max)
 }
 
-function num(v: unknown): number | null {
-  return typeof v === 'number' && Number.isFinite(v) ? v : null
+/** A business website is always a registrable public domain, never an IP or a
+ *  single-label host. Rejects a trailing all-numeric TLD, so "192.168.1.1"
+ *  cannot pass as a hostname. */
+const PUBLIC_HOSTNAME_RE =
+  /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,63}$/
+
+/** Hostnames that only ever resolve inside a network. safeProbe rejects these
+ *  too; refusing them here keeps them out of the stored snapshot as well. */
+const INTERNAL_SUFFIXES = ['.local', '.localhost', '.internal', '.intranet', '.home.arpa', '.test']
+
+const MAX_WEBSITE_LEN = 200
+
+/**
+ * The only field that turns into an outbound request, so it gets the tightest
+ * rules. `safeProbe` already blocks SSRF (DNS-resolved private-range rejection,
+ * socket pinning, per-redirect revalidation); this narrows the remaining
+ * "arbitrary outbound GET from our servers" primitive:
+ *
+ *   - http/https only, no embedded credentials, no explicit port
+ *   - registrable public hostname, no IP literals, no internal-only suffixes
+ *   - 200 characters max, in and out
+ *   - query string and fragment are DROPPED, so a caller cannot use this route
+ *     to fire parameterized GETs at a third party from our IP
+ *
+ * Returns '' for anything unusable rather than failing the request: directory
+ * data (OSM in particular) carries free-text website tags, and an unusable URL
+ * is a legitimate audit finding ("no working website"), not an error.
+ */
+function sanitizeWebsite(raw: unknown): string {
+  const input = clean(raw, MAX_WEBSITE_LEN)
+  if (!input) return ''
+
+  let url: URL
+  try {
+    url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`)
+  } catch {
+    return ''
+  }
+
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return ''
+  if (url.username || url.password) return ''
+  if (url.port) return ''
+
+  const host = url.hostname.toLowerCase()
+  if (host.length > 253 || !PUBLIC_HOSTNAME_RE.test(host)) return ''
+  if (INTERNAL_SUFFIXES.some((suffix) => host.endsWith(suffix))) return ''
+
+  const normalized = `${url.protocol}//${host}${url.pathname}`
+  return normalized.length > MAX_WEBSITE_LEN ? '' : normalized
+}
+
+/** Google ratings are 0-5. Anything else is not a rating. */
+function rating(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null
+  if (v < 0 || v > 5) return null
+  return Math.round(v * 10) / 10
+}
+
+function reviewCount(v: unknown): number | null {
+  if (typeof v !== 'number' || !Number.isFinite(v)) return null
+  if (v < 0 || v > 10_000_000) return null
+  return Math.floor(v)
 }
 
 function sanitizeLead(raw: Record<string, unknown>): LeadSnapshot | null {
-  const businessName = str(raw.businessName, 200).trim()
+  const businessName = clean(raw.businessName, 200)
   if (!businessName) return null
+
+  // Slice BEFORE filtering so a huge array is never walked end to end.
   const hours = Array.isArray(raw.businessHours)
-    ? raw.businessHours.filter((h): h is string => typeof h === 'string').slice(0, 7)
-    : null
+    ? raw.businessHours
+        .slice(0, 14)
+        .map((h) => clean(h, 120))
+        .filter((h) => h.length > 0)
+        .slice(0, 7)
+    : []
+
   return {
     businessName,
-    category: str(raw.category, 100),
-    address: str(raw.address),
-    city: str(raw.city, 100),
-    state: str(raw.state, 50),
-    zipCode: str(raw.zipCode, 10),
-    phone: str(raw.phone, 30),
-    website: str(raw.website, 500),
-    rating: num(raw.rating),
-    reviewCount: num(raw.reviewCount),
-    businessHours: hours && hours.length > 0 ? hours : null,
+    category: clean(raw.category, 100),
+    address: clean(raw.address, 200),
+    city: clean(raw.city, 100),
+    state: clean(raw.state, 50),
+    zipCode: clean(raw.zipCode, 12),
+    phone: clean(raw.phone, 30),
+    website: sanitizeWebsite(raw.website),
+    rating: rating(raw.rating),
+    reviewCount: reviewCount(raw.reviewCount),
+    businessHours: hours.length > 0 ? hours : null,
   }
 }
 
@@ -75,12 +159,11 @@ function isMissingTableError(error: { code?: string; message?: string }): boolea
 
 export async function POST(request: Request) {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  // Each audit is an outbound probe plus a public-page insert, so a deactivated
+  // session must not reach it.
+  const auth = await requireActiveUser(supabase)
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   try {
     const { success, retryAfter } = await checkRateLimit(auditLimiter, user.id)
@@ -108,7 +191,9 @@ export async function POST(request: Request) {
   }
 
   const body = raw as { lead?: Record<string, unknown> }
-  if (!body.lead || typeof body.lead !== 'object') {
+  // An array is `typeof 'object'` too, and would sail through the allowlist
+  // below producing an empty snapshot.
+  if (!body.lead || typeof body.lead !== 'object' || Array.isArray(body.lead)) {
     return NextResponse.json({ error: 'lead is required' }, { status: 400 })
   }
 

@@ -39,13 +39,17 @@ export async function requireAdmin(supabase: SupabaseClient): Promise<AdminResul
 
   const email = (user.email ?? '').trim().toLowerCase()
 
+  // `status` is read in the SAME query as `role`: an owner whose own account has
+  // been deactivated must lose admin access too. Deactivation revokes sessions,
+  // but a cookie already in flight stays valid until it expires and the proxy
+  // only re-checks status on pages, never on these API routes.
   const { data: profile } = await supabase
     .from('users_profile')
-    .select('role')
+    .select('role, status')
     .eq('id', user.id)
     .maybeSingle()
 
-  if (profile?.role !== 'admin' || !ADMIN_EMAILS.has(email)) {
+  if (profile?.role !== 'admin' || profile?.status === 'deactivated' || !ADMIN_EMAILS.has(email)) {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 

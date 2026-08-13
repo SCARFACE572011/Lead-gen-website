@@ -443,12 +443,6 @@ function fillTemplate(
     .replace('{Cat}', category ?? '')
 }
 
-function generateSlug(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '')
-    .slice(0, 28)
-}
 
 function generatePhone(areaCode: string, rand: () => number): string {
   const suffix = Math.floor(rand() * 9000) + 1000
@@ -492,14 +486,6 @@ function generateRevenueEstimate(employees: number): string {
   return '$50M+'
 }
 
-function generateSocialUrls(name: string, rand: () => number) {
-  const slug = generateSlug(name)
-  return {
-    facebookUrl: rand() < 0.60 ? `https://www.facebook.com/${slug}` : null,
-    instagramUrl: rand() < 0.40 ? `https://www.instagram.com/${slug}` : null,
-    linkedinUrl: rand() < 0.30 ? `https://www.linkedin.com/company/${slug}` : null,
-  }
-}
 
 function generateAddress(rand: () => number): string {
   const num = Math.floor(rand() * 9900) + 100

@@ -115,6 +115,9 @@ export async function searchLeadsHere(params: SearchParams): Promise<SearchResul
         city: place.address.city ?? '',
         state: place.address.state ?? '',
         zipCode: place.address.postalCode ?? params.zipCode,
+        // Country the search resolved to. Carried so a postal-code-only lookup
+        // later (competitor analysis) does not read a non-US postcode as a ZIP.
+        countryCode: loc.countryCode || undefined,
         phone,
         website,
         rating: place.rating ?? null,

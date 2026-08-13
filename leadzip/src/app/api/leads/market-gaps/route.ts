@@ -7,6 +7,7 @@ import { searchLeads } from '@/lib/providers/leadDataProvider'
 import type { Lead, SearchParams } from '@/types/lead'
 import { buildCacheKey as buildLeadsCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 import { marketGapsLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -97,7 +98,8 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Auth + per-user rate limit (this route can trigger up to 6 paid provider
-    //    calls, so it is signed-in only and fails CLOSED on limiter errors) ──────
+    //    calls, so it is signed-in only, blocks deactivated accounts, and fails
+    //    CLOSED on limiter errors) ───────────────────────────────────────────────
     let supabase: Awaited<
       ReturnType<(typeof import('@/lib/supabase/server'))['createClient']>
     > | null = null
@@ -105,13 +107,16 @@ export async function POST(request: NextRequest) {
     if (isSupabaseConfigured) {
       const { createClient } = await import('@/lib/supabase/server')
       supabase = await createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
 
-      if (!user) {
-        return NextResponse.json({ error: 'Sign in to analyze market gaps' }, { status: 401 })
+      const auth = await requireActiveUser(supabase)
+      if (!auth.ok) {
+        // Keep the signed-out copy this route already showed; a deactivated
+        // account gets the shared 403 instead.
+        return auth.reason === 'unauthenticated'
+          ? NextResponse.json({ error: 'Sign in to analyze market gaps' }, { status: 401 })
+          : auth.response
       }
+      const { user } = auth
 
       try {
         const { success, retryAfter } = await checkRateLimit(marketGapsLimiter, user.id)

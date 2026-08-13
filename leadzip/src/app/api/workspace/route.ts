@@ -1,21 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 function serviceClient() {
   return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
 }
 
-async function getAuthedUser() {
+// The session client verifies WHO is calling and that the account is still
+// active; the service client above then acts on their own workspace only.
+async function getAuthedUser(columns?: readonly string[]) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  return user
+  return requireActiveUser(supabase, columns ? { columns } : undefined)
 }
 
 // GET — return the workspace the current user belongs to (as owner or member)
 export async function GET() {
-  const user = await getAuthedUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthedUser()
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const db = serviceClient()
 
@@ -71,17 +74,14 @@ export async function GET() {
 
 // POST — create a workspace (agency plan only)
 export async function POST(request: NextRequest) {
-  const user = await getAuthedUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // One round trip covers the deactivated check and the agency-plan fence.
+  const auth = await getAuthedUser(['plan'])
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const db = serviceClient()
-  const { data: profile } = await db
-    .from('users_profile')
-    .select('plan')
-    .eq('id', user.id)
-    .single()
 
-  if (profile?.plan !== 'agency') {
+  if (auth.profile?.plan !== 'agency') {
     return NextResponse.json({ error: 'Agency plan required to create a workspace' }, { status: 403 })
   }
 
@@ -110,8 +110,9 @@ export async function POST(request: NextRequest) {
 
 // PATCH — rename workspace
 export async function PATCH(request: NextRequest) {
-  const user = await getAuthedUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const auth = await getAuthedUser()
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const body = await request.json().catch(() => ({}))
   const name = (body.name as string)?.trim()

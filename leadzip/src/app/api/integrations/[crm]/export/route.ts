@@ -5,6 +5,7 @@ import { exportToHubSpot } from '@/lib/crm/hubspot'
 import { exportToGoHighLevel } from '@/lib/crm/gohighlevel'
 import { exportToPipedrive } from '@/lib/crm/pipedrive'
 import type { CrmLead } from '@/lib/crm/types'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 function serviceClient() {
   return createClient(
@@ -19,8 +20,11 @@ export async function POST(
 ) {
   const { crm } = await params
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  // Pushes rows into a third-party CRM over the network, so a deactivated
+  // session must not reach it.
+  const auth = await requireActiveUser(supabase)
+  if (!auth.ok) return auth.response
+  const { user } = auth
 
   const body = await request.json().catch(() => ({}))
   const leads: CrmLead[] = body.leads ?? []

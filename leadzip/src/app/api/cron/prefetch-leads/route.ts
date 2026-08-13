@@ -1,11 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchLeadsCombined } from '@/lib/providers/combinedProvider'
 import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
+import { isUsZip } from '@/lib/geocode'
 import type { SearchParams } from '@/types/lead'
 
 // Vercel Cron: runs nightly at 3am UTC (see vercel.json)
 // Reads the 20 most-searched ZIP+category combos from search_history and pre-warms the cache.
 // Secure this route with CRON_SECRET env var.
+//
+// US ZIP ROWS ONLY — see the filter below for why international rows are skipped
+// rather than warmed.
 //
 // TTL: this cron used to write its own 24h expiry into rows every other module
 // treats as 12h. That did not just make rows outlive their intended freshness —
@@ -54,9 +58,41 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to read search history' }, { status: 500 })
   }
 
-  // Count frequency and dedupe
+  // Count frequency and dedupe.
+  //
+  // SKIP INTERNATIONAL ROWS. search_history stores a worldwide search's location
+  // text ("Berlin, Germany") in the same `zip_code` column and carries no country
+  // code, so this cron used to warm the LEGACY-shaped key "Berlin, Germany|Plumbers|25"
+  // for them. No interactive international search can ever read that key: those
+  // build `intl:{cc}:{location}|{category}|{km}km`. Every such row was a wasted
+  // billable Google Places call (up to 20 a night) writing a row nobody reads.
+  //
+  // Building the intl key instead is NOT safe from this table. The key needs the
+  // country code and the km radius, and search_history has neither: the country is
+  // unrecoverable for text like "Cambridge", and guessing it wrong is worse than
+  // not warming at all, because leads_cache is a SHARED pool — a "Cambridge"
+  // geocoded with no country bias lands in Massachusetts, and warming that under a
+  // UK key would serve wrong-continent leads to every later reader for the full
+  // 12h TTL. The radius is equally unknown (this cron hardcodes 25 miles, which is
+  // ~40 km, not one of the 1/5/10/25/50 km options the UI offers), so even a
+  // correct country would produce a key no interactive search asks for.
+  //
+  // Skipping is therefore both the correct and the cheaper choice. Warming
+  // international searches properly needs country_code + radius_km columns on
+  // search_history and a writer for them in the search route; until then this cron
+  // stays on the ZIP path it was written for. Skipped rows are reported as
+  // skippedNonZip so the gap stays visible in the cron logs.
+  //
+  // A 5-digit foreign postcode (Berlin's "10117") is indistinguishable from a US
+  // ZIP in this column and still takes the ZIP path, exactly as it did before —
+  // it warms a legitimate US ZIP key, so nothing is corrupted, just unhelpful.
   const freqMap = new Map<string, { zipCode: string; category: string; count: number }>()
+  let skippedNonZip = 0
   for (const row of topSearches) {
+    if (!isUsZip(String(row.zip_code ?? ''))) {
+      skippedNonZip++
+      continue
+    }
     const key = `${row.zip_code}|${row.category}`
     const existing = freqMap.get(key)
     if (existing) {
@@ -93,10 +129,8 @@ export async function GET(request: NextRequest) {
       }
 
       // Shared builder, so a warmed row is readable by the interactive search.
-      // NOTE: search_history stores international searches' location text in the
-      // same zip_code column and carries no country code, so an international row
-      // still warms a legacy-shaped key that the interactive intl key can never
-      // match. Fixing that needs a country column on search_history.
+      // Only US ZIPs reach here (see the filter above), so this is always the
+      // legacy `{zip}|{category}|{miles}` key shape.
       const cacheKey = buildCacheKey({ zipCode, category, radiusMiles: 25 })
       const { error: upsertError } = await supabase.from('leads_cache').upsert({
         cache_key: cacheKey,
@@ -119,5 +153,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ prefetched, errors, skipped, total: top20.length })
+  return NextResponse.json({ prefetched, errors, skipped, skippedNonZip, total: top20.length })
 }

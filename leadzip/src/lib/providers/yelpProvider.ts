@@ -153,6 +153,9 @@ export async function searchLeadsYelp(params: SearchParams): Promise<SearchResul
         city,
         state,
         zipCode,
+        // Country the search resolved to. Carried so a postal-code-only lookup
+        // later (competitor analysis) does not read a non-US postcode as a ZIP.
+        countryCode: loc.countryCode || undefined,
         phone: b.phone ? formatPhone(b.phone, loc.countryCode) : '',
         // b.url is the Yelp LISTING page (yelp.com/biz/...), NOT the business's
         // real website. Mapping it here would make every Yelp lead look like it

@@ -53,6 +53,10 @@ export default function SavedSearchesPage() {
   }, [])
 
   useEffect(() => {
+    // Fetch on mount. `load` is a stable useCallback that sets state only after
+    // the request settles, so this is synchronising with an external system
+    // rather than the cascading-render pattern the rule targets.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     load()
   }, [load])
 
@@ -191,7 +195,11 @@ export default function SavedSearchesPage() {
                 <tr key={search.id} className="transition-colors hover:bg-signal-50/50">
                   <td className="px-4 py-3 font-semibold text-ink">{search.name}</td>
                   <td className="hidden px-4 py-3 text-ink-soft sm:table-cell">
-                    <span className="font-mono">{search.zip}</span> · {search.radius} mi
+                    {/* International rows are stored in km. Rendering their
+                        converted miles showed "16 mi" for a 25 km search, which
+                        is true but reads as wrong to whoever picked 25 km. */}
+                    <span className="font-mono">{search.zip}</span> ·{' '}
+                    {search.radiusKm != null ? `${search.radiusKm} km` : `${search.radius} mi`}
                   </td>
                   <td className="hidden px-4 py-3 capitalize text-ink-soft md:table-cell">
                     {search.category}

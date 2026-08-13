@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requireActiveUser } from '@/lib/requireActiveUser'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -12,11 +13,15 @@ export async function GET() {
   try {
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-
-    if (!user) {
-      return NextResponse.json({ leads: [] })
+    const auth = await requireActiveUser(supabase)
+    if (!auth.ok) {
+      // Signed-out callers keep the existing "empty list" answer (the saved page
+      // renders it as a normal empty state). A deactivated account gets the 403.
+      return auth.reason === 'unauthenticated'
+        ? NextResponse.json({ leads: [] })
+        : auth.response
     }
+    const { user } = auth
 
     const { data: rows, error } = await supabase
       .from('leads')

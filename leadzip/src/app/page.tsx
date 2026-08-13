@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   MapPin, ArrowRight, Search, Target, Send, Database, Gauge, Mail,
-  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Menu, X,
+  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Menu, X, Sparkles,
 } from 'lucide-react'
 import { HeroSearchWidget } from '@/components/landing/HeroSearchWidget'
 import { HeroMap } from '@/components/landing/HeroMap'
@@ -151,13 +151,23 @@ export default function Home() {
               </span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/75">
-              Find and score every local business in any ZIP code, with real phones, websites,
-              and owner emails. Live Google &amp; Yelp data, not a scraped demo. The businesses
-              that need you most, first.
+              Find and score every local business in any ZIP code or city worldwide, with real
+              phones, websites, and owner emails. Live Google &amp; Yelp data, not a scraped demo.
+              The businesses that need you most, first.
             </p>
             <div className="mt-8">
               <HeroSearchWidget />
             </div>
+            {/* Reassurance under the form, where the offer actually gets read.
+                Lime stays on the single strongest phrase so it keeps its job as
+                the rare accent rather than becoming a second badge. */}
+            <p className="mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-sm text-white/70">
+              <Sparkles className="h-4 w-4 shrink-0 text-lime" aria-hidden />
+              <span className="font-semibold text-lime">7 days of Pro, free.</span>
+              <span>Cancel before day 7 and pay nothing.</span>
+              <span className="hidden text-white/40 sm:inline" aria-hidden>·</span>
+              <span>Or stay on the free plan, 25 searches a month, no card.</span>
+            </p>
           </div>
           <div className="lg:pl-6">
             <HeroMap />
@@ -292,6 +302,11 @@ export default function Home() {
           <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
             Start free. Upgrade when the deals roll in.
           </h2>
+          <p className="mt-4 text-base text-stone">
+            Pro and Agency both start with a 7-day free trial. We take your card at signup,
+            you get everything unlocked, and you can cancel any time before day 7 without
+            being charged.
+          </p>
         </Reveal>
         <div className="mt-14 grid items-stretch gap-6 md:grid-cols-3">
           {PLANS.map((p, i) => (
@@ -361,7 +376,8 @@ export default function Home() {
             Your next 50 clients are<br className="hidden sm:block" /> already on the map.
           </h2>
           <p className="mx-auto mt-5 max-w-lg text-lg text-white/85">
-            Run your first search free. No card, no demo data. Just type a ZIP and watch your territory light up.
+            Run your first search free. No card, no demo data. Just type a ZIP or a city and
+            watch your territory light up.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link href="/signup" className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3.5 font-semibold text-signal transition-transform hover:scale-[1.03] active:scale-95">
@@ -371,6 +387,9 @@ export default function Home() {
               See pricing
             </Link>
           </div>
+          <p className="mt-6 text-sm text-white/75">
+            Ready for unlimited? Pro and Agency include a 7-day free trial. Cancel before day 7 and pay nothing.
+          </p>
         </div>
       </section>
 

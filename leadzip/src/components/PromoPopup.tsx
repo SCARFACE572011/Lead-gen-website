@@ -9,7 +9,9 @@ import { MapPin, X } from 'lucide-react'
 // checkout to auto-apply the 15%-off coupon. DISMISS_KEY stops it reappearing.
 const DISMISS_KEY = 'leadzipp_promo_v1_dismissed'
 const CLAIM_KEY = 'leadzipp_promo15'
-const DELAY_MS = 30_000
+// Long enough that the hero lands first, short enough to catch a visitor who is
+// still deciding. Most sessions that bounce are gone well before 30 seconds.
+const DELAY_MS = 8_000
 
 // The popup only belongs on marketing pages. Anything under the app or the auth
 // flow is off-limits (a logged-in owner shouldn't be pitched a signup discount).
@@ -103,7 +105,7 @@ export function PromoPopup() {
     }
   }, [ensureAudio])
 
-  // Start the 30s timer once, and pre-unlock audio on the first interaction.
+  // Start the reveal timer once, and pre-unlock audio on the first interaction.
   useEffect(() => {
     let dismissed = false
     try {

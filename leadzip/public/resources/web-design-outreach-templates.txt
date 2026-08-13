@@ -1,0 +1,108 @@
+LEADZIPP WEB DESIGN OUTREACH TEMPLATES
+======================================
+
+Use these only after you verify the specific issue is still true. Replace every
+bracketed field. Do not claim you audited anything you did not check, and follow
+the outreach, privacy, and calling laws that apply to you and the recipient.
+
+
+1. PERMISSION-BASED COLD EMAIL: NO WEBSITE LISTED
+-------------------------------------------------
+Subject: Quick question about [Business Name]
+
+Hi [First Name or Business Name team],
+
+I found [Business Name] while looking at [business type] companies in [area].
+Your public listing did not show a website when I checked on [date].
+
+If that is still current, would it be useful if I sent a one-page example of how
+customers could view [service], see your work, and request a quote online?
+
+No pressure—if you already have a site, send it over and I will update my notes.
+
+[Your Name]
+[Company]
+[Contact details]
+[Postal address and unsubscribe instructions where required]
+
+
+2. SPECIFIC WEBSITE-GAP EMAIL
+-----------------------------
+Subject: One thing I noticed on [Business Name]'s site
+
+Hi [First Name],
+
+I was looking at [Business Name]'s website on [device] and noticed [specific,
+verified issue]. That may make it harder for a visitor to [book/call/request a
+quote], especially when they arrive from the map listing.
+
+Would you like me to send a short screenshot with the change I would make first?
+
+[Your Name]
+[Company]
+[Contact details]
+[Postal address and unsubscribe instructions where required]
+
+
+3. SHORT PHONE OPENER
+---------------------
+"Hi, is this a bad time? My name is [Name]. I found [Business Name] while
+researching [category] companies in [area]. Your public listing did not show a
+website when I checked today, and I wanted to confirm whether that is still
+right before I send anything."
+
+If yes:
+"I build simple sites that help [category] businesses turn map visitors into
+[calls/quote requests/bookings]. Would it be unreasonable for me to email a
+one-page example?"
+
+If no:
+"Thanks for correcting me. What is the best web address? I will update my notes."
+
+
+4. VOICEMAIL
+------------
+"Hi, this is [Name] from [Company]. I found [Business Name] while looking at
+[category] businesses in [area], and I had one quick question about the website
+shown on your public listing. My number is [phone]. Again, [Name] at [phone]."
+
+
+5. FOLLOW-UP AFTER 3-5 BUSINESS DAYS
+------------------------------------
+Subject: Re: [original subject]
+
+Hi [First Name],
+
+One quick follow-up, then I will close the loop. The specific thing I noticed was
+[verified issue], which can get in the way when a potential customer tries to
+[desired action].
+
+If improving that is on your list this quarter, I am happy to send the short
+example. If not, no reply is needed.
+
+[Your Name]
+[Required contact and opt-out details]
+
+
+6. SIMPLE QUALIFICATION NOTES
+-----------------------------
+Before contact, record:
+- The exact issue and the date you verified it
+- Why it matters to this business's customer
+- The smallest useful next step you can offer
+- The correct channel and any outreach restrictions
+
+After contact, record:
+- No response / replied / meeting / not a fit / follow up later
+- The next action and date
+- Any request not to be contacted, immediately and permanently
+
+
+7. FIVE-DAY WORK RHYTHM
+-----------------------
+Monday: Verify five prospects and write one real observation for each.
+Tuesday: Call the two with the clearest public gap.
+Wednesday: Email the two where a visual example adds value.
+Thursday: Send one useful follow-up, never a generic "just bumping this."
+Friday: Update the tracker, honor opt-outs, and choose the next five only after
+the first batch has a recorded outcome.

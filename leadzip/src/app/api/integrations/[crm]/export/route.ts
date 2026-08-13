@@ -6,6 +6,9 @@ import { exportToGoHighLevel } from '@/lib/crm/gohighlevel'
 import { exportToPipedrive } from '@/lib/crm/pipedrive'
 import type { CrmLead } from '@/lib/crm/types'
 import { requireActiveUser } from '@/lib/requireActiveUser'
+import { getLeadEntitlements } from '@/lib/leadEntitlements'
+
+const VALID_CRMS = new Set(['hubspot', 'gohighlevel', 'pipedrive'])
 
 function serviceClient() {
   return createClient(
@@ -19,12 +22,23 @@ export async function POST(
   { params }: { params: Promise<{ crm: string }> }
 ) {
   const { crm } = await params
+  if (!VALID_CRMS.has(crm)) {
+    return NextResponse.json({ error: 'Unknown CRM' }, { status: 422 })
+  }
+
   const supabase = await createServerClient()
   // Pushes rows into a third-party CRM over the network, so a deactivated
   // session must not reach it.
-  const auth = await requireActiveUser(supabase)
+  const auth = await requireActiveUser(supabase, { columns: ['plan', 'role'] })
   if (!auth.ok) return auth.response
   const { user } = auth
+
+  if (!getLeadEntitlements(auth.profile?.plan, auth.profile?.role).canExportAll) {
+    return NextResponse.json(
+      { error: 'CRM export is available on Pro and Agency.', upgradeRequired: true },
+      { status: 403 }
+    )
+  }
 
   const body = await request.json().catch(() => ({}))
   const leads: CrmLead[] = body.leads ?? []

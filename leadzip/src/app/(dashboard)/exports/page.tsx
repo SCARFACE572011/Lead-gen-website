@@ -16,8 +16,10 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Lead } from '@/types/lead'
-import { exportToCSV, exportToBrandedPDF, LEAD_EXPORT_FIELDS } from '@/lib/export'
+import { exportToBrandedPDF, LEAD_EXPORT_FIELDS } from '@/lib/export'
+import { exportReturnedLeadsCsv } from '@/lib/leadBulkActions'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
 
 const STORAGE_KEY = 'leadzip_saved_leads'
 const EXPORT_HISTORY_KEY = 'leadzip_export_history'
@@ -75,6 +77,7 @@ export default function ExportsPage() {
   const [format, setFormat] = useState<FormatKey>('csv')
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([])
   const [mounted, setMounted] = useState(false)
+  const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'agency'>('free')
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -87,6 +90,18 @@ export default function ExportsPage() {
     if (histRaw) {
       try { setExportHistory(JSON.parse(histRaw)) } catch { /* noop */ }
     }
+
+    createClient().auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      createClient()
+        .from('users_profile')
+        .select('plan')
+        .eq('id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.plan === 'pro' || data?.plan === 'agency') setUserPlan(data.plan)
+        })
+    }).catch(() => {})
   }, [])
 
   const toggleLeadSelect = (id: string) => {
@@ -115,6 +130,7 @@ export default function ExportsPage() {
 
   const selectedLeads = leads.filter((l) => selectedLeadIds.has(l.id))
   const previewLeads = selectedLeads.slice(0, 5)
+  const isPaid = userPlan === 'pro' || userPlan === 'agency'
 
   const handleExport = async () => {
     if (selectedLeads.length === 0) return
@@ -123,6 +139,10 @@ export default function ExportsPage() {
 
     try {
       if (format === 'branded_pdf') {
+        if (!isPaid) {
+          toast.info('Branded PDF export is included with Pro and Agency.')
+          return
+        }
         await exportToBrandedPDF(selectedLeads)
         const record = newExportRecord({
           filename: `${filename}.pdf`,
@@ -139,7 +159,8 @@ export default function ExportsPage() {
         return
       }
 
-      exportToCSV(selectedLeads, filename, {
+      const exportResult = await exportReturnedLeadsCsv(selectedLeads, {
+        filename,
         fields: Array.from(selectedFields),
         bom: format === 'excel_csv',
       })
@@ -147,16 +168,19 @@ export default function ExportsPage() {
       // Record export
       const record = newExportRecord({
         filename: `${filename}.csv`,
-        leadCount: selectedLeads.length,
+        leadCount: exportResult.exportedCount,
         format: format === 'excel_csv' ? 'Excel CSV' : 'CSV',
         formatKey: format,
-        leadIds,
+        leadIds: leadIds.slice(0, exportResult.exportedCount),
         fields: Array.from(selectedFields),
       })
       const updated = [record, ...exportHistory]
       setExportHistory(updated)
       localStorage.setItem(EXPORT_HISTORY_KEY, JSON.stringify(updated))
-      toast.success(`Exported ${selectedLeads.length} lead${selectedLeads.length !== 1 ? 's' : ''}`)
+      toast.success(`Exported ${exportResult.exportedCount} lead${exportResult.exportedCount !== 1 ? 's' : ''}`)
+      if (exportResult.planCapped && exportResult.upgradeNotice) {
+        toast.info(exportResult.upgradeNotice)
+      }
     } catch {
       toast.error('Export failed — please try again')
     }
@@ -187,6 +211,10 @@ export default function ExportsPage() {
 
     try {
       if (formatKey === 'branded_pdf') {
+        if (!isPaid) {
+          toast.info('Branded PDF export is included with Pro and Agency.')
+          return
+        }
         await exportToBrandedPDF(relevantLeads)
         toast.success('Re-exported Branded PDF')
         return
@@ -194,11 +222,15 @@ export default function ExportsPage() {
 
       const validKeys = new Set(ALL_FIELDS.map((f) => f.key))
       const fields = record.fields.filter((f) => validKeys.has(f))
-      exportToCSV(relevantLeads, record.filename, {
+      const exportResult = await exportReturnedLeadsCsv(relevantLeads, {
+        filename: record.filename,
         fields: fields.length > 0 ? fields : undefined,
         bom: formatKey === 'excel_csv',
       })
-      toast.success('Re-exported CSV')
+      toast.success(`Re-exported ${exportResult.exportedCount} lead${exportResult.exportedCount !== 1 ? 's' : ''}`)
+      if (exportResult.planCapped && exportResult.upgradeNotice) {
+        toast.info(exportResult.upgradeNotice)
+      }
     } catch {
       toast.error('Export failed — please try again')
     }
@@ -350,14 +382,15 @@ export default function ExportsPage() {
                 </h2>
                 <div className="space-y-2">
                   {[
-                    { value: 'csv', label: 'Standard CSV', desc: 'Compatible with all tools' },
-                    { value: 'excel_csv', label: 'Excel-ready CSV', desc: 'UTF-8 BOM for Excel' },
-                    { value: 'branded_pdf', label: 'Branded PDF', desc: 'Agency logo, colors, and name — configure in Settings → White Label', icon: <FileImage className="w-3.5 h-3.5 text-signal" /> },
+                    { value: 'csv', label: 'Standard CSV', desc: 'Compatible with all tools', paidOnly: false },
+                    { value: 'excel_csv', label: 'Excel-ready CSV', desc: 'UTF-8 BOM for Excel', paidOnly: false },
+                    { value: 'branded_pdf', label: 'Branded PDF', desc: 'Agency logo, colors, and name — configure in Settings → White Label', icon: <FileImage className="w-3.5 h-3.5 text-signal" />, paidOnly: true },
                   ].map((f) => (
                     <label
                       key={f.value}
                       className={cn(
                         'flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all',
+                        f.paidOnly && !isPaid && 'cursor-not-allowed opacity-60',
                         format === f.value
                           ? 'border-signal bg-signal-50'
                           : 'border-sand hover:border-stone/40'
@@ -368,6 +401,7 @@ export default function ExportsPage() {
                         name="format"
                         value={f.value}
                         checked={format === f.value}
+                        disabled={f.paidOnly && !isPaid}
                         onChange={() => setFormat(f.value as FormatKey)}
                         className="mt-0.5 accent-signal"
                       />
@@ -375,6 +409,9 @@ export default function ExportsPage() {
                         <div className="text-sm font-semibold text-ink flex items-center gap-1.5">
                           {f.label}
                           {'icon' in f && f.icon}
+                          {f.paidOnly && !isPaid && (
+                            <span className="rounded-full bg-signal-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-signal">Paid</span>
+                          )}
                         </div>
                         <div className="text-xs text-stone">{f.desc}</div>
                       </div>

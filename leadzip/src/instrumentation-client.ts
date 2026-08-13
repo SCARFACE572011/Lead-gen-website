@@ -11,6 +11,15 @@
  * `track()` re-checks the URL on every event as a safety net for the rare case
  * where a gclid shows up on a client-side navigation instead.
  */
-import { captureGclid } from '@/lib/analytics'
+import {
+  ANALYTICS_CONSENT_EVENT,
+  captureGclid,
+  hasAnalyticsConsent,
+  type AnalyticsConsent,
+} from '@/lib/analytics'
 
-captureGclid()
+if (hasAnalyticsConsent()) captureGclid()
+
+window.addEventListener(ANALYTICS_CONSENT_EVENT, (event) => {
+  if ((event as CustomEvent<AnalyticsConsent>).detail === 'all') captureGclid()
+})

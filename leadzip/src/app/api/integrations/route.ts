@@ -5,6 +5,7 @@ import { requireActiveUser } from '@/lib/requireActiveUser'
 import { validateHubSpotKey } from '@/lib/crm/hubspot'
 import { validateGoHighLevelKey } from '@/lib/crm/gohighlevel'
 import { validatePipedriveKey } from '@/lib/crm/pipedrive'
+import { getLeadEntitlements } from '@/lib/leadEntitlements'
 
 type CrmType = 'hubspot' | 'gohighlevel' | 'pipedrive'
 
@@ -17,15 +18,22 @@ function serviceClient() {
 
 // The session client verifies WHO is calling and that the account is still
 // active; the service client above then acts on their own rows only.
-async function getAuthedUser() {
+async function getAuthedUser(columns: readonly string[] = []) {
   const supabase = await createServerClient()
-  return requireActiveUser(supabase)
+  return requireActiveUser(supabase, { columns })
 }
 
 export async function GET() {
-  const auth = await getAuthedUser()
+  const auth = await getAuthedUser(['plan', 'role'])
   if (!auth.ok) return auth.response
   const { user } = auth
+
+  if (!getLeadEntitlements(auth.profile?.plan, auth.profile?.role).canExportAll) {
+    return NextResponse.json(
+      { error: 'CRM integrations are available on Pro and Agency.', upgradeRequired: true },
+      { status: 403 }
+    )
+  }
 
   const { data, error } = await serviceClient()
     .from('crm_integrations')
@@ -40,9 +48,16 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   // Validating a key makes an outbound call to the CRM, so a deactivated
   // session must not reach it.
-  const auth = await getAuthedUser()
+  const auth = await getAuthedUser(['plan', 'role'])
   if (!auth.ok) return auth.response
   const { user } = auth
+
+  if (!getLeadEntitlements(auth.profile?.plan, auth.profile?.role).canExportAll) {
+    return NextResponse.json(
+      { error: 'CRM integrations are available on Pro and Agency.', upgradeRequired: true },
+      { status: 403 }
+    )
+  }
 
   const body = await request.json().catch(() => ({}))
   const crm_type = body.crm_type as CrmType

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { requireAdmin } from '@/lib/admin-auth'
+import { requirePlatformAdmin } from '@/lib/admin-auth'
 
 function serviceClient() {
   return createSupabaseClient(
@@ -13,7 +13,7 @@ function serviceClient() {
 export async function GET() {
   // Auth check — must be a real admin owner (role + email allowlist)
   const supabase = await createServerClient()
-  const admin = await requireAdmin(supabase)
+  const admin = await requirePlatformAdmin(supabase)
   if (!admin.ok) return admin.response
 
   const db = serviceClient()

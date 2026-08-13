@@ -1,32 +1,38 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
-
-const CONSENT_KEY = 'leadzip_cookie_consent'
+import {
+  readAnalyticsConsent,
+  setAnalyticsConsent,
+  type AnalyticsConsent,
+} from '@/lib/analytics'
 
 /**
  * Height of this banner, published to the page so other bottom-anchored UI can
- * sit above it. The chat launcher shares this corner (bottom-4 left-4 on
- * desktop, and the banner is full width on mobile), so without this it was
+ * sit above it. The chat launcher uses the opposite corner on desktop, but the
+ * banner is full width on mobile, so without this it would be
  * completely covered and untappable until a first-time visitor accepted
  * cookies. Measuring beats a hardcoded offset because the banner wraps to
  * different heights across viewports.
  */
 const BANNER_HEIGHT_VAR = '--consent-banner-h'
+export const COOKIE_PREFERENCES_EVENT = 'leadzipp:open-cookie-preferences'
 
 export function CookieConsent() {
   const [visible, setVisible] = useState(false)
   const bannerRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    try {
-      if (!localStorage.getItem(CONSENT_KEY)) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setVisible(true)
-      }
-    } catch {
-      // SSR / privacy mode guard
+    if (!readAnalyticsConsent()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setVisible(true)
     }
+  }, [])
+
+  useEffect(() => {
+    const reopen = () => setVisible(true)
+    window.addEventListener(COOKIE_PREFERENCES_EVENT, reopen)
+    return () => window.removeEventListener(COOKIE_PREFERENCES_EVENT, reopen)
   }, [])
 
   useEffect(() => {
@@ -55,12 +61,8 @@ export function CookieConsent() {
 
   if (!visible) return null
 
-  const accept = (type: 'all' | 'necessary') => {
-    try {
-      localStorage.setItem(CONSENT_KEY, type)
-    } catch {
-      // ignore
-    }
+  const accept = (type: AnalyticsConsent) => {
+    setAnalyticsConsent(type)
     setVisible(false)
   }
 

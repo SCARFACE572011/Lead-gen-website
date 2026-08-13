@@ -5,14 +5,15 @@ import { useEffect } from 'react'
 /**
  * Conversion tracking for LeadZipp.
  *
- * Everything funnels through `track()`, which pushes a flat object onto
- * `window.dataLayer` for Google Tag Manager (bootstrapped in src/app/layout.tsx
- * behind NEXT_PUBLIC_GTM_ID). If GTM is not configured the pushes still land in
- * the array harmlessly, so call sites never need to check.
+ * Everything funnels through `track()`. With Google Tag Manager configured it
+ * pushes a flat event object onto `window.dataLayer`; with direct GA4 configured
+ * it sends the equivalent `gtag('event', ...)` command. Call sites never need
+ * to know which installation is active.
  *
  * Hard rules for this file:
  *   - Never throws. Analytics failing must never break the product.
  *   - No-ops during SSR (no window).
+ *   - No-ops until the visitor explicitly accepts analytics cookies.
  *   - Never carries PII. No email addresses, no names, no raw search queries.
  *     Only plan names, billing periods, booleans and coarse count buckets.
  */
@@ -30,6 +31,7 @@ export type AnalyticsEvent =
   | 'trial_started'
   | 'search_run'
   | 'checkout_started'
+  | 'first_territory_request_submitted'
 
 export type PlanName = 'pro' | 'agency'
 
@@ -90,6 +92,83 @@ export interface AnalyticsEventProps {
     billing: BillingPeriod
     promo?: boolean
   }
+  /** Public founder-help form. Never carries the territory, name, or email. */
+  first_territory_request_submitted: {
+    has_notes: boolean
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ * Consent
+ * ------------------------------------------------------------------ */
+
+export const ANALYTICS_CONSENT_KEY = 'leadzip_cookie_consent'
+export const ANALYTICS_CONSENT_EVENT = 'leadzip:analytics-consent-changed'
+
+export type AnalyticsConsent = 'all' | 'necessary'
+
+// Session fallback for browsers that block Web Storage. It is intentionally
+// not persisted; those visitors are asked again after a full reload.
+let memoryConsent: AnalyticsConsent | null = null
+
+/**
+ * Read the stored choice. Unknown/legacy values are deliberately treated as
+ * no choice so analytics stays off and the banner can ask again.
+ */
+export function readAnalyticsConsent(): AnalyticsConsent | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const value = window.localStorage.getItem(ANALYTICS_CONSENT_KEY)
+    return value === 'all' || value === 'necessary' ? value : memoryConsent
+  } catch {
+    return memoryConsent
+  }
+}
+
+export function hasAnalyticsConsent(): boolean {
+  return readAnalyticsConsent() === 'all'
+}
+
+/**
+ * Persist a choice, update Google Consent Mode when its bootstrap is present,
+ * then notify the consent-gated script loader. Storage can be unavailable in
+ * hardened browsers; the in-page update still works for the current visit.
+ */
+export function setAnalyticsConsent(choice: AnalyticsConsent): void {
+  if (typeof window === 'undefined') return
+  memoryConsent = choice
+
+  try {
+    window.localStorage.setItem(ANALYTICS_CONSENT_KEY, choice)
+  } catch {
+    // The banner still closes and the current page can honor the user's choice.
+  }
+
+  if (choice === 'necessary') clearGclid()
+
+  try {
+    const w = window as WindowWithAnalytics
+    w.gtag?.('consent', 'update', {
+      analytics_storage: choice === 'all' ? 'granted' : 'denied',
+      // LeadZipp does not use Google advertising storage.
+      ad_storage: 'denied',
+      ad_user_data: 'denied',
+      ad_personalization: 'denied',
+    })
+    if (choice === 'all') configureDirectGa4(w)
+  } catch {
+    // A broken Google queue must not prevent the app from honoring the choice.
+  }
+
+  try {
+    window.dispatchEvent(
+      new CustomEvent<AnalyticsConsent>(ANALYTICS_CONSENT_EVENT, {
+        detail: choice,
+      }),
+    )
+  } catch {
+    // Consent signaling must never break the product.
+  }
 }
 
 /* ------------------------------------------------------------------ *
@@ -100,12 +179,19 @@ type DataLayerRecord = Record<string, unknown>
 
 // Declared locally rather than as a `declare global` so this file cannot
 // collide with a dataLayer typing added elsewhere in the app.
-type WindowWithDataLayer = Window & { dataLayer?: DataLayerRecord[] }
+type WindowWithAnalytics = Window & {
+  dataLayer?: unknown[]
+  gtag?: (...args: unknown[]) => void
+  __leadzipGa4Configured?: boolean
+}
 
-function getDataLayer(): DataLayerRecord[] | null {
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || process.env.NEXT_PUBLIC_GA
+
+function getDataLayer(): unknown[] | null {
   if (typeof window === 'undefined') return null
   try {
-    const w = window as WindowWithDataLayer
+    const w = window as WindowWithAnalytics
     if (!Array.isArray(w.dataLayer)) w.dataLayer = []
     return w.dataLayer
   } catch {
@@ -113,8 +199,24 @@ function getDataLayer(): DataLayerRecord[] | null {
   }
 }
 
+function getGtag(): WindowWithAnalytics['gtag'] {
+  if (typeof window === 'undefined') return undefined
+  try {
+    return (window as WindowWithAnalytics).gtag
+  } catch {
+    return undefined
+  }
+}
+
+function configureDirectGa4(w: WindowWithAnalytics): void {
+  if (GTM_ID || !GA4_ID || !w.gtag || w.__leadzipGa4Configured) return
+  w.__leadzipGa4Configured = true
+  w.gtag('js', new Date())
+  w.gtag('config', GA4_ID)
+}
+
 /**
- * Push a typed event onto the dataLayer.
+ * Send a typed event through the configured Google analytics installation.
  *
  * No-ops during SSR and never throws. Props are optional so a bare
  * `track('some_event')` stays legal, but every event above defines the shape it
@@ -125,15 +227,29 @@ export function track<E extends AnalyticsEvent>(
   props?: AnalyticsEventProps[E],
 ): void {
   try {
-    const dataLayer = getDataLayer()
-    if (!dataLayer) return
+    if (!hasAnalyticsConsent()) return
+
     // Safety net: an ad click can land on a page that soft-navigates before the
     // startup hook runs, so re-check the URL on every event. No-op when the URL
     // carries no gclid.
     captureGclid()
-    dataLayer.push({ event, ...(props ?? {}) })
+
+    if (GTM_ID) {
+      const dataLayer = getDataLayer()
+      if (!dataLayer) return
+      const payload: DataLayerRecord = { event, ...(props ?? {}) }
+      dataLayer.push(payload)
+      return
+    }
+
+    if (GA4_ID) {
+      // Queue config before the event when consent was granted during this
+      // visit. (For a saved grant, the root bootstrap already did this.)
+      configureDirectGa4(window as WindowWithAnalytics)
+      getGtag()?.('event', event, props ?? {})
+    }
   } catch {
-    // Swallowed on purpose. A broken tag manager must never break a signup.
+    // Swallowed on purpose. Broken analytics must never break a signup.
   }
 }
 
@@ -173,7 +289,7 @@ const GCLID_PATTERN = /^[A-Za-z0-9._-]{1,512}$/
  * event: it is a no-op when there is nothing new to capture.
  */
 export function captureGclid(): string | null {
-  if (typeof window === 'undefined') return null
+  if (typeof window === 'undefined' || !hasAnalyticsConsent()) return null
   try {
     const fromUrl = new URLSearchParams(window.location.search).get('gclid')
     if (!fromUrl || !GCLID_PATTERN.test(fromUrl)) return readGclid()
@@ -185,6 +301,17 @@ export function captureGclid(): string | null {
     return fromUrl
   } catch {
     return null
+  }
+}
+
+/** Remove attribution storage when analytics consent is denied or withdrawn. */
+export function clearGclid(): void {
+  if (typeof document === 'undefined') return
+  try {
+    const secure = typeof window !== 'undefined' && window.location.protocol === 'https:' ? '; Secure' : ''
+    document.cookie = `${GCLID_COOKIE}=; Max-Age=0; Path=/; SameSite=Lax${secure}`
+  } catch {
+    // A blocked cookie jar is already the desired privacy outcome.
   }
 }
 
@@ -293,6 +420,7 @@ export function trackTrialStartedOnce(
   billing: BillingPeriod,
 ): boolean {
   if (typeof window === 'undefined') return false
+  if (!hasAnalyticsConsent()) return false
   // Without a session id there is nothing stable to dedupe on, and firing would
   // risk double counting the primary conversion. Stripe's success_url always
   // includes it, so this only skips hand-crafted URLs.
@@ -317,7 +445,14 @@ export function TrialStartedTracker({
   billing: BillingPeriod
 }): null {
   useEffect(() => {
-    trackTrialStartedOnce(sessionId, plan, billing)
+    const send = () => trackTrialStartedOnce(sessionId, plan, billing)
+    const sendAfterGrant = (event: Event) => {
+      if ((event as CustomEvent<AnalyticsConsent>).detail === 'all') send()
+    }
+
+    send()
+    window.addEventListener(ANALYTICS_CONSENT_EVENT, sendAfterGrant)
+    return () => window.removeEventListener(ANALYTICS_CONSENT_EVENT, sendAfterGrant)
   }, [sessionId, plan, billing])
 
   return null

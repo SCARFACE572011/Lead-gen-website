@@ -13,13 +13,19 @@ import {
   SearchX,
   Loader2,
   Bell,
+  Bookmark,
   Activity,
-  SlidersHorizontal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { track, bucketResultCount } from '@/lib/analytics'
 import { Lead, SearchParams, SearchHistory } from '@/types/lead'
-import { exportToCSV, exportToHubSpot, exportToSalesforce } from '@/lib/export'
+import { exportToHubSpot, exportToSalesforce } from '@/lib/export'
+import {
+  exportReturnedLeadsCsv,
+  LeadBulkActionError,
+  saveReturnedLeads,
+} from '@/lib/leadBulkActions'
+import { getLeadEntitlements } from '@/lib/leadEntitlements'
 import { SearchFilters } from '@/components/leads/SearchFilters'
 import { LeadCard } from '@/components/leads/LeadCard'
 import { LeadTable } from '@/components/leads/LeadTable'
@@ -224,8 +230,10 @@ function SearchPageInner() {
   const [sourceBannerDismissed, setSourceBannerDismissed] = useState(false)
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const [fromCache, setFromCache] = useState(false)
-  const [filterSheetOpen, setFilterSheetOpen] = useState(false)
   const [locationLabel, setLocationLabel] = useState<string | null>(null)
+  const [bulkSaveProgress, setBulkSaveProgress] = useState<{ completed: number; total: number; saved: number } | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [actionNotice, setActionNotice] = useState<{ tone: 'success' | 'warning' | 'error'; message: string } | null>(null)
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -511,47 +519,52 @@ function SearchPageInner() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const handleSave = useCallback((lead: Lead) => {
-    setSavedLeadIds((prev) => {
-      const next = new Set(prev)
-      const removing = next.has(lead.id)
-      if (removing) { next.delete(lead.id) } else { next.add(lead.id) }
+  const handleSave = useCallback(async (lead: Lead) => {
+    const removing = savedLeadIds.has(lead.id)
+    setActionNotice(null)
 
-      try {
-        localStorage.setItem(SAVED_IDS_KEY, JSON.stringify([...next]))
-
-        const rawLeads = localStorage.getItem(SAVED_LEADS_KEY)
-        let savedLeads: Lead[] = []
-        try { savedLeads = JSON.parse(rawLeads ?? '[]') } catch { /* ignore */ }
-
-        if (!removing) {
-          if (!savedLeads.some((l) => l.id === lead.id)) {
-            savedLeads.push({ ...lead, savedAt: new Date().toISOString() })
-          }
-        } else {
-          savedLeads = savedLeads.filter((l) => l.id !== lead.id)
-        }
-        localStorage.setItem(SAVED_LEADS_KEY, JSON.stringify(savedLeads))
-      } catch { /* ignore */ }
-
-      // Persist to Supabase via API (non-blocking, fire-and-forget)
+    try {
       if (removing) {
-        fetch('/api/leads/save', {
+        const response = await fetch('/api/leads/save', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ leadId: lead.id }),
-        }).catch(() => {})
-      } else {
-        fetch('/api/leads/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lead: { ...lead, savedAt: new Date().toISOString() } }),
-        }).catch(() => {})
+        })
+        if (!response.ok) {
+          const payload = await response.json().catch(() => ({})) as { error?: string }
+          throw new Error(payload.error || 'Could not remove this saved lead.')
+        }
+
+        setSavedLeadIds((previous) => {
+          const next = new Set(previous)
+          next.delete(lead.id)
+          try { localStorage.setItem(SAVED_IDS_KEY, JSON.stringify([...next])) } catch { /* ignore */ }
+          return next
+        })
+        try {
+          const stored = JSON.parse(localStorage.getItem(SAVED_LEADS_KEY) ?? '[]') as Lead[]
+          localStorage.setItem(SAVED_LEADS_KEY, JSON.stringify(stored.filter((item) => item.id !== lead.id)))
+        } catch { /* ignore */ }
+        return
       }
 
-      return next
-    })
-  }, [])
+      const result = await saveReturnedLeads([{ ...lead, savedAt: new Date().toISOString() }])
+      if (result.savedIds.includes(lead.id)) {
+        setSavedLeadIds((previous) => new Set([...previous, lead.id]))
+      }
+      if (result.limitReached) {
+        setActionNotice({
+          tone: 'warning',
+          message: 'Your saved-lead limit is full. Upgrade your plan to keep saving new leads.',
+        })
+      }
+    } catch (error) {
+      setActionNotice({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Could not save this lead.',
+      })
+    }
+  }, [savedLeadIds])
 
   const handleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -565,11 +578,72 @@ function SearchPageInner() {
     })
   }, [])
 
-  const handleExportSelected = useCallback(() => {
-    const selected = leads.filter((l) => selectedIds.has(l.id))
-    if (selected.length === 0) return
-    exportToCSV(selected, `leadzip-export-${Date.now()}`)
-    setSelectedIds(new Set())
+  const handleSelectAllVisible = useCallback((selected: boolean) => {
+    setSelectedIds(selected ? new Set(leads.map((lead) => lead.id)) : new Set())
+  }, [leads])
+
+  const handleBulkSave = useCallback(async (scope: 'selected' | 'all') => {
+    const entitlement = getLeadEntitlements(userPlan)
+    if (!entitlement.canBulkSave) {
+      setActionNotice({ tone: 'warning', message: 'Bulk saving is included with Pro and Agency. Free accounts can save leads one at a time.' })
+      return
+    }
+
+    const candidates = (scope === 'selected'
+      ? leads.filter((lead) => selectedIds.has(lead.id))
+      : leads
+    ).filter((lead) => !savedLeadIds.has(lead.id))
+
+    if (candidates.length === 0) {
+      setActionNotice({ tone: 'success', message: 'All of these leads are already saved.' })
+      return
+    }
+
+    setActionNotice(null)
+    try {
+      const result = await saveReturnedLeads(candidates, setBulkSaveProgress)
+      setSavedLeadIds((previous) => new Set([...previous, ...result.savedIds]))
+      if (scope === 'selected') setSelectedIds(new Set())
+
+      const detail = result.alreadySavedCount > 0 ? ` ${result.alreadySavedCount} were already in your list.` : ''
+      setActionNotice({
+        tone: result.limitReached || result.failedCount > 0 ? 'warning' : 'success',
+        message: result.limitReached
+          ? `Saved ${result.insertedCount} leads before reaching your plan limit.${detail}`
+          : `Saved ${result.insertedCount} ${result.insertedCount === 1 ? 'lead' : 'leads'}.${detail}`,
+      })
+    } catch (error) {
+      const message = error instanceof LeadBulkActionError && error.upgradeRequired
+        ? 'Bulk saving is included with Pro and Agency.'
+        : error instanceof Error ? error.message : 'Could not save these leads.'
+      setActionNotice({ tone: 'error', message })
+    } finally {
+      setBulkSaveProgress(null)
+    }
+  }, [leads, savedLeadIds, selectedIds, userPlan])
+
+  const handleExportCsv = useCallback(async (scope: 'selected' | 'all') => {
+    const exportLeads = scope === 'selected'
+      ? leads.filter((lead) => selectedIds.has(lead.id))
+      : leads
+    if (exportLeads.length === 0) return
+
+    setExporting(true)
+    setActionNotice(null)
+    try {
+      const result = await exportReturnedLeadsCsv(exportLeads, { filename: `leadzipp-${Date.now()}` })
+      if (scope === 'selected') setSelectedIds(new Set())
+      setActionNotice({
+        tone: result.planCapped ? 'warning' : 'success',
+        message: result.planCapped
+          ? `Exported the first ${result.exportedCount} leads allowed on Free. Upgrade to export the full result set.`
+          : `Exported ${result.exportedCount} ${result.exportedCount === 1 ? 'lead' : 'leads'} to CSV.`,
+      })
+    } catch (error) {
+      setActionNotice({ tone: 'error', message: error instanceof Error ? error.message : 'Could not export these leads.' })
+    } finally {
+      setExporting(false)
+    }
   }, [leads, selectedIds])
 
   const handleExportHubSpot = useCallback(() => {
@@ -634,87 +708,47 @@ function SearchPageInner() {
 
   const selectedCount = selectedIds.size
   const maxBulkZips = MAX_BULK_ZIPS[userPlan] ?? 3
+  const leadEntitlements = getLeadEntitlements(userPlan)
+  const allVisibleSelected = leads.length > 0 && leads.every((lead) => selectedIds.has(lead.id))
+  const unsavedVisibleCount = leads.filter((lead) => !savedLeadIds.has(lead.id)).length
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold font-display text-ink">Search Leads</h1>
-        <p className="mt-1 text-sm text-stone">
-          Find local businesses that need your services
-        </p>
+    <div className="mx-auto max-w-[1720px] space-y-5">
+      <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+        <div>
+          <p className="readout text-signal">Lead workspace</p>
+          <h1 className="mt-1 font-display text-2xl font-bold text-ink sm:text-3xl">Find your next customers</h1>
+          <p className="mt-1 text-sm text-stone">Search a territory, review the best opportunities, then save or export the leads you want.</p>
+        </div>
+        <ol className="flex items-center gap-1 rounded-2xl border border-sand bg-card p-1 text-xs font-semibold text-stone shadow-card" aria-label="Lead workflow">
+          {['Search', 'Select', 'Save or export'].map((step, index) => (
+            <li
+              key={step}
+              className={cn(
+                'flex items-center gap-1.5 rounded-xl px-2.5 py-2 sm:px-3',
+                index === 0 && !hasSearched && 'bg-signal-50 text-signal-600',
+                index === 1 && hasSearched && selectedCount === 0 && 'bg-signal-50 text-signal-600',
+                index === 2 && selectedCount > 0 && 'bg-signal-50 text-signal-600'
+              )}
+            >
+              <span className="flex h-5 w-5 items-center justify-center rounded-full border border-current font-mono text-[10px]">{index + 1}</span>
+              <span className={cn(index === 2 && 'hidden sm:inline')}>{step}</span>
+            </li>
+          ))}
+        </ol>
       </div>
 
-      {/* Main layout: sidebar + results */}
-      <div className="flex gap-6">
-        {/* Filters sidebar — desktop */}
-        <aside className="hidden w-72 shrink-0 lg:block">
-          <SearchFilters
-            onSearch={handleSearch}
-            onBulkSearch={handleBulkSearch}
-            isLoading={isLoading}
-            initialValues={initialValues}
-            searchMode={searchMode}
-            onSearchModeChange={setSearchMode}
-            maxBulkZips={maxBulkZips}
-          />
-        </aside>
+      <SearchFilters
+        onSearch={handleSearch}
+        onBulkSearch={handleBulkSearch}
+        isLoading={isLoading}
+        initialValues={initialValues}
+        searchMode={searchMode}
+        onSearchModeChange={setSearchMode}
+        maxBulkZips={maxBulkZips}
+      />
 
-        {/* Results */}
-        <div className="flex-1 min-w-0 space-y-4">
-          {/* Mobile filter trigger */}
-          <div className="lg:hidden mb-4 flex items-center gap-2">
-            <button
-              onClick={() => setFilterSheetOpen(true)}
-              className="flex items-center gap-2 rounded-xl border border-sand bg-card px-4 py-2.5 text-sm font-medium text-ink-soft shadow-card hover:bg-paper-2 transition-colors min-h-[44px]"
-            >
-              <SlidersHorizontal className="h-4 w-4 text-signal" />
-              Filters
-            </button>
-          </div>
-
-          {/* Mobile bottom sheet */}
-          {filterSheetOpen && (
-            <>
-              {/* Backdrop */}
-              <div
-                className="lg:hidden fixed inset-0 bg-black/50 z-40"
-                onClick={() => setFilterSheetOpen(false)}
-                aria-hidden="true"
-              />
-              {/* Sheet */}
-              <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-card shadow-2xl animate-slide-up max-h-[70vh] overflow-y-auto">
-                {/* Drag handle */}
-                <div className="flex justify-center pt-3 pb-1">
-                  <div className="h-1 w-10 rounded-full bg-sand" />
-                </div>
-                <div className="flex items-center justify-between px-4 pb-2">
-                  <h2 className="text-sm font-semibold font-display text-ink">Filters</h2>
-                  <button
-                    onClick={() => setFilterSheetOpen(false)}
-                    className="rounded-lg p-1.5 text-stone hover:text-ink hover:bg-paper-2 transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
-                    aria-label="Close filters"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="px-4 pb-6">
-                  <SearchFilters
-                    onSearch={(params) => {
-                      handleSearch(params)
-                      setFilterSheetOpen(false)
-                    }}
-                    onBulkSearch={handleBulkSearch}
-                    isLoading={isLoading}
-                    initialValues={initialValues}
-                    searchMode={searchMode}
-                    onSearchModeChange={setSearchMode}
-                    maxBulkZips={maxBulkZips}
-                  />
-                </div>
-              </div>
-            </>
-          )}
+      <section className="min-w-0 space-y-4" aria-label="Lead search results">
 
           {/* Results toolbar */}
           {(hasSearched || leads.length > 0) && (
@@ -773,7 +807,41 @@ function SearchPageInner() {
                 )}
               </p>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                {leads.length > 0 && !isLoading && (
+                  <button
+                    onClick={() => handleSelectAllVisible(!allVisibleSelected)}
+                    className="flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-2 text-xs font-medium text-ink-soft shadow-card transition-colors hover:bg-paper-2"
+                  >
+                    <CheckSquare className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {allVisibleSelected ? 'Clear selection' : 'Select all'}
+                  </button>
+                )}
+
+                {leads.length > 0 && !isLoading && leadEntitlements.canBulkSave && (
+                  <button
+                    onClick={() => void handleBulkSave('all')}
+                    disabled={bulkSaveProgress !== null || unsavedVisibleCount === 0}
+                    className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-2 text-xs font-semibold text-white shadow-card transition-colors hover:bg-ink-soft disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {bulkSaveProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Bookmark className="h-3.5 w-3.5" aria-hidden="true" />}
+                    {bulkSaveProgress
+                      ? `Saving ${bulkSaveProgress.completed}/${bulkSaveProgress.total}`
+                      : unsavedVisibleCount === 0 ? 'All saved' : `Save all ${unsavedVisibleCount}`}
+                  </button>
+                )}
+
+                {leads.length > 0 && !isLoading && (
+                  <button
+                    onClick={() => void handleExportCsv('all')}
+                    disabled={exporting}
+                    className="flex items-center gap-1.5 rounded-full bg-signal px-3 py-2 text-xs font-semibold text-white shadow-card transition-colors hover:bg-signal-600 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" /> : <Download className="h-3.5 w-3.5" aria-hidden="true" />}
+                    {leadEntitlements.canExportAll ? 'Export all' : 'Export CSV'}
+                  </button>
+                )}
+
                 {/* Save this search */}
                 {leads.length > 0 && !isLoading && searchMode === 'single' && lastSearchParams && (
                   <button
@@ -814,7 +882,7 @@ function SearchPageInner() {
                         className="flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-2 text-xs font-medium text-ink-soft shadow-card transition-colors hover:bg-paper-2"
                       >
                         <Activity className="h-3.5 w-3.5 shrink-0 text-forest" />
-                        Check all websites
+                        Check websites
                       </button>
                     )}
                   </div>
@@ -911,6 +979,29 @@ function SearchPageInner() {
             </div>
           )}
 
+          {actionNotice && (
+            <div
+              role="status"
+              aria-live="polite"
+              className={cn(
+                'flex items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm',
+                actionNotice.tone === 'success' && 'border-emerald-200 bg-emerald-50 text-emerald-800',
+                actionNotice.tone === 'warning' && 'border-amber-200 bg-amber-50 text-amber-800',
+                actionNotice.tone === 'error' && 'border-red-200 bg-red-50 text-red-700'
+              )}
+            >
+              <span>
+                {actionNotice.message}{' '}
+                {actionNotice.tone === 'warning' && userPlan === 'free' && (
+                  <a href="/pricing" className="font-semibold underline underline-offset-2">View paid plans</a>
+                )}
+              </span>
+              <button onClick={() => setActionNotice(null)} aria-label="Dismiss message" className="shrink-0 rounded-lg p-1 hover:bg-black/5">
+                <X className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </div>
+          )}
+
           {/* Data source banner */}
           {!isLoading && leads.length > 0 && !sourceBannerDismissed && dataSource && dataSource !== 'google_places' && dataSource !== 'foursquare' && (
             <div className={cn(
@@ -941,7 +1032,7 @@ function SearchPageInner() {
 
           {/* Loading skeletons */}
           {isLoading && viewMode === 'card' && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <SkeletonCard key={i} />
               ))}
@@ -968,7 +1059,7 @@ function SearchPageInner() {
 
           {/* Results */}
           {!isLoading && leads.length > 0 && viewMode === 'card' && (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {sortedLeads.map((lead) => (
                 <LeadCard
                   key={lead.id}
@@ -987,6 +1078,9 @@ function SearchPageInner() {
               leads={sortedLeads}
               onSave={handleSave}
               savedIds={[...savedLeadIds]}
+              selectedIds={selectedIds}
+              onSelect={handleSelect}
+              onSelectAll={handleSelectAllVisible}
             />
           )}
 
@@ -1002,43 +1096,55 @@ function SearchPageInner() {
           {!isLoading && leads.length === 0 && (
             <EmptyState hasSearched={hasSearched} errorMessage={errorMessage} />
           )}
-        </div>
-      </div>
+      </section>
 
       {/* Floating bulk action bar */}
       {selectedCount > 0 && (
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2"
+          className="fixed inset-x-3 bottom-3 z-50 sm:inset-x-auto sm:bottom-6 sm:left-1/2 sm:-translate-x-1/2"
         >
-          <div className="flex items-center gap-3 rounded-2xl border border-sand bg-card px-5 py-3 shadow-xl">
+          <div className="flex flex-wrap items-center justify-center gap-2 rounded-2xl border border-sand bg-card px-3 py-3 shadow-xl sm:flex-nowrap sm:gap-3 sm:px-5">
             <div className="flex items-center gap-2 text-sm font-semibold text-ink">
               <CheckSquare className="h-4 w-4 text-signal shrink-0" />
               {selectedCount} {selectedCount === 1 ? 'lead' : 'leads'} selected
             </div>
-            <div className="h-4 w-px bg-sand" />
+            <div className="hidden h-4 w-px bg-sand sm:block" />
+            {leadEntitlements.canBulkSave && (
+              <button
+                className="flex items-center gap-1.5 rounded-full bg-ink px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-ink-soft disabled:opacity-50"
+                onClick={() => void handleBulkSave('selected')}
+                disabled={bulkSaveProgress !== null}
+              >
+                {bulkSaveProgress ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Bookmark className="h-3.5 w-3.5 shrink-0" />}
+                Save selected
+              </button>
+            )}
             <button
               className="flex items-center gap-1.5 rounded-full bg-signal px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-signal-600"
-              onClick={handleExportSelected}
+              onClick={() => void handleExportCsv('selected')}
+              disabled={exporting}
             >
-              <Download className="h-3.5 w-3.5 shrink-0" />
+              {exporting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5 shrink-0" />}
               Export CSV
             </button>
-            <button
-              className="flex items-center gap-1.5 rounded-full bg-forest px-3 py-1.5 text-xs font-semibold text-lime transition-colors hover:bg-forest-700"
-              onClick={handleExportHubSpot}
-            >
-              <Download className="h-3.5 w-3.5 shrink-0" />
-              HubSpot
-            </button>
-            <button
-              className="flex items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-paper-2"
-              onClick={handleExportSalesforce}
-            >
-              <Download className="h-3.5 w-3.5 shrink-0" />
-              Salesforce
-            </button>
+            {leadEntitlements.canExportAll && (
+              <>
+                <button
+                  className="hidden items-center gap-1.5 rounded-full bg-forest px-3 py-1.5 text-xs font-semibold text-lime transition-colors hover:bg-forest-700 md:flex"
+                  onClick={handleExportHubSpot}
+                >
+                  HubSpot
+                </button>
+                <button
+                  className="hidden items-center gap-1.5 rounded-full border border-sand bg-card px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:bg-paper-2 md:flex"
+                  onClick={handleExportSalesforce}
+                >
+                  Salesforce
+                </button>
+              </>
+            )}
             <button
               onClick={() => setSelectedIds(new Set())}
               aria-label="Clear selection"

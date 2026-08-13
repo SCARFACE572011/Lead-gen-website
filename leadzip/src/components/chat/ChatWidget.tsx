@@ -2,13 +2,13 @@
 
 import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { MapPin, MessageCircle, Send, X } from 'lucide-react'
+import { EyeOff, MapPin, MessageCircle, Send, X } from 'lucide-react'
 
-// Sales + support chat, anchored bottom-LEFT. The promo popup owns the
-// bottom-right corner and the cookie banner sits at z-[60] bottom-left until
-// dismissed, so the collapsed launcher stays below it (z-[55]) and the open
-// panel goes above everything (z-[80]).
+// Sales + support chat. It lives on the right, can be hidden persistently, and
+// can be restored from Settings > Notifications.
 const STORAGE_KEY = 'leadzipp_chat_v1'
+export const CHAT_HIDDEN_KEY = 'leadzipp_chat_hidden_v1'
+export const CHAT_VISIBILITY_EVENT = 'leadzipp:chat-visibility'
 const LABEL_DELAY_MS = 4000
 const SUPPORT_EMAIL = 'support@leadzipp.com'
 const MAX_MESSAGE_CHARS = 1000
@@ -82,6 +82,7 @@ export function ChatWidget() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [humanOpen, setHumanOpen] = useState(false)
+  const [hidden, setHidden] = useState(false)
 
   const openedOnceRef = useRef(false)
   const launcherRef = useRef<HTMLButtonElement>(null)
@@ -91,10 +92,25 @@ export function ChatWidget() {
 
   // "Need help?" nudge appears after a few seconds, once, until the chat is opened.
   useEffect(() => {
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHidden(window.localStorage.getItem(CHAT_HIDDEN_KEY) === 'true')
+    } catch {
+      // Storage can be unavailable in private browsing; keep help visible.
+    }
+
+    const syncVisibility = (event: Event) => {
+      const detail = (event as CustomEvent<{ hidden?: boolean }>).detail
+      setHidden(detail?.hidden === true)
+    }
+    window.addEventListener(CHAT_VISIBILITY_EVENT, syncVisibility)
     const timer = window.setTimeout(() => {
       if (!openedOnceRef.current) setShowLabel(true)
     }, LABEL_DELAY_MS)
-    return () => window.clearTimeout(timer)
+    return () => {
+      window.clearTimeout(timer)
+      window.removeEventListener(CHAT_VISIBILITY_EVENT, syncVisibility)
+    }
   }, [])
 
   // Persist the conversation for the browsing session.
@@ -128,6 +144,14 @@ export function ChatWidget() {
   const closeChat = () => {
     setOpen(false)
     window.setTimeout(() => launcherRef.current?.focus(), 90)
+  }
+
+  const hideChat = () => {
+    setOpen(false)
+    setShowLabel(false)
+    setHidden(true)
+    try { window.localStorage.setItem(CHAT_HIDDEN_KEY, 'true') } catch { /* ignore */ }
+    window.dispatchEvent(new CustomEvent(CHAT_VISIBILITY_EVENT, { detail: { hidden: true } }))
   }
 
   // Escape closes; Tab is trapped inside the panel while it is open.
@@ -207,18 +231,33 @@ export function ChatWidget() {
     ? { opacity: 0, y: 0, scale: 1 }
     : { opacity: 0, y: 24, scale: 0.97 }
 
+  if (hidden) return null
+
   return (
     <>
-      {/* Collapsed launcher, bottom-left. The cookie banner shares this corner
-          (full width on mobile, bottom-4 left-4 on desktop) and outranks the
-          launcher in z-order, so it used to bury the button completely on a
-          first visit. The banner publishes its measured height, and the
-          launcher rides above it, falling back to 0 once consent is given. */}
+      {/* Collapsed launcher, bottom-right. It rides above the measured consent
+          banner on first visit and returns to the corner after a choice. */}
       {!open && (
         <div
-          className="fixed left-4 z-[55] flex items-center gap-2.5"
+          className="fixed right-4 z-[55] flex items-center gap-2.5"
           style={{ bottom: 'calc(1rem + var(--consent-banner-h, 0px))' }}
         >
+          <AnimatePresence>
+            {showLabel && (
+              <motion.button
+                onClick={openChat}
+                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 8 }}
+                animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="rounded-full border border-sand bg-white px-3.5 py-2 text-[13px] font-semibold text-ink shadow-card transition-colors hover:border-signal hover:text-signal"
+              >
+                Need help?
+              </motion.button>
+            )}
+          </AnimatePresence>
+
+          <div className="relative">
           <button
             ref={launcherRef}
             onClick={openChat}
@@ -237,21 +276,15 @@ export function ChatWidget() {
               />
             )}
           </button>
-
-          <AnimatePresence>
-            {showLabel && (
-              <motion.button
-                onClick={openChat}
-                initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -8 }}
-                animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="rounded-full border border-sand bg-white px-3.5 py-2 text-[13px] font-semibold text-ink shadow-card transition-colors hover:border-signal hover:text-signal"
-              >
-                Need help?
-              </motion.button>
-            )}
-          </AnimatePresence>
+            <button
+              onClick={hideChat}
+              aria-label="Hide help button"
+              title="Hide help button (restore it in Settings)"
+              className="absolute -right-1.5 -top-1.5 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-sand bg-white text-stone shadow-sm transition-colors hover:border-signal hover:text-signal focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal"
+            >
+              <X className="h-3 w-3" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       )}
 
@@ -272,7 +305,7 @@ export function ChatWidget() {
                 ? { duration: 0.15 }
                 : { type: 'spring', stiffness: 360, damping: 30, mass: 0.9 }
             }
-            className="fixed inset-x-0 bottom-0 z-[80] flex h-[75dvh] flex-col overflow-hidden rounded-t-2xl border border-sand bg-white shadow-[0_12px_40px_-12px_rgba(23,19,14,0.35)] sm:inset-x-auto sm:bottom-4 sm:left-4 sm:h-[560px] sm:max-h-[calc(100dvh-2rem)] sm:w-[380px] sm:rounded-2xl"
+            className="fixed inset-x-0 bottom-0 z-[80] flex h-[75dvh] flex-col overflow-hidden rounded-t-2xl border border-sand bg-white shadow-[0_12px_40px_-12px_rgba(23,19,14,0.35)] sm:inset-x-auto sm:bottom-4 sm:right-4 sm:h-[560px] sm:max-h-[calc(100dvh-2rem)] sm:w-[380px] sm:rounded-2xl"
           >
             {/* thin signal rule, same motif as the promo popup */}
             <div className="h-1 w-full shrink-0 bg-signal" />
@@ -291,6 +324,14 @@ export function ChatWidget() {
                   Typically replies instantly
                 </p>
               </div>
+              <button
+                onClick={hideChat}
+                aria-label="Hide help widget"
+                title="Hide help widget (restore it in Settings)"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-stone transition-colors hover:bg-paper-2 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sand"
+              >
+                <EyeOff className="h-4 w-4" aria-hidden="true" />
+              </button>
               <button
                 onClick={closeChat}
                 aria-label="Close chat"

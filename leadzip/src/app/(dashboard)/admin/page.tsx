@@ -166,14 +166,13 @@ export default function AdminPage() {
         if (!user) { setIsAdmin(false); setLoading(false); return }
         setCurrentUserId(user.id)
 
-        const { data } = await supabase
-          .from('users_profile').select('role').eq('id', user.id).maybeSingle()
-
-        if (data?.role !== 'admin') { setIsAdmin(false); setLoading(false); return }
-        setIsAdmin(true)
-
+        // The server checks both the platform role and the private owner
+        // allowlist. A paid plan or customer workspace role is never enough.
         const res = await fetch('/api/admin/stats')
-        if (res.ok) setStats(await res.json())
+        if (!res.ok) { setIsAdmin(false); return }
+
+        setStats(await res.json())
+        setIsAdmin(true)
       } catch {
         setIsAdmin(false)
       } finally {
@@ -314,7 +313,7 @@ export default function AdminPage() {
             <ShieldAlert className="w-8 h-8 text-red-500" />
           </div>
           <h2 className="font-display text-xl font-bold text-ink mb-2">Access Denied</h2>
-          <p className="text-sm text-stone">Admin access only.</p>
+          <p className="text-sm text-stone">Platform owner access only.</p>
         </div>
       </div>
     )
@@ -341,7 +340,7 @@ export default function AdminPage() {
               <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink">Owner Portal</h1>
               <span className="inline-flex items-center gap-1.5 bg-red-50 text-red-700 border border-red-200 text-xs font-semibold px-2.5 py-1 rounded-full">
                 <ShieldAlert className="w-3 h-3" />
-                Admin Only
+                Platform Owner Only
               </span>
             </div>
             <p className="text-sm text-stone">Complete platform management for LeadZipp</p>

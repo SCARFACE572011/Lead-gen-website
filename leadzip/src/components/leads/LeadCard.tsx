@@ -19,6 +19,8 @@ import {
   Copy,
   Check,
   ExternalLink,
+  ChevronDown,
+  MoreHorizontal,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead, DigitalHealthDetails } from '@/types/lead'
@@ -81,6 +83,7 @@ export function LeadCard({
   onSelect,
 }: LeadCardProps) {
   const [noteOpen, setNoteOpen] = useState(false)
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false)
   const [noteDraft, setNoteDraft] = useState(lead.notes ?? '')
   const hasWebsite = Boolean(lead.website && lead.website.trim() !== '')
 
@@ -538,8 +541,9 @@ export function LeadCard({
         </div>
       )}
 
-      {/* Actions */}
-      <div className="mt-1 flex items-center gap-2 border-t border-sand pt-3 flex-wrap">
+      {/* Primary actions stay predictable; enrichment tools are tucked under
+          More so a card reads like a lead, not a toolbar. */}
+      <div className="mt-1 flex flex-wrap items-center gap-2 border-t border-sand pt-3">
         <button
           onClick={handleSaveClick}
           aria-label={isSaved ? 'Remove from saved' : 'Save lead'}
@@ -556,72 +560,6 @@ export function LeadCard({
             <Bookmark className="h-3.5 w-3.5 shrink-0" />
           )}
           {isSaved ? 'Saved' : 'Save'}
-        </button>
-
-        <button
-          onClick={() => setNoteOpen(!noteOpen)}
-          aria-label="Add note"
-          className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:bg-sand"
-        >
-          <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-          Note
-        </button>
-
-        {(auditState === 'idle' || auditState === 'error') && (
-          <button
-            onClick={handleGenerateAudit}
-            aria-label="Generate shareable audit report"
-            className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:bg-sand"
-          >
-            <FileText className="h-3.5 w-3.5 shrink-0" />
-            Audit
-          </button>
-        )}
-        {auditState === 'loading' && (
-          <span className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-stone cursor-not-allowed">
-            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-            Generating…
-          </span>
-        )}
-        {auditState === 'done' && (
-          <span className="flex items-center gap-1">
-            <a
-              href={auditUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-full bg-signal-50 px-2.5 py-1.5 text-xs font-medium text-signal-600 transition-colors hover:bg-signal-50"
-            >
-              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
-              View audit
-            </a>
-            <button
-              onClick={handleCopyAuditLink}
-              aria-label="Copy audit link"
-              title="Copy shareable link"
-              className="flex items-center rounded-full bg-paper-2 p-1.5 text-ink-soft transition-colors hover:bg-sand"
-            >
-              {auditCopied ? (
-                <Check className="h-3.5 w-3.5 shrink-0 text-green-600" />
-              ) : (
-                <Copy className="h-3.5 w-3.5 shrink-0" />
-              )}
-            </button>
-          </span>
-        )}
-
-        <button
-          onClick={() => setCompetitorsOpen((o) => !o)}
-          aria-expanded={competitorsOpen}
-          aria-label="Show nearby competitors"
-          className={cn(
-            'flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors',
-            competitorsOpen
-              ? 'bg-signal-50 text-signal-600'
-              : 'bg-paper-2 text-ink-soft hover:bg-sand'
-          )}
-        >
-          <BarChart3 className="h-3.5 w-3.5 shrink-0" />
-          Competitors
         </button>
 
         {hasWebsite && (
@@ -670,32 +608,85 @@ export function LeadCard({
                 {emailUpgradeNote}
               </a>
             )}
-
-            {healthState === 'idle' && (
-              <button
-                onClick={handleCheckHealth}
-                aria-label="Check digital health"
-                className="flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1.5 text-xs font-medium text-green-700 transition-colors hover:bg-green-100"
-              >
-                <Zap className="h-3.5 w-3.5 shrink-0" />
-                Check Health
-              </button>
-            )}
-
-            {healthState === 'loading' && (
-              <span className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-stone cursor-not-allowed">
-                <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
-                Checking…
-              </span>
-            )}
-            {healthState === 'found' && (
-              <span className={cn('text-xs font-bold font-mono tabular-nums', healthColor(healthScore).label)}>
-                {healthScore}/100
-              </span>
-            )}
           </>
         )}
+
+        <button
+          onClick={() => setMoreActionsOpen((open) => !open)}
+          aria-expanded={moreActionsOpen}
+          aria-controls={`lead-tools-${lead.id}`}
+          className={cn(
+            'ml-auto flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors',
+            moreActionsOpen ? 'bg-signal-50 text-signal-600' : 'bg-paper-2 text-ink-soft hover:bg-sand'
+          )}
+        >
+          <MoreHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+          More
+          <ChevronDown className={cn('h-3 w-3 transition-transform', moreActionsOpen && 'rotate-180')} aria-hidden="true" />
+        </button>
       </div>
+
+      {moreActionsOpen && (
+        <div id={`lead-tools-${lead.id}`} className="flex flex-wrap items-center gap-2 rounded-xl border border-sand bg-paper-2 p-2.5">
+          <button
+            onClick={() => setNoteOpen(!noteOpen)}
+            className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1.5 text-xs font-medium text-ink-soft hover:text-ink"
+          >
+            <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
+            {noteOpen ? 'Hide note' : 'Add note'}
+          </button>
+
+          {(auditState === 'idle' || auditState === 'error') && (
+            <button onClick={handleGenerateAudit} className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1.5 text-xs font-medium text-ink-soft hover:text-ink">
+              <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+              Create audit
+            </button>
+          )}
+          {auditState === 'loading' && (
+            <span className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1.5 text-xs text-stone">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />Generating…
+            </span>
+          )}
+          {auditState === 'done' && (
+            <span className="flex items-center gap-1">
+              <a href={auditUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1.5 text-xs font-medium text-signal-600">
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />View audit
+              </a>
+              <button onClick={handleCopyAuditLink} aria-label="Copy audit link" className="rounded-full bg-card p-1.5 text-ink-soft">
+                {auditCopied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+              </button>
+            </span>
+          )}
+
+          <button
+            onClick={() => setCompetitorsOpen((open) => !open)}
+            aria-expanded={competitorsOpen}
+            className={cn(
+              'flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1.5 text-xs font-medium',
+              competitorsOpen ? 'text-signal-600' : 'text-ink-soft hover:text-ink'
+            )}
+          >
+            <BarChart3 className="h-3.5 w-3.5" aria-hidden="true" />
+            Competitors
+          </button>
+
+          {hasWebsite && healthState === 'idle' && (
+            <button onClick={handleCheckHealth} className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1.5 text-xs font-medium text-green-700 hover:text-green-800">
+              <Zap className="h-3.5 w-3.5" aria-hidden="true" />Check website
+            </button>
+          )}
+          {hasWebsite && healthState === 'loading' && (
+            <span className="flex items-center gap-1.5 rounded-full bg-card px-2.5 py-1.5 text-xs text-stone">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />Checking…
+            </span>
+          )}
+          {hasWebsite && healthState === 'found' && (
+            <span className={cn('rounded-full bg-card px-2.5 py-1.5 font-mono text-xs font-bold', healthColor(healthScore).label)}>
+              Website {healthScore}/100
+            </span>
+          )}
+        </div>
+      )}
 
       {auditState === 'error' && auditError && (
         <p className="text-xs text-red-600">{auditError}</p>

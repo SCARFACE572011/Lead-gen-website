@@ -150,6 +150,16 @@ export const saveLimiter = createLimiter({
   local: { limit: 30, windowMs: 60_000 },
 })
 
+// CSV generation has no upstream cost, but parsing and serializing a large lead
+// payload does use application memory/CPU. Keep it responsive under accidental
+// double-clicks or scripted downloads and degrade locally during Redis outages.
+export const exportLimiter = createLimiter({
+  limiter: Ratelimit.slidingWindow(20, '1 m'),
+  prefix: 'rl:export',
+  onOutage: 'local',
+  local: { limit: 20, windowMs: 60_000 },
+})
+
 export const savedSearchesLimiter = createLimiter({
   limiter: Ratelimit.slidingWindow(30, '1 m'),
   prefix: 'rl:saved-searches',
@@ -211,6 +221,15 @@ export const authLimiter = createLimiter({
   prefix: 'rl:auth',
   onOutage: 'local',
   local: { limit: 5, windowMs: 15 * 60_000 },
+})
+
+// Public founder-help form. Each accepted request sends one email, so a Redis
+// outage must never turn the endpoint into an unmetered mail relay. Four real
+// submissions per IP per hour is generous for a human and cheap to fail closed.
+export const territoryRequestLimiter = createLimiter({
+  limiter: Ratelimit.slidingWindow(4, '1 h'),
+  prefix: 'rl:territory-request',
+  onOutage: 'deny',
 })
 
 // Chat widget limiters, keyed by client IP. The route is public (no account

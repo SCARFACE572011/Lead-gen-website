@@ -92,7 +92,7 @@ leadzip/
 │   │   │   ├── history/          # Search history page
 │   │   │   ├── exports/          # Export leads page
 │   │   │   ├── settings/         # Account settings page
-│   │   │   └── admin/            # Admin dashboard (role-gated)
+│   │   │   └── admin/            # Platform owner console (role + private allowlist)
 │   │   ├── api/
 │   │   │   └── leads/
 │   │   │       ├── search/       # POST /api/leads/search

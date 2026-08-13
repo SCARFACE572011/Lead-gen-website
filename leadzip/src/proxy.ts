@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 import { authLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { hasPlatformAdminAccess } from '@/lib/admin-auth'
 
 // Every private page surface. The (dashboard) layout is a client component with
 // no server guard, so this list is the only page-level auth gate: it must stay
@@ -69,13 +70,16 @@ export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
   const isAuthRoute = AUTH_ROUTES.some(r => pathname.startsWith(r))
+  const isPlatformAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/')
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const adminDb = isProtected && user && serviceRoleKey
+    ? createSupabaseClient(supabaseUrl, serviceRoleKey, {
+        auth: { autoRefreshToken: false, persistSession: false },
+      })
+    : null
 
   // Deactivated user check — kick them out before they reach any protected page
-  if (isProtected && user && process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    const adminDb = createSupabaseClient(
-      supabaseUrl,
-      process.env.SUPABASE_SERVICE_ROLE_KEY,
-    )
+  if (user && adminDb) {
     const { data: userProfile } = await adminDb
       .from('users_profile')
       .select('status')
@@ -89,6 +93,16 @@ export async function proxy(request: NextRequest) {
       url.searchParams.set('deactivated', 'true')
       return NextResponse.redirect(url)
     }
+  }
+
+  // The customer-facing Agency plan and workspace `owner` role never grant
+  // access to the platform control plane. Fail closed before /admin renders;
+  // every admin API independently repeats this same authorization check.
+  if (isPlatformAdminRoute && user && !(await hasPlatformAdminAccess(user, adminDb))) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/dashboard'
+    url.search = ''
+    return NextResponse.redirect(url)
   }
 
   // Unauthenticated user trying to access protected route

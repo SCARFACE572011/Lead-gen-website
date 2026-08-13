@@ -1,35 +1,86 @@
 import { NextResponse } from 'next/server'
-import type { SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 
-// Defense-in-depth for admin API access. A caller must satisfy BOTH:
-//   1. users_profile.role === 'admin' (the normal check), AND
-//   2. their account email is on this owner allowlist.
-// So even if the users_profile privileged-column lockdown migration
-// (20260810) has not been applied yet — a window in which a user could set
-// their own role to 'admin' via PostgREST — they still cannot reach any admin
-// endpoint unless they are a real owner. Keep this list in sync with the
-// handle_new_user trigger (supabase/schema.sql + 20260811_admin_emails.sql).
-const ADMIN_EMAILS = new Set<string>([
+type AuthUser = {
+  id: string
+  email?: string | null
+}
+
+// Transitional fallback for installations that have not yet applied
+// 20260812_admin_allowlist.sql. It is used only when Postgres explicitly says
+// the table does not exist; all other database errors fail closed.
+const LEGACY_PLATFORM_ADMIN_EMAILS = new Set([
   'scarface572011@live.com',
   'jezdangomez@gmail.com',
 ])
 
-/** True only for a real owner email (case-insensitive). Use alongside the
- *  role==='admin' DB check for defense-in-depth on admin endpoints. */
-export function isAdminEmail(email: string | null | undefined): boolean {
-  return ADMIN_EMAILS.has((email ?? '').trim().toLowerCase())
-}
-
 type AdminResult =
   | { ok: true; userId: string; email: string }
   | { ok: false; response: NextResponse }
+
+function platformAdminClient(): SupabaseClient | null {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!url || !serviceRoleKey) return null
+
+  return createClient(url, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
+}
+
+/**
+ * Platform-admin access is an explicit owner grant, never a subscription
+ * entitlement. Both checks must pass:
+ *
+ *  1. the profile has the platform `admin` role and is active; and
+ *  2. the account email is present in the locked-down admin_allowlist table.
+ *
+ * Agency workspace ownership is deliberately unrelated. A customer can be an
+ * owner in workspace_members and still has no access to global users, billing,
+ * sales, or analytics.
+ */
+export async function hasPlatformAdminAccess(
+  user: AuthUser,
+  adminDb: SupabaseClient | null = platformAdminClient(),
+): Promise<boolean> {
+  const email = (user.email ?? '').trim().toLowerCase()
+  if (!adminDb || !email) return false
+
+  const [profileResult, allowlistResult] = await Promise.all([
+    adminDb
+      .from('users_profile')
+      .select('role, status')
+      .eq('id', user.id)
+      .maybeSingle(),
+    adminDb
+      .from('admin_allowlist')
+      .select('email')
+      .eq('email', email)
+      .maybeSingle(),
+  ])
+
+  if (profileResult.error) return false
+
+  const allowlistTableMissing = allowlistResult.error &&
+    ['42P01', 'PGRST205'].includes(allowlistResult.error.code)
+  const isAllowlisted = allowlistTableMissing
+    ? LEGACY_PLATFORM_ADMIN_EMAILS.has(email)
+    : !allowlistResult.error && allowlistResult.data?.email === email
+
+  return (
+    profileResult.data?.role === 'admin' &&
+    profileResult.data?.status !== 'deactivated' &&
+    isAllowlisted
+  )
+}
 
 /**
  * Verify the current session belongs to a real admin owner.
  * Returns { ok:true, userId, email } or { ok:false, response } with the
  * appropriate 401/403 to return from the route.
  */
-export async function requireAdmin(supabase: SupabaseClient): Promise<AdminResult> {
+export async function requirePlatformAdmin(supabase: SupabaseClient): Promise<AdminResult> {
   const {
     data: { user },
   } = await supabase.auth.getUser()
@@ -38,20 +89,13 @@ export async function requireAdmin(supabase: SupabaseClient): Promise<AdminResul
   }
 
   const email = (user.email ?? '').trim().toLowerCase()
-
-  // `status` is read in the SAME query as `role`: an owner whose own account has
-  // been deactivated must lose admin access too. Deactivation revokes sessions,
-  // but a cookie already in flight stays valid until it expires and the proxy
-  // only re-checks status on pages, never on these API routes.
-  const { data: profile } = await supabase
-    .from('users_profile')
-    .select('role, status')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (profile?.role !== 'admin' || profile?.status === 'deactivated' || !ADMIN_EMAILS.has(email)) {
+  if (!(await hasPlatformAdminAccess(user))) {
     return { ok: false, response: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
 
   return { ok: true, userId: user.id, email }
 }
+
+// Backwards-compatible name for any route not yet migrated to the clearer
+// platform-admin terminology.
+export const requireAdmin = requirePlatformAdmin

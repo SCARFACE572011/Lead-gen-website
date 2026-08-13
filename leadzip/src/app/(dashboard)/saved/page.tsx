@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Lead, LeadStatus, PipelineStage, PIPELINE_STAGES, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
-import { exportToCSV } from '@/lib/export'
+import { exportReturnedLeadsCsv } from '@/lib/leadBulkActions'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import PipelineBoard from '@/components/leads/PipelineBoard'
@@ -37,6 +37,12 @@ const VIEW_KEY = 'leadzip_saved_view'
 const STAGE_KEY = 'leadzip_pipeline_stages'
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+
+async function currentUserId(): Promise<string> {
+  const { data: { user } } = await createClient().auth.getUser()
+  if (!user) throw new Error('Not signed in')
+  return user.id
+}
 
 type SavedView = 'list' | 'board'
 
@@ -538,7 +544,12 @@ export default function SavedLeadsPage() {
     if (isSupabaseConfigured) {
       try {
         const supabase = createClient()
-        const { error } = await supabase.from('leads').update({ status }).eq('id', id)
+        const userId = await currentUserId()
+        const { error } = await supabase
+          .from('leads')
+          .update({ status })
+          .eq('id', id)
+          .eq('user_id', userId)
         if (error) throw error
       } catch {
         // Persisting the status failed — roll back so the row doesn't quietly
@@ -557,7 +568,12 @@ export default function SavedLeadsPage() {
     if (isSupabaseConfigured) {
       try {
         const supabase = createClient()
-        const { error } = await supabase.from('leads').update({ notes }).eq('id', id)
+        const userId = await currentUserId()
+        const { error } = await supabase
+          .from('leads')
+          .update({ notes })
+          .eq('id', id)
+          .eq('user_id', userId)
         if (error) throw error
       } catch {
         // Persisting the note failed — roll back so the edit doesn't quietly
@@ -629,7 +645,12 @@ export default function SavedLeadsPage() {
     if (isSupabaseConfigured) {
       try {
         const supabase = createClient()
-        const { error } = await supabase.from('leads').delete().eq('id', id)
+        const userId = await currentUserId()
+        const { error } = await supabase
+          .from('leads')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', userId)
         if (error) throw error
       } catch {
         // Persisting the delete failed — roll back so the row doesn't reappear
@@ -657,7 +678,12 @@ export default function SavedLeadsPage() {
     if (isSupabaseConfigured) {
       try {
         const supabase = createClient()
-        const { error } = await supabase.from('leads').delete().in('id', ids)
+        const userId = await currentUserId()
+        const { error } = await supabase
+          .from('leads')
+          .delete()
+          .in('id', ids)
+          .eq('user_id', userId)
         if (error) throw error
       } catch {
         // Persisting the deletes failed — roll back the whole batch
@@ -676,6 +702,7 @@ export default function SavedLeadsPage() {
     const sel = leads.filter(l => selectedIds.has(l.id))
     const payload = sel.map(l => ({
       businessName: l.businessName,
+      email: l.email,
       phone: l.phone,
       website: l.website,
       address: l.address,
@@ -690,6 +717,14 @@ export default function SavedLeadsPage() {
         body: JSON.stringify({ leads: payload }),
       })
       const data = await res.json()
+      if (!res.ok) {
+        setPushResult({
+          succeeded: 0,
+          failed: sel.length,
+          errors: [data.error ?? 'CRM export failed — please try again'],
+        })
+        return
+      }
       setPushResult({ succeeded: data.succeeded ?? 0, failed: data.failed ?? 0, errors: data.errors ?? [] })
     } catch {
       setPushResult({ succeeded: 0, failed: sel.length, errors: ['Network error — please try again'] })
@@ -711,17 +746,31 @@ export default function SavedLeadsPage() {
     setConfirmingBulkDelete(false)
   }
 
-  const handleExportAll = () => {
+  const handleExportAll = async () => {
     if (leads.length === 0) return
-    exportToCSV(leads, `leadzip-saved-${Date.now()}`)
-    toast.success(`Exported ${leads.length} lead${leads.length !== 1 ? 's' : ''}`)
+    try {
+      const result = await exportReturnedLeadsCsv(leads, {
+        filename: `leadzipp-saved-${Date.now()}`,
+      })
+      toast.success(`Exported ${result.exportedCount} lead${result.exportedCount !== 1 ? 's' : ''}`)
+      if (result.planCapped && result.upgradeNotice) toast.info(result.upgradeNotice)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Export failed — please try again')
+    }
   }
 
-  const handleExportSelected = () => {
+  const handleExportSelected = async () => {
     const sel = leads.filter((l) => selectedIds.has(l.id))
     if (sel.length === 0) return
-    exportToCSV(sel, `leadzip-selected-${Date.now()}`)
-    toast.success(`Exported ${sel.length} lead${sel.length !== 1 ? 's' : ''}`)
+    try {
+      const result = await exportReturnedLeadsCsv(sel, {
+        filename: `leadzipp-selected-${Date.now()}`,
+      })
+      toast.success(`Exported ${result.exportedCount} lead${result.exportedCount !== 1 ? 's' : ''}`)
+      if (result.planCapped && result.upgradeNotice) toast.info(result.upgradeNotice)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Export failed — please try again')
+    }
   }
 
   const filtered = leads

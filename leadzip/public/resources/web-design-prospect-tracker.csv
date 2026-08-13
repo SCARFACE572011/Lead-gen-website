@@ -1,0 +1,2 @@
+company_name,category,territory,listing_url,website,phone,email,opportunity_signal,score,verified_on,first_channel,first_contact_date,status,next_action,next_action_date,notes
+Sample Business,Roofing contractor,Your ZIP or city,https://example.com/listing,,(555) 010-0000,,No website listed,90,YYYY-MM-DD,Phone,,Not contacted,Verify listing,YYYY-MM-DD,Replace this example row before use

@@ -12,6 +12,7 @@ import { HeroMap } from '@/components/landing/HeroMap'
 import { Reveal } from '@/components/landing/Reveal'
 import FaqSchema from '@/components/seo/FaqSchema'
 import SoftwareApplicationSchema from '@/components/seo/SoftwareApplicationSchema'
+import { COOKIE_PREFERENCES_EVENT } from '@/components/CookieConsent'
 
 const TRADES = [
   'Plumbers', 'Dentists', 'Roofers', 'Salons', 'HVAC', 'Law Firms', 'Restaurants',
@@ -171,6 +172,12 @@ export default function Home() {
               <span>Cancel before day 7 and pay nothing.</span>
               <span className="hidden text-white/40 sm:inline" aria-hidden>·</span>
               <span>Or stay on the free plan, 25 searches a month, no card.</span>
+            </p>
+            <p className="mt-5 text-sm text-white/65">
+              Not sure where to begin?{' '}
+              <Link href="/first-territory" className="font-semibold text-white underline decoration-lime/70 underline-offset-4 hover:text-lime">
+                Ask us to build your first territory with you.
+              </Link>
             </p>
           </div>
           <div className="lg:pl-6">
@@ -419,8 +426,10 @@ export default function Home() {
                 <ul className="mt-4 space-y-2.5 text-sm">
                   <li><a href="#features" className="hover:text-white">Features</a></li>
                   <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+                  <li><Link href="/web-design-leads" className="hover:text-white">Web design leads</Link></li>
                   <li><Link href="/leads" className="hover:text-white">Lead lists by city</Link></li>
                   <li><Link href="/compare" className="hover:text-white">Compare tools</Link></li>
+                  <li><Link href="/resources/web-design-outreach-kit" className="hover:text-white">Free outreach kit</Link></li>
                   <li><Link href="/api-docs" className="hover:text-white">API</Link></li>
                   <li><Link href="/search" className="hover:text-white">Search</Link></li>
                 </ul>
@@ -430,6 +439,7 @@ export default function Home() {
                 <ul className="mt-4 space-y-2.5 text-sm">
                   <li><Link href="/about" className="hover:text-white">About LeadZipp</Link></li>
                   <li><Link href="/lead-scoring-methodology" className="hover:text-white">Scoring methodology</Link></li>
+                  <li><Link href="/sample-territory" className="hover:text-white">Sample territory</Link></li>
                   <li><a href="#how" className="hover:text-white">How it works</a></li>
                   <li><a href="#faq" className="hover:text-white">FAQ</a></li>
                   <li><Link href="/login" className="hover:text-white">Log in</Link></li>
@@ -440,6 +450,14 @@ export default function Home() {
                 <ul className="mt-4 space-y-2.5 text-sm">
                   <li><Link href="/privacy" className="hover:text-white">Privacy</Link></li>
                   <li><Link href="/terms" className="hover:text-white">Terms</Link></li>
+                  <li>
+                    <button
+                      onClick={() => window.dispatchEvent(new Event(COOKIE_PREFERENCES_EVENT))}
+                      className="hover:text-white"
+                    >
+                      Cookie preferences
+                    </button>
+                  </li>
                 </ul>
               </div>
             </div>

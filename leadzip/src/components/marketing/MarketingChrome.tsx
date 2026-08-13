@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { MapPin, Menu, X } from 'lucide-react'
+import { COOKIE_PREFERENCES_EVENT } from '@/components/CookieConsent'
 
 export function SiteHeader() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -85,6 +86,7 @@ export function SiteFooter() {
               <ul className="mt-4 space-y-2.5 text-sm">
                 <li><Link href="/#features" className="hover:text-white">Features</Link></li>
                 <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+                <li><Link href="/web-design-leads" className="hover:text-white">Web design leads</Link></li>
                 <li><Link href="/leads" className="hover:text-white">Lead lists by city</Link></li>
                 <li><Link href="/compare" className="hover:text-white">Compare tools</Link></li>
                 <li><Link href="/api-docs" className="hover:text-white">API</Link></li>
@@ -96,6 +98,8 @@ export function SiteFooter() {
               <ul className="mt-4 space-y-2.5 text-sm">
                 <li><Link href="/blog" className="hover:text-white">Blog</Link></li>
                 <li><Link href="/lead-scoring-methodology" className="hover:text-white">Scoring methodology</Link></li>
+                <li><Link href="/sample-territory" className="hover:text-white">Sample territory</Link></li>
+                <li><Link href="/resources/web-design-outreach-kit" className="hover:text-white">Outreach kit</Link></li>
                 <li><Link href="/about" className="hover:text-white">About LeadZipp</Link></li>
                 <li><Link href="/#how" className="hover:text-white">How it works</Link></li>
                 <li><Link href="/#faq" className="hover:text-white">FAQ</Link></li>
@@ -106,6 +110,14 @@ export function SiteFooter() {
               <ul className="mt-4 space-y-2.5 text-sm">
                 <li><Link href="/privacy" className="hover:text-white">Privacy</Link></li>
                 <li><Link href="/terms" className="hover:text-white">Terms</Link></li>
+                <li>
+                  <button
+                    onClick={() => window.dispatchEvent(new Event(COOKIE_PREFERENCES_EVENT))}
+                    className="hover:text-white"
+                  >
+                    Cookie preferences
+                  </button>
+                </li>
               </ul>
             </div>
           </div>

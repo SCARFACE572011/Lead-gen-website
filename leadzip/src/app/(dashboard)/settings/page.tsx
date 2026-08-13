@@ -32,10 +32,13 @@ import {
   Users,
   UserMinus,
   Send,
+  MessageCircle,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { getWhiteLabel, saveWhiteLabel, type WhiteLabelSettings } from '@/lib/white-label'
+import { CHAT_HIDDEN_KEY, CHAT_VISIBILITY_EVENT } from '@/components/chat/ChatWidget'
+import { COOKIE_PREFERENCES_EVENT } from '@/components/CookieConsent'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
@@ -165,7 +168,7 @@ function ProfileTab() {
         </div>
         <div>
           <p className="text-sm font-medium text-ink">{fullName || 'Your Name'}</p>
-          <p className="readout text-stone mt-0.5">LeadZipp Pro Member</p>
+          <p className="readout text-stone mt-0.5">LeadZipp member</p>
         </div>
       </div>
 
@@ -570,6 +573,7 @@ const DEFAULT_PREFS = {
   systemUpdates: true,
   newFeatures: true,
   usageAlerts: true,
+  showHelpWidget: true,
 }
 
 function NotificationsTab() {
@@ -579,8 +583,9 @@ function NotificationsTab() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(NOTIF_KEY)
+      const showHelpWidget = localStorage.getItem(CHAT_HIDDEN_KEY) !== 'true'
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      if (raw) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(raw) })
+      setPrefs({ ...DEFAULT_PREFS, ...(raw ? JSON.parse(raw) : {}), showHelpWidget })
     } catch { /* ignore */ }
   }, [])
 
@@ -592,6 +597,10 @@ function NotificationsTab() {
   const handleSave = () => {
     try {
       localStorage.setItem(NOTIF_KEY, JSON.stringify(prefs))
+      localStorage.setItem(CHAT_HIDDEN_KEY, prefs.showHelpWidget ? 'false' : 'true')
+      window.dispatchEvent(new CustomEvent(CHAT_VISIBILITY_EVENT, {
+        detail: { hidden: !prefs.showHelpWidget },
+      }))
       setSaved(true)
       setTimeout(() => setSaved(false), 2500)
     } catch { /* ignore */ }
@@ -627,6 +636,12 @@ function NotificationsTab() {
       label: 'Usage limit alerts',
       desc: 'Alert when you reach 80% of your plan limits',
       icon: <Bell className="w-4 h-4 text-signal" />,
+    },
+    {
+      key: 'showHelpWidget' as const,
+      label: 'Show help widget',
+      desc: 'Keep the support button visible; you can restore it here after hiding it',
+      icon: <MessageCircle className="w-4 h-4 text-signal" />,
     },
   ]
 
@@ -731,6 +746,19 @@ function ComplianceTab() {
           This information is provided for general guidance only and does not constitute legal advice.
           Consult a qualified attorney for compliance advice specific to your situation and jurisdiction.
         </p>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-sand bg-card p-4">
+        <div>
+          <p className="text-sm font-semibold text-ink">Your cookie choice</p>
+          <p className="mt-0.5 text-xs text-stone">Review or change whether LeadZipp may use analytics cookies.</p>
+        </div>
+        <button
+          onClick={() => window.dispatchEvent(new Event(COOKIE_PREFERENCES_EVENT))}
+          className="rounded-full border border-sand px-4 py-2 text-xs font-semibold text-ink-soft transition-colors hover:border-signal hover:text-signal"
+        >
+          Cookie preferences
+        </button>
       </div>
     </div>
   )
@@ -1173,6 +1201,7 @@ const CRM_META: Record<CrmType, { label: string; placeholder: string; helpUrl: s
 function IntegrationsTab() {
   const [connected, setConnected] = useState<CrmType[]>([])
   const [loading, setLoading] = useState(true)
+  const [upgradeRequired, setUpgradeRequired] = useState(false)
   const [adding, setAdding] = useState<CrmType | null>(null)
   const [keyInput, setKeyInput] = useState('')
   const [saving, setSaving] = useState(false)
@@ -1181,8 +1210,18 @@ function IntegrationsTab() {
 
   useEffect(() => {
     fetch('/api/integrations')
-      .then(r => r.json())
-      .then(d => setConnected((d.integrations ?? []).map((i: { crm_type: CrmType }) => i.crm_type)))
+      .then(async (response) => ({
+        ok: response.ok,
+        status: response.status,
+        data: await response.json().catch(() => ({})),
+      }))
+      .then(({ ok, status, data }) => {
+        if (!ok && status === 403 && data.upgradeRequired === true) {
+          setUpgradeRequired(true)
+          return
+        }
+        setConnected((data.integrations ?? []).map((i: { crm_type: CrmType }) => i.crm_type))
+      })
       .finally(() => setLoading(false))
   }, [])
 
@@ -1221,6 +1260,17 @@ function IntegrationsTab() {
 
       {loading ? (
         <div className="text-sm text-stone py-6 text-center">Loading…</div>
+      ) : upgradeRequired ? (
+        <div className="rounded-2xl border border-sand bg-paper-2 p-6 text-center">
+          <Plug className="mx-auto h-8 w-8 text-stone" aria-hidden="true" />
+          <p className="mt-3 text-sm font-semibold text-ink">CRM integrations are included with Pro and Agency</p>
+          <p className="mx-auto mt-1 max-w-md text-xs leading-relaxed text-stone">
+            Upgrade to connect HubSpot, GoHighLevel, or Pipedrive and push saved leads without rebuilding your list.
+          </p>
+          <a href="/pricing" className="mt-4 inline-flex rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-signal-600">
+            View paid plans
+          </a>
+        </div>
       ) : (
         <div className="space-y-3">
           {crms.map(crm => {
@@ -1441,22 +1491,21 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-paper">
-      <div className="max-w-4xl mx-auto px-6 py-8">
-        <div className="mb-6">
+    <div className="mx-auto max-w-6xl">
+        <div className="mb-5">
           <h1 className="font-display text-2xl font-extrabold tracking-tight text-ink">Settings</h1>
           <p className="text-sm text-stone mt-0.5">Manage your account, plan, and preferences</p>
         </div>
 
-        <div className="flex gap-6">
-          <div className="w-52 shrink-0">
-            <nav className="space-y-1">
+        <div className="space-y-4">
+          <div className="overflow-x-auto pb-1">
+            <nav className="flex min-w-max gap-1 rounded-2xl border border-sand bg-card p-1.5 shadow-card" aria-label="Settings sections">
               {TABS.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={cn(
-                    'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all text-left',
+                    'flex items-center gap-2 rounded-xl px-3.5 py-2.5 text-sm font-medium transition-all',
                     activeTab === tab.id
                       ? 'bg-signal text-white shadow-sm'
                       : 'text-ink-soft hover:bg-paper-2 hover:text-ink'
@@ -1469,11 +1518,10 @@ export default function SettingsPage() {
             </nav>
           </div>
 
-          <div className="flex-1 bg-card border border-sand rounded-2xl p-6">
+          <div className="rounded-3xl border border-sand bg-card p-5 sm:p-7">
             {renderTab()}
           </div>
         </div>
-      </div>
     </div>
   )
 }

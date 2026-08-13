@@ -5,6 +5,7 @@ import { Toaster } from "sonner";
 import Script from "next/script";
 import { ThemeProvider } from "next-themes";
 import { CookieConsent } from "@/components/CookieConsent"
+import { AnalyticsScripts } from "@/components/AnalyticsScripts";
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { PromoPopup } from "@/components/PromoPopup";
 import { ChatWidget } from "@/components/chat/ChatWidget";
@@ -16,6 +17,24 @@ import { SITE_URL } from "@/components/seo/site";
 // NEXT_PUBLIC_GA4_ID. Each must be referenced literally, since Next inlines
 // NEXT_PUBLIC_* at build time and cannot resolve a computed lookup.
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_ID || process.env.NEXT_PUBLIC_GA;
+const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID;
+const HAS_GOOGLE_ANALYTICS = Boolean(GTM_ID || GA4_ID);
+
+// This tiny first-party bootstrap makes the privacy choice authoritative before
+// any Google code can run. It queues Consent Mode locally but does not make a
+// network request; AnalyticsScripts loads Google only after an explicit grant.
+const GOOGLE_CONSENT_BOOTSTRAP = `(function(w){
+w.dataLayer=w.dataLayer||[];
+w.gtag=w.gtag||function(){w.dataLayer.push(arguments);};
+var choice=null;
+try{choice=w.localStorage.getItem('leadzip_cookie_consent');}catch(e){}
+var granted=choice==='all';
+w.gtag('consent','default',{
+analytics_storage:granted?'granted':'denied',
+ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'
+});
+${GA4_ID && !GTM_ID ? `if(granted){w.__leadzipGa4Configured=true;w.gtag('js',new Date());w.gtag('config',${JSON.stringify(GA4_ID)});}` : ""}
+})(window);`;
 
 // Display — characterful modern grotesque, used with restraint for headlines
 const bricolage = Bricolage_Grotesque({
@@ -126,21 +145,14 @@ export default function RootLayout({
       className={`${bricolage.variable} ${hanken.variable} ${spaceMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
+        {HAS_GOOGLE_ANALYTICS && (
+          <Script id="google-consent-default" strategy="beforeInteractive">
+            {GOOGLE_CONSENT_BOOTSTRAP}
+          </Script>
+        )}
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
         {/* SEO — JSON-LD structured data (Organization, WebSite, SoftwareApplication, FAQ) */}
         <StructuredData />
-
-        {/* GTM noscript fallback */}
-        {process.env.NEXT_PUBLIC_GTM_ID && (
-          <noscript>
-            <iframe
-              src={`https://www.googletagmanager.com/ns.html?id=${process.env.NEXT_PUBLIC_GTM_ID}`}
-              height="0"
-              width="0"
-              style={{ display: "none", visibility: "hidden" }}
-            />
-          </noscript>
-        )}
 
         {children}
         <Toaster richColors position="top-center" />
@@ -148,31 +160,7 @@ export default function RootLayout({
         <OnboardingModal />
         <PromoPopup />
         <ChatWidget />
-
-        {/* GTM script */}
-        {process.env.NEXT_PUBLIC_GTM_ID && (
-          <Script id="gtm" strategy="afterInteractive">
-            {`(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','${process.env.NEXT_PUBLIC_GTM_ID}');`}
-          </Script>
-        )}
-
-        {/* GA4 fallback (only when no GTM) */}
-        {GA4_ID && !process.env.NEXT_PUBLIC_GTM_ID && (
-          <>
-            <Script
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA4_ID}`}
-              strategy="afterInteractive"
-            />
-            <Script id="ga4" strategy="afterInteractive">
-              {`window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}
-gtag('js',new Date());gtag('config','${GA4_ID}');`}
-            </Script>
-          </>
-        )}
+        <AnalyticsScripts />
         </ThemeProvider>
       </body>
     </html>

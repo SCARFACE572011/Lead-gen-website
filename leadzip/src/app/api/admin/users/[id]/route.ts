@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { isAdminEmail } from '@/lib/admin-auth'
+import { requirePlatformAdmin } from '@/lib/admin-auth'
 
 function serviceClient() {
   return createSupabaseClient(
@@ -15,18 +15,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const supabase = await createServerClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { data: profile } = await supabase
-    .from('users_profile')
-    .select('role')
-    .eq('id', user.id)
-    .maybeSingle()
-
-  if (profile?.role !== 'admin' || !isAdminEmail(user.email)) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const admin = await requirePlatformAdmin(supabase)
+  if (!admin.ok) return admin.response
+  const user = { id: admin.userId }
 
   const { id: targetId } = await params
   const body = await request.json()

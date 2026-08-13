@@ -47,6 +47,14 @@ begin
   if v_rows = 0 then
     raise notice 'admin-setup: no users_profile row matched %, nothing granted.', v_admin_email;
   else
+    -- The platform-admin grant has two independent halves. The allowlist makes
+    -- the account an explicit platform owner; role='admin' alone is
+    -- insufficient in the application. Paid Agency customers are never
+    -- inserted here.
+    insert into public.admin_allowlist (email, note)
+    values (lower(v_admin_email), 'Explicit owner grant via admin-setup.sql')
+    on conflict (email) do nothing;
+
     raise notice 'admin-setup: granted admin + agency to %.', v_admin_email;
   end if;
 end $$;

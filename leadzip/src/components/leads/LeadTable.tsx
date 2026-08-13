@@ -26,6 +26,9 @@ interface LeadTableProps {
   leads: Lead[]
   onSave: (lead: Lead) => void
   savedIds: string[]
+  selectedIds?: Set<string>
+  onSelect?: (id: string) => void
+  onSelectAll?: (selected: boolean) => void
 }
 
 function SortIcon({ column, sortKey, sortDir }: { column: SortKey; sortKey: SortKey; sortDir: SortDir }) {
@@ -45,7 +48,14 @@ function StarBadge({ rating }: { rating: number | null }) {
   )
 }
 
-export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
+export function LeadTable({
+  leads,
+  onSave,
+  savedIds,
+  selectedIds = new Set<string>(),
+  onSelect,
+  onSelectAll,
+}: LeadTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('leadScore')
   const [sortDir, setSortDir] = useState<SortDir>('desc')
 
@@ -167,7 +177,13 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
         <thead>
           <tr className="border-b border-sand bg-paper-2">
             <th className="w-10 px-4 py-3">
-              <span className="sr-only">Select</span>
+              <input
+                type="checkbox"
+                checked={leads.length > 0 && leads.every((lead) => selectedIds.has(lead.id))}
+                onChange={(event) => onSelectAll?.(event.target.checked)}
+                aria-label="Select all visible leads"
+                className="h-4 w-4 cursor-pointer rounded border-sand accent-signal"
+              />
             </th>
             {headerCell('Business', 'businessName')}
             <th className="whitespace-nowrap px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-stone">
@@ -216,6 +232,8 @@ export function LeadTable({ leads, onSave, savedIds }: LeadTableProps) {
                 <td className="px-4 py-3">
                   <input
                     type="checkbox"
+                    checked={selectedIds.has(lead.id)}
+                    onChange={() => onSelect?.(lead.id)}
                     aria-label={`Select ${lead.businessName}`}
                     className="h-4 w-4 cursor-pointer rounded border-sand accent-signal"
                   />

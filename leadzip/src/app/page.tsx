@@ -395,6 +395,8 @@ export default function Home() {
                 <ul className="mt-4 space-y-2.5 text-sm">
                   <li><a href="#features" className="hover:text-white">Features</a></li>
                   <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
+                  <li><Link href="/leads" className="hover:text-white">Lead lists by city</Link></li>
+                  <li><Link href="/compare" className="hover:text-white">Compare tools</Link></li>
                   <li><Link href="/api-docs" className="hover:text-white">API</Link></li>
                   <li><Link href="/search" className="hover:text-white">Search</Link></li>
                 </ul>

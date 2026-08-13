@@ -1,6 +1,6 @@
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
-import { geocodeZip } from '@/lib/geocode'
+import { resolveSearchLocation, effectiveRadiusMeters } from '@/lib/geocode'
 import { formatPhone } from '@/lib/phoneFormatter'
 
 const FSQ_SEARCH_URL = 'https://api.foursquare.com/v3/places/search'
@@ -109,12 +109,13 @@ export async function searchLeadsFoursquare(params: SearchParams): Promise<Searc
   const apiKey = process.env.FOURSQUARE_API_KEY
   if (!apiKey) throw new Error('FOURSQUARE_API_KEY not configured')
 
-  const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
+  const loc = params.resolved ?? (await resolveSearchLocation(params))
+  const { lat, lon, city: geoCity, state: geoState } = loc
 
   // Foursquare caps radius at 100,000m (~62mi). For larger radii, tile the area
   // with multiple sub-searches at offset centers so we cover the full radius.
   const FSQ_MAX_RADIUS = 100000
-  const radiusMeters = Math.round(params.radiusMiles * 1609.34)
+  const radiusMeters = effectiveRadiusMeters(params)
   const categoryIds = FSQ_CATEGORY_IDS[params.category]
   const query = params.category === 'Custom Keyword' && params.keyword
     ? params.keyword
@@ -176,7 +177,7 @@ export async function searchLeadsFoursquare(params: SearchParams): Promise<Searc
         city,
         state,
         zipCode,
-        phone: place.tel ? formatPhone(place.tel) : '',
+        phone: place.tel ? formatPhone(place.tel, loc.countryCode) : '',
         website: place.website ?? '',
         rating,
         reviewCount,

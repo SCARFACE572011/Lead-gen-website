@@ -48,6 +48,21 @@ export const enrichHealthLimiter = new Ratelimit({
   prefix: 'rl:enrich:health',
 })
 
+// Competitor analysis costs one billable Places call per request, so it gets a
+// tight per-user cap.
+export const competitorsLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(6, '1 m'),
+  prefix: 'rl:competitors',
+})
+
+// Audit generation does a short website probe + a DB insert per request.
+export const auditLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
+  prefix: 'rl:audit',
+})
+
 export const saveLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(30, '1 m'),
@@ -58,6 +73,31 @@ export const savedSearchesLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(30, '1 m'),
   prefix: 'rl:saved-searches',
+})
+
+// Pipeline stage moves (drag-and-drop on the /saved board) — cheap DB updates,
+// but cap rapid-fire scripting.
+export const pipelineLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(60, '1 m'),
+  prefix: 'rl:pipeline',
+})
+
+// AI proposal generation — each request may hit the Claude API, so keep a tight
+// per-user cap to protect spend.
+export const proposalLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(10, '1 m'),
+  prefix: 'rl:proposal',
+})
+
+// Market Gap Finder — one analysis fans out to up to 6 category searches, each a
+// potential paid provider call on cache miss (~$0.10 apiece). Low hourly cap per
+// user bounds worst-case upstream cost; cache hits make repeats nearly free.
+export const marketGapsLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(6, '1 h'),
+  prefix: 'rl:market-gaps',
 })
 
 // API v1 key limiters (daily quota per plan)
@@ -84,6 +124,21 @@ export const authLimiter = new Ratelimit({
   redis,
   limiter: Ratelimit.slidingWindow(5, '15 m'),
   prefix: 'rl:auth',
+})
+
+// Chat widget limiters, keyed by client IP. The route is public (no account
+// needed) and can call the paid Anthropic API, so it needs both a burst guard
+// and a daily cost cap. In FAQ fallback mode the same limits stop abuse.
+export const chatLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(12, '1 m'),
+  prefix: 'rl:chat',
+})
+
+export const chatDailyLimiter = new Ratelimit({
+  redis,
+  limiter: Ratelimit.slidingWindow(80, '1 d'),
+  prefix: 'rl:chat:day',
 })
 
 export interface RateLimitResult {

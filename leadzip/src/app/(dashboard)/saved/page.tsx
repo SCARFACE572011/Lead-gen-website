@@ -18,16 +18,24 @@ import {
   CheckCircle2,
   AlertCircle,
   RefreshCw,
+  Wand2,
+  List as ListIcon,
+  Columns3,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Lead, LeadStatus, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
+import { Lead, LeadStatus, PipelineStage, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
 import { exportToCSV } from '@/lib/export'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
+import PipelineBoard from '@/components/leads/PipelineBoard'
+import ProposalModal from '@/components/leads/ProposalModal'
 
 const STORAGE_KEY = 'leadzip_saved_leads'
+const VIEW_KEY = 'leadzip_saved_view'
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+
+type SavedView = 'list' | 'board'
 
 type SortOption = 'score' | 'date' | 'category' | 'rating' | 'name'
 type StatusFilter = 'all' | LeadStatus
@@ -121,6 +129,7 @@ function LeadRow({
   onStatusChange,
   onNotesChange,
   onDelete,
+  onGenerate,
 }: {
   lead: Lead
   selected: boolean
@@ -128,6 +137,7 @@ function LeadRow({
   onStatusChange: (id: string, status: LeadStatus) => void
   onNotesChange: (id: string, notes: string) => void
   onDelete: (id: string) => void
+  onGenerate: (lead: Lead) => void
 }) {
   const [editingNotes, setEditingNotes] = useState(false)
   const [noteDraft, setNoteDraft] = useState(lead.notes)
@@ -248,13 +258,22 @@ function LeadRow({
         </span>
       </td>
       <td className="px-3 py-3 pr-4">
-        <button
-          onClick={() => onDelete(lead.id)}
-          className="p-1.5 rounded-lg text-stone hover:text-red-500 hover:bg-red-50 transition-all"
-          title="Delete lead"
-        >
-          <Trash2 className="w-4 h-4" />
-        </button>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onGenerate(lead)}
+            className="p-1.5 rounded-lg text-stone hover:text-signal hover:bg-signal-50 transition-all"
+            title="Generate outreach"
+          >
+            <Wand2 className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => onDelete(lead.id)}
+            className="p-1.5 rounded-lg text-stone hover:text-red-500 hover:bg-red-50 transition-all"
+            title="Delete lead"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
       </td>
     </tr>
   )
@@ -273,6 +292,9 @@ export default function SavedLeadsPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(false)
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false)
+  const [view, setView] = useState<SavedView>('list')
+  const [proposalLead, setProposalLead] = useState<Lead | null>(null)
+  const [pipelineMigrationNeeded, setPipelineMigrationNeeded] = useState(false)
   const [connectedCrms, setConnectedCrms] = useState<CrmType[]>([])
   const [crmModal, setCrmModal] = useState(false)
   const [pushingCrm, setPushingCrm] = useState<CrmType | null>(null)
@@ -307,6 +329,9 @@ export default function SavedLeadsPage() {
           if (error) throw error
 
           if (data && data.length > 0) {
+            // Feature-detect the pipeline columns: select('*') simply omits them
+            // when the one-time migration hasn't run yet.
+            setPipelineMigrationNeeded(!('pipeline_stage' in data[0]))
             setLeads(
               data.map((l) => ({
                 id: l.id,
@@ -332,6 +357,9 @@ export default function SavedLeadsPage() {
                 facebookUrl: l.facebook_url ?? null,
                 instagramUrl: l.instagram_url ?? null,
                 linkedinUrl: l.linkedin_url ?? null,
+                email: l.email ?? undefined,
+                pipelineStage: (l.pipeline_stage as PipelineStage) ?? 'new',
+                stageUpdatedAt: l.stage_updated_at ?? undefined,
               }))
             )
             return
@@ -372,8 +400,19 @@ export default function SavedLeadsPage() {
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
+    try {
+      const savedView = localStorage.getItem(VIEW_KEY)
+      if (savedView === 'board' || savedView === 'list') {
+        setView(savedView)
+      }
+    } catch { /* non-fatal */ }
     loadLeads()
   }, [loadLeads])
+
+  const switchView = (v: SavedView) => {
+    setView(v)
+    try { localStorage.setItem(VIEW_KEY, v) } catch { /* non-fatal */ }
+  }
 
   const saveToStorage = useCallback((updated: Lead[]) => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
@@ -405,6 +444,37 @@ export default function SavedLeadsPage() {
       } catch {
         // Non-fatal
       }
+    }
+  }
+
+  const handleStageChange = async (id: string, stage: PipelineStage) => {
+    const snapshot = leads
+    const updated = leads.map((l) =>
+      l.id === id
+        ? { ...l, pipelineStage: stage, stageUpdatedAt: new Date().toISOString() }
+        : l
+    )
+    saveToStorage(updated)
+
+    if (!isSupabaseConfigured) return
+    try {
+      const res = await fetch('/api/leads/pipeline', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: id, stage }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        if (data?.migrationRequired) {
+          // Column not migrated yet — keep the move locally and surface the banner
+          setPipelineMigrationNeeded(true)
+          return
+        }
+        throw new Error(data?.error ?? 'Stage update failed')
+      }
+    } catch {
+      saveToStorage(snapshot)
+      toast.error('Failed to move lead')
     }
   }
 
@@ -672,6 +742,32 @@ export default function SavedLeadsPage() {
         )}
 
         <div className="bg-card border border-sand rounded-2xl px-4 py-3 mb-4 flex flex-wrap gap-3 items-center">
+          <div className="inline-flex items-center rounded-full border border-sand bg-paper-2 p-0.5" role="tablist" aria-label="View">
+            <button
+              role="tab"
+              aria-selected={view === 'list'}
+              onClick={() => switchView('list')}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                view === 'list' ? 'bg-card text-ink shadow-sm border border-sand' : 'text-stone hover:text-ink'
+              )}
+            >
+              <ListIcon className="w-3.5 h-3.5" />
+              List
+            </button>
+            <button
+              role="tab"
+              aria-selected={view === 'board'}
+              onClick={() => switchView('board')}
+              className={cn(
+                'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors',
+                view === 'board' ? 'bg-card text-ink shadow-sm border border-sand' : 'text-stone hover:text-ink'
+              )}
+            >
+              <Columns3 className="w-3.5 h-3.5" />
+              Pipeline
+            </button>
+          </div>
           <div className="relative flex-1 min-w-[200px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-stone" />
             <input
@@ -768,6 +864,26 @@ export default function SavedLeadsPage() {
               )}
             </div>
           </div>
+        ) : view === 'board' ? (
+          <div>
+            {pipelineMigrationNeeded && isSupabaseConfigured && (
+              <div className="mb-4 flex items-start gap-2.5 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl px-4 py-3">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div className="text-sm">
+                  <p className="font-semibold">Pipeline needs a one-time database migration</p>
+                  <p className="text-xs mt-0.5 text-amber-700">
+                    Run <span className="font-mono">supabase/migrations/20260812_pipeline.sql</span> in the Supabase SQL editor.
+                    Until then, stage changes are kept on this device only.
+                  </p>
+                </div>
+              </div>
+            )}
+            <PipelineBoard
+              leads={filtered}
+              onStageChange={handleStageChange}
+              onGenerate={setProposalLead}
+            />
+          </div>
         ) : (
           <div className="bg-card border border-sand rounded-2xl overflow-hidden">
             <div className="overflow-x-auto">
@@ -804,6 +920,7 @@ export default function SavedLeadsPage() {
                       onStatusChange={handleStatusChange}
                       onNotesChange={handleNotesChange}
                       onDelete={handleDelete}
+                      onGenerate={setProposalLead}
                     />
                   ))}
                 </tbody>
@@ -812,6 +929,8 @@ export default function SavedLeadsPage() {
           </div>
         )}
       </div>
+
+      <ProposalModal lead={proposalLead} onClose={() => setProposalLead(null)} />
     </div>
   )
 }

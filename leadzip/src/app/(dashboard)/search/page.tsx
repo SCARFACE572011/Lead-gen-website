@@ -43,6 +43,17 @@ const HISTORY_KEY = 'leadzip_search_history'
 
 const MAX_BULK_ZIPS: Record<string, number> = { free: 3, pro: 10, agency: 25 }
 
+// Radius options offered in international (km) mode. Reruns from history store
+// miles (integer column), so we snap the converted value back onto an option.
+const KM_OPTIONS = [1, 5, 10, 25, 50]
+function snapKm(km: number): number {
+  return KM_OPTIONS.reduce(
+    (best, opt) => (Math.abs(opt - km) < Math.abs(best - km) ? opt : best),
+    KM_OPTIONS[0]
+  )
+}
+const ZIP_RE = /^\d{5}(-\d{4})?$/
+
 function haversineDistanceMiles(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 3958.8
   const dLat = ((lat2 - lat1) * Math.PI) / 180
@@ -158,7 +169,7 @@ function EmptyState({ hasSearched, errorMessage }: { hasSearched: boolean; error
         <div>
           <p className="text-base font-semibold font-display text-ink">Ready to find leads</p>
           <p className="mt-1 text-sm text-stone">
-            Enter a ZIP code and click Search Leads to get started
+            Enter a US ZIP code or any city worldwide, like London, UK, then click Search Leads
           </p>
         </div>
       </div>
@@ -211,6 +222,7 @@ function SearchPageInner() {
   const [fetchedAt, setFetchedAt] = useState<string | null>(null)
   const [fromCache, setFromCache] = useState(false)
   const [filterSheetOpen, setFilterSheetOpen] = useState(false)
+  const [locationLabel, setLocationLabel] = useState<string | null>(null)
 
   // Load saved lead IDs from localStorage
   useEffect(() => {
@@ -251,13 +263,41 @@ function SearchPageInner() {
       .catch(() => {})
   }, [])
 
-  // Pre-populate initial filter values from URL params (for Rerun from history)
-  const initialValues = useMemo<Partial<SearchParams>>(() => ({
-    zipCode: searchParams.get('zip') ?? '',
-    radiusMiles: searchParams.get('radius') ? Number(searchParams.get('radius')) : 25,
-    category: searchParams.get('category') ?? '',
-    keyword: searchParams.get('keyword') ?? undefined,
-  }), [searchParams])
+  // Pre-populate initial filter values from URL params (for Rerun from history).
+  // The zip param may carry an international location string ("Berlin, Germany")
+  // written by an international search; detect by pattern and rebuild km mode.
+  const initialValues = useMemo<Partial<SearchParams>>(() => {
+    const zipParam = (searchParams.get('zip') ?? '').trim()
+    const locationParam = (searchParams.get('location') ?? '').trim()
+    const radiusParam = searchParams.get('radius') ? Number(searchParams.get('radius')) : undefined
+    const radiusKmParam = searchParams.get('radiusKm') ? Number(searchParams.get('radiusKm')) : undefined
+    const countryParam = (searchParams.get('country') ?? '').trim().toUpperCase() || undefined
+    const category = searchParams.get('category') ?? ''
+    const keyword = searchParams.get('keyword') ?? undefined
+
+    const zipIsZip = ZIP_RE.test(zipParam) && (!countryParam || countryParam === 'US')
+    const location = locationParam || (!zipIsZip ? zipParam : '')
+
+    if (location) {
+      // History stores miles; snap back to the closest km option (10 km <-> 6 mi)
+      const radiusKm = radiusKmParam ?? snapKm((radiusParam ?? 6) * 1.60934)
+      return {
+        zipCode: '',
+        location,
+        countryCode: countryParam,
+        radiusKm,
+        radiusMiles: Math.round(radiusKm * 0.621371 * 100) / 100,
+        category,
+        keyword,
+      }
+    }
+    return {
+      zipCode: zipParam,
+      radiusMiles: radiusParam ?? 25,
+      category,
+      keyword,
+    }
+  }, [searchParams])
 
   const handleSearch = useCallback(async (params: SearchParams) => {
     setIsLoading(true)
@@ -289,7 +329,7 @@ function SearchPageInner() {
         return
       }
 
-      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number }; source?: string; fetchedAt?: string; fromCache?: boolean }
+      const result = await res.json() as { leads: Lead[]; total: number; center?: { lat: number; lon: number }; source?: string; fetchedAt?: string; fromCache?: boolean; locationLabel?: string }
       const filteredLeads = params.excludeSaved
         ? result.leads.filter((l) => !savedLeadIds.has(l.id))
         : result.leads
@@ -302,13 +342,14 @@ function SearchPageInner() {
       setFetchedAt(result.fetchedAt ?? null)
       setFromCache(result.fromCache ?? false)
       setSourceBannerDismissed(false)
+      setLocationLabel(result.locationLabel ?? params.location ?? null)
 
       // Save to search history in localStorage
       try {
         const entry: SearchHistory = {
           id: `h_${Date.now()}`,
           userId: 'local',
-          zipCode: params.zipCode,
+          zipCode: params.location || params.zipCode,
           radius: params.radiusMiles,
           category: params.category,
           keyword: params.keyword ?? '',
@@ -342,6 +383,7 @@ function SearchPageInner() {
     setBulkProgress({ done: 0, total: zips.length })
     setNoResultZips([])
     setSearchedZipCount(zips.length)
+    setLocationLabel(null)
 
     try {
       const results = await Promise.all(
@@ -429,22 +471,24 @@ function SearchPageInner() {
     }
   }, [savedLeadIds])
 
-  // Auto-run search if URL params are present (from history Rerun or onboarding)
+  // Auto-run search if URL params are present (from history Rerun or onboarding).
+  // initialValues already normalized ZIP vs international mode from the URL.
   useEffect(() => {
-    const zip = searchParams.get('zip')
-    if (zip) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      handleSearch({
-        zipCode: zip,
-        radiusMiles: searchParams.get('radius') ? Number(searchParams.get('radius')) : 25,
-        category: searchParams.get('category') ?? '',
-        keyword: searchParams.get('keyword') ?? undefined,
-        noWebsite: searchParams.get('noWebsite') === 'true' || undefined,
-        hasWebsite: searchParams.get('hasWebsite') === 'true' || undefined,
-        minRating: searchParams.get('minRating') ? Number(searchParams.get('minRating')) : undefined,
-        minReviews: searchParams.get('minReviews') ? Number(searchParams.get('minReviews')) : undefined,
-      })
-    }
+    if (!searchParams.get('zip') && !searchParams.get('location')) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    handleSearch({
+      zipCode: initialValues.zipCode ?? '',
+      location: initialValues.location,
+      countryCode: initialValues.countryCode,
+      radiusKm: initialValues.radiusKm,
+      radiusMiles: initialValues.radiusMiles ?? 25,
+      category: initialValues.category ?? '',
+      keyword: initialValues.keyword,
+      noWebsite: searchParams.get('noWebsite') === 'true' || undefined,
+      hasWebsite: searchParams.get('hasWebsite') === 'true' || undefined,
+      minRating: searchParams.get('minRating') ? Number(searchParams.get('minRating')) : undefined,
+      minReviews: searchParams.get('minReviews') ? Number(searchParams.get('minReviews')) : undefined,
+    })
     // Only on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -679,6 +723,11 @@ function SearchPageInner() {
                           {searchedZipCount}
                         </span>{' '}
                         ZIP codes
+                      </>
+                    ) : locationLabel ? (
+                      <>
+                        {totalFound === 1 ? 'lead' : 'leads'} in{' '}
+                        <span className="font-semibold text-ink">{locationLabel}</span>
                       </>
                     ) : (
                       <>{totalFound === 1 ? 'lead' : 'leads'} found</>
@@ -987,9 +1036,13 @@ function SearchPageInner() {
         <SaveSearchModal
           isOpen={saveModalOpen}
           onClose={() => setSaveModalOpen(false)}
-          defaultName={`${lastSearchParams.category || 'Leads'} · ${lastSearchParams.zipCode}`}
-          zip={lastSearchParams.zipCode}
-          radius={lastSearchParams.radiusMiles ?? 25}
+          defaultName={`${lastSearchParams.category || 'Leads'} · ${lastSearchParams.location || lastSearchParams.zipCode}`}
+          zip={lastSearchParams.location || lastSearchParams.zipCode}
+          radius={
+            lastSearchParams.radiusKm != null
+              ? Math.max(1, Math.round(lastSearchParams.radiusKm * 0.621371))
+              : lastSearchParams.radiusMiles ?? 25
+          }
           category={lastSearchParams.category ?? ''}
           keyword={lastSearchParams.keyword}
           savedCount={savedSearchCount}

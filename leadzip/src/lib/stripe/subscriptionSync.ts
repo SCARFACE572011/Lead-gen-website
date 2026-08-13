@@ -165,8 +165,8 @@ export async function confirmCheckoutSession(
     return { activated: false, reason: 'session_user_mismatch' }
   }
   if (session.mode !== 'subscription') return { activated: false, reason: 'not_subscription' }
-  // Gate on session completion, NOT payment_status: checkout uses a 14-day
-  // trial, so a legitimately-completed session is 'no_payment_required'
+  // Gate on session completion, NOT payment_status: first-time checkouts use a
+  // 7-day trial, so a legitimately-completed session is 'no_payment_required'
   // (trialing), not 'paid'. session.status === 'complete' covers both trial and
   // immediate-charge sign-ups, mirroring how the webhook activates.
   if (session.status !== 'complete') return { activated: false, reason: 'incomplete' }

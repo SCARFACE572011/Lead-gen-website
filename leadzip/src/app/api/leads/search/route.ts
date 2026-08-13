@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchLeads } from '@/lib/providers/leadDataProvider'
+import {
+  isUsZip,
+  resolveSearchLocation,
+  LocationNotFoundError,
+  effectiveRadiusMiles,
+} from '@/lib/geocode'
 import type { SearchParams, Lead } from '@/types/lead'
 import {
   searchLimiterFree,
@@ -38,13 +44,26 @@ function buildCacheKey(params: SearchParams): string {
   // fetch a completely different pool per keyword — so it MUST be part of the key,
   // or e.g. a "sushi" pool would be served for a later "plumbers" search on the
   // same zip. Normal category keys are left unchanged so existing cache still hits.
-  const zip = params.zipCode.trim()
   const cat = (params.category || '').trim()
-  const radius = params.radiusMiles ?? 25
-  if (cat === 'Custom Keyword') {
-    return `${zip}|${cat}|${radius}|${(params.keyword || '').trim().toLowerCase()}`
+  const kwSuffix =
+    cat === 'Custom Keyword' ? `|${(params.keyword || '').trim().toLowerCase()}` : ''
+
+  // International / free-text searches get their own namespaced key built from
+  // the normalized location text + country + km radius. Deterministic from the
+  // request alone (no geocoding needed to check the cache), and it can never
+  // collide with a legacy ZIP key thanks to the "intl:" prefix — existing
+  // cached ZIP rows keep hitting exactly as before.
+  const location = (params.location ?? '').trim()
+  if (location) {
+    const norm = location.toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',')
+    const cc = (params.countryCode ?? '').trim().toLowerCase()
+    const km = params.radiusKm ?? Math.round((params.radiusMiles ?? 25) * 1.60934)
+    return `intl:${cc}:${norm}|${cat}|${km}km${kwSuffix}`
   }
-  return `${zip}|${cat}|${radius}`
+
+  const zip = params.zipCode.trim()
+  const radius = params.radiusMiles ?? 25
+  return `${zip}|${cat}|${radius}${kwSuffix}`
 }
 
 // Refinement filters applied to the cached POOL on BOTH cache hit and miss, so the
@@ -83,12 +102,52 @@ function applyPoolFilters(leads: Lead[], params: SearchParams): Lead[] {
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as SearchParams
+    // NEVER trust a client-supplied resolved location: the cache key comes from
+    // the location text, so spoofed coordinates could poison the shared pool.
+    body.resolved = undefined
 
-    if (!body.zipCode) {
-      return NextResponse.json({ error: 'ZIP code is required' }, { status: 400 })
+    // ── Location mode detection ───────────────────────────────────────────────
+    // One location box, two modes: a 5-digit input with country US (or none) is
+    // the existing US ZIP fast path; anything else is a worldwide free-text
+    // search ("Berlin, Germany", "Dubai", a UK postcode, ...). A 5-digit input
+    // with a non-US country selected (e.g. "10117" + Germany) is free text.
+    const rawZip = (body.zipCode ?? '').trim()
+    const rawLocation = (body.location ?? '').trim()
+    const countryCode = (body.countryCode ?? '').trim().toUpperCase()
+    const usIntent = countryCode === '' || countryCode === 'US'
+    const zipInput = isUsZip(rawZip) ? rawZip : isUsZip(rawLocation) ? rawLocation : ''
+
+    if (usIntent && zipInput) {
+      // ZIP fast path — normalize so cache keys and history match legacy rows
+      body.zipCode = zipInput
+      body.location = undefined
+      body.radiusKm = undefined
+    } else {
+      const locationText = rawLocation || rawZip
+      if (!locationText) {
+        return NextResponse.json(
+          { error: 'Enter a ZIP code or a city, like "London, UK"' },
+          { status: 400 }
+        )
+      }
+      if (usIntent && /^\d+$/.test(locationText)) {
+        return NextResponse.json(
+          { error: 'Enter a valid 5-digit US ZIP code, or a city like "London, UK"' },
+          { status: 400 }
+        )
+      }
+      body.location = locationText
+      body.zipCode = ''
+      // Clamp the international radius to the provider bias cap (50 km)
+      if (typeof body.radiusKm === 'number' && Number.isFinite(body.radiusKm)) {
+        body.radiusKm = Math.min(Math.max(body.radiusKm, 1), 50)
+      } else {
+        body.radiusKm = undefined
+      }
     }
-    if (body.zipCode.length < 5) {
-      return NextResponse.json({ error: 'Invalid ZIP code' }, { status: 400 })
+    if (typeof body.radiusMiles !== 'number' || !Number.isFinite(body.radiusMiles)) {
+      body.radiusMiles =
+        body.radiusKm != null ? Math.round(body.radiusKm * 0.621371 * 100) / 100 : 25
     }
 
     const isSupabaseConfigured =
@@ -151,6 +210,9 @@ export async function POST(request: NextRequest) {
             center: firstWithCoords
               ? { lat: firstWithCoords.latitude, lon: firstWithCoords.longitude }
               : undefined,
+            // Cache rows don't store a normalized label; echo the searched text
+            // so the results header can still say "42 leads in Berlin, Germany".
+            locationLabel: body.location || undefined,
           })
         }
       } catch {
@@ -304,6 +366,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // ── Geocode the location ONCE, server-side ────────────────────────────────
+    // Validates the input with a friendly error BEFORE any billable provider
+    // call, and hands the resolved coordinates to every provider so fallback
+    // chains don't re-geocode. Geocoder outages fall through: providers resolve
+    // on their own (preserving the old behavior for transient failures).
+    try {
+      body.resolved = await resolveSearchLocation(body)
+    } catch (err) {
+      if (err instanceof LocationNotFoundError || (err as Error)?.name === 'LocationNotFoundError') {
+        const searched = body.location || body.zipCode
+        return NextResponse.json(
+          {
+            error: `We couldn't find "${searched}". Try a format like "London, UK" or "Berlin, Germany", or check the country selector.`,
+          },
+          { status: 422 }
+        )
+      }
+      console.warn('[search] geocode resolution failed — providers will retry', err)
+      body.resolved = undefined
+    }
+
     // ── Live fetch (the billable provider call) ───────────────────────────────
     const results = await searchLeads(body)
 
@@ -382,8 +465,13 @@ export async function POST(request: NextRequest) {
         if (user && admin) {
           await admin.from('search_history').insert({
             user_id: user.id,
-            zip_code: body.zipCode,
-            radius: body.radiusMiles,
+            // ZIP searches store the ZIP as always; international searches store
+            // the location display text in the same (text) column, so history
+            // and its Rerun links keep working without a schema change.
+            zip_code: body.location || body.zipCode,
+            // Integer column, always miles (10 km ≈ 6 mi) — the search page
+            // converts back to the nearest km option on rerun.
+            radius: Math.max(1, Math.round(effectiveRadiusMiles(body))),
             category: body.category || '',
             keyword: body.keyword || '',
             result_count: results.total,
@@ -416,7 +504,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    return NextResponse.json({ ...results, source: results.source, fetchedAt: new Date().toISOString() })
+    return NextResponse.json({
+      ...results,
+      source: results.source,
+      fetchedAt: new Date().toISOString(),
+      locationLabel: results.locationLabel ?? body.resolved?.displayName ?? body.location ?? undefined,
+    })
   } catch (error) {
     console.error('Lead search error:', error)
     return NextResponse.json({ error: 'Search failed' }, { status: 500 })

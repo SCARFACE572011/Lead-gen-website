@@ -6,16 +6,28 @@ import { getAllPosts, formatDate } from '@/lib/blog'
 import { SiteHeader, SiteFooter } from '@/components/marketing/MarketingChrome'
 import { Reveal } from '@/components/landing/Reveal'
 
+const BLOG_TITLE = 'Blog: Local Lead Generation Playbooks'
+const BLOG_DESCRIPTION =
+  'Guides and playbooks for finding local business leads: prospecting by ZIP code, finding businesses without a website, lead scoring, and outreach that books clients.'
+const BLOG_OG_IMAGE =
+  '/og?title=Playbooks+for+finding+local+clients&subtitle=The+LeadZipp+blog'
+
 export const metadata: Metadata = {
-  title: 'Blog — Local lead generation playbooks',
-  description:
-    'Guides and playbooks for finding local business leads: prospecting by ZIP code, finding businesses without a website, lead scoring, and outreach that books clients.',
+  title: BLOG_TITLE,
+  description: BLOG_DESCRIPTION,
   alternates: { canonical: 'https://leadzipp.com/blog' },
   openGraph: {
-    title: 'LeadZipp Blog — Local lead generation playbooks',
-    description: 'Guides for finding and closing local business clients — by ZIP code.',
+    title: `${BLOG_TITLE} | LeadZipp`,
+    description: BLOG_DESCRIPTION,
     url: 'https://leadzipp.com/blog',
     type: 'website',
+    images: [{ url: BLOG_OG_IMAGE, width: 1200, height: 630, alt: 'The LeadZipp blog' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${BLOG_TITLE} | LeadZipp`,
+    description: BLOG_DESCRIPTION,
+    images: [BLOG_OG_IMAGE],
   },
 }
 

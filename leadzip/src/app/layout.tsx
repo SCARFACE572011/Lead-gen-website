@@ -7,7 +7,9 @@ import { ThemeProvider } from "next-themes";
 import { CookieConsent } from "@/components/CookieConsent"
 import { OnboardingModal } from "@/components/OnboardingModal";
 import { PromoPopup } from "@/components/PromoPopup";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 import StructuredData from "@/components/seo/StructuredData";
+import { SITE_URL } from "@/components/seo/site";
 
 // Display — characterful modern grotesque, used with restraint for headlines
 const bricolage = Bricolage_Grotesque({
@@ -33,13 +35,14 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
-const SITE_TITLE = "LeadZipp | Find local business leads by ZIP code";
+const SITE_TITLE =
+  "Local Business Lead Generation for Agencies by ZIP Code | LeadZipp";
 const SITE_DESCRIPTION =
-  "Drop a pin, fill your pipeline. LeadZipp turns any ZIP code into a scored list of real local businesses from live Google Places and Yelp data, with phones, websites, and owner emails, ready to export to CSV, PDF, or your CRM.";
+  "Find local businesses without websites and turn them into clients. LeadZipp builds scored lead lists by ZIP code from live Google Places and Yelp data, with phones and owner emails, for web design agencies, freelancers, and sales teams.";
 const OG_IMAGE = "/og?title=Drop+a+pin.+Fill+your+pipeline.&subtitle=Scored+local+business+leads,+by+ZIP+code";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://leadzipp.com"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: SITE_TITLE,
     template: "%s | LeadZipp",
@@ -47,9 +50,12 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   applicationName: "LeadZipp",
   keywords: [
-    "lead generation",
+    "local business lead generation",
+    "lead generation for agencies",
+    "find businesses without a website",
     "local business leads",
     "ZIP code business search",
+    "web design leads",
     "B2B leads",
     "sales prospecting",
     "local lead finder",
@@ -78,7 +84,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: SITE_TITLE,
     description: SITE_DESCRIPTION,
-    url: "https://leadzipp.com",
+    url: SITE_URL,
     siteName: "LeadZipp",
     locale: "en_US",
     images: [
@@ -97,9 +103,9 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [OG_IMAGE],
   },
-  alternates: { canonical: "https://leadzipp.com" },
+  alternates: { canonical: SITE_URL },
   verification: {
-    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || "",
+    google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
   },
 };
 
@@ -135,6 +141,7 @@ export default function RootLayout({
         <CookieConsent />
         <OnboardingModal />
         <PromoPopup />
+        <ChatWidget />
 
         {/* GTM script */}
         {process.env.NEXT_PUBLIC_GTM_ID && (

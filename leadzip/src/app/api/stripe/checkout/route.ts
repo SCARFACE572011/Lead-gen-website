@@ -63,25 +63,89 @@ export async function POST(request: NextRequest) {
   // New-signup promo: when the visitor came through the 15%-off popup we
   // auto-apply the coupon (15% off the first charge). Stripe forbids combining
   // an auto-applied discount with allow_promotion_codes, so it's one or the other.
+  // With a trial, Stripe applies the coupon to the first PAID invoice (the one
+  // generated when the trial ends), so promo + trial compose correctly.
   const promoCoupon = process.env.STRIPE_PROMO_COUPON
   const applyPromo = promo === true && !!promoCoupon
   const discountConfig = applyPromo
     ? { discounts: [{ coupon: promoCoupon! }] }
     : { allow_promotion_codes: true }
 
+  // ── Trial-abuse guard ─────────────────────────────────────────────────────
+  // The 7-day free trial is only for users who have NEVER had a Stripe
+  // subscription (any status). Two signals, both checked:
+  //   1. Our own subscriptions table: a row with a stripe_subscription_id
+  //      means this user has subscribed before.
+  //   2. Stripe itself: if we know their customer id, list subscriptions with
+  //      status 'all' (read-only) — catches subs our DB missed.
+  // RLS allows a user to read their own subscriptions row, so the session
+  // client is fine here.
+  let existingCustomerId: string | null = null
+  let hadSubscription = false
+  {
+    const { data: subRow } = await supabase
+      .from('subscriptions')
+      .select('stripe_customer_id, stripe_subscription_id')
+      .eq('user_id', user.id)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    if (subRow?.stripe_subscription_id) hadSubscription = true
+    if (subRow?.stripe_customer_id) existingCustomerId = subRow.stripe_customer_id
+  }
+
+  if (existingCustomerId) {
+    try {
+      const customer = await stripe.customers.retrieve(existingCustomerId)
+      if (customer.deleted) {
+        existingCustomerId = null
+      } else if (!hadSubscription) {
+        const subs = await stripe.subscriptions.list({
+          customer: existingCustomerId,
+          status: 'all',
+          limit: 1,
+        })
+        if (subs.data.length > 0) hadSubscription = true
+      }
+    } catch {
+      // Stale or mode-mismatched customer id — ignore it and let Checkout
+      // create a fresh customer from the email instead of failing checkout.
+      existingCustomerId = null
+    }
+  }
+
+  const trialEligible = !hadSubscription
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
+      // Card is always collected up front, even though the trial invoice is $0.
+      payment_method_collection: 'always',
       line_items: [{ price: priceId, quantity: 1 }],
-      customer_email: user.email || undefined,
+      // Reuse the known Stripe customer for returning buyers (keeps their
+      // billing history in one place); Stripe forbids passing customer AND
+      // customer_email together, so email is the new-customer path only.
+      ...(existingCustomerId
+        ? { customer: existingCustomerId }
+        : { customer_email: user.email || undefined }),
       client_reference_id: user.id,
       success_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/dashboard?payment=success&plan=${plan}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://leadzipp.com'}/pricing?payment=cancelled`,
       metadata: { plan, billing, user_id: user.id },
       ...discountConfig,
       subscription_data: {
-        trial_period_days: 14,
+        // First-time subscribers get a 7-day trial and are auto-charged when
+        // it ends. If the card somehow goes missing the sub cancels instead
+        // of silently converting. Returning subscribers pay immediately.
+        ...(trialEligible
+          ? {
+              trial_period_days: 7,
+              trial_settings: {
+                end_behavior: { missing_payment_method: 'cancel' as const },
+              },
+            }
+          : {}),
         metadata: { plan, billing, user_id: user.id },
       },
     })

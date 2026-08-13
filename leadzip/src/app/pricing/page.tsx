@@ -67,7 +67,7 @@ const PLANS: Plan[] = [
     monthlyPrice: 25,
     annualPrice: 20,
     description: "For agencies and sales teams ready to grow their pipeline.",
-    cta: "Start Pro Trial",
+    cta: "Start 7-day free trial",
     ctaHref: "/signup?plan=pro",
     popular: true,
     accentColor: "#FF4D23",
@@ -89,7 +89,7 @@ const PLANS: Plan[] = [
     monthlyPrice: 50,
     annualPrice: 40,
     description: "Built for scaling agencies with high-volume lead needs.",
-    cta: "Start Agency Trial",
+    cta: "Start 7-day free trial",
     ctaHref: "/signup?plan=agency",
     popular: false,
     accentColor: "#0C2B24",
@@ -120,7 +120,7 @@ const PRICING_FAQS = [
   },
   {
     q: "Is there a free trial for paid plans?",
-    a: "Yes — both Pro and Agency come with a 14-day free trial. Checkout is handled securely by Stripe, and you can cancel anytime before the trial ends and you won't be charged.",
+    a: "Yes. Both Pro and Agency come with a 7-day free trial. A card is required at signup and checkout is handled securely by Stripe. Cancel anytime before day 7 and you will not be charged.",
   },
   {
     q: "What payment methods do you accept?",
@@ -196,6 +196,15 @@ function PlanCard({
             </>
           )}
         </Button>
+        <p
+          className={cn(
+            "mt-2 text-center text-xs",
+            onDark ? "text-white/60" : "text-stone"
+          )}
+        >
+          Card required. Cancel anytime before day 7 and you will not be
+          charged.
+        </p>
       </div>
     );
   }

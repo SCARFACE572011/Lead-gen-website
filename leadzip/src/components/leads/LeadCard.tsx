@@ -14,10 +14,17 @@ import {
   Mail,
   Loader2,
   Zap,
+  FileText,
+  BarChart3,
+  Copy,
+  Check,
+  ExternalLink,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Lead, DigitalHealthDetails } from '@/types/lead'
 import { LeadScore } from './LeadScore'
+import { HealthScoreBadge } from './HealthScoreBadge'
+import { CompetitorsPanel } from './CompetitorsPanel'
 
 interface LeadCardProps {
   lead: Lead
@@ -167,6 +174,55 @@ export function LeadCard({
     return { label: 'text-green-700', bar: 'bg-green-500' }
   }
 
+  // Audit report generation (shareable public link)
+  type AuditState = 'idle' | 'loading' | 'done' | 'error'
+  const [auditState, setAuditState] = useState<AuditState>('idle')
+  const [auditUrl, setAuditUrl] = useState('')
+  const [auditError, setAuditError] = useState('')
+  const [auditCopied, setAuditCopied] = useState(false)
+
+  async function handleGenerateAudit() {
+    setAuditState('loading')
+    setAuditError('')
+    try {
+      const res = await fetch('/api/leads/audit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead }),
+      })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        setAuditUrl(data.url)
+        setAuditState('done')
+      } else {
+        setAuditError(
+          res.status === 401
+            ? 'Sign in to generate audits.'
+            : res.status === 429
+              ? 'Rate limit reached. Try again in a minute.'
+              : data.error || 'Could not generate audit.'
+        )
+        setAuditState('error')
+      }
+    } catch {
+      setAuditError('Could not generate audit.')
+      setAuditState('error')
+    }
+  }
+
+  async function handleCopyAuditLink() {
+    try {
+      await navigator.clipboard.writeText(`${window.location.origin}${auditUrl}`)
+      setAuditCopied(true)
+      setTimeout(() => setAuditCopied(false), 2000)
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+
+  // Competitor analysis — lazy: the panel mounts (and fetches) only when opened
+  const [competitorsOpen, setCompetitorsOpen] = useState(false)
+
   const VISIBLE_SIGNALS: { key: keyof DigitalHealthDetails; label: string; pts: number; caveat?: string }[] = [
     { key: 'hasHttps', label: 'SSL / HTTPS', pts: 5 },
     { key: 'mobileResponsive', label: 'Mobile-friendly', pts: 10 },
@@ -231,6 +287,7 @@ export function LeadCard({
               {lead.openNow === false && (
                 <span className="rounded-full bg-paper-2 px-2 py-0.5 text-xs font-medium text-stone">Closed now</span>
               )}
+              <HealthScoreBadge lead={lead} size="sm" />
             </div>
             {lead.address && (
               <p className="mt-1 truncate text-xs text-stone">
@@ -334,7 +391,10 @@ export function LeadCard({
             )}
           </div>
         </div>
-        <LeadScore score={lead.leadScore} size="sm" />
+        <div className="flex flex-col items-end gap-1.5">
+          <LeadScore score={lead.leadScore} size="sm" />
+          <HealthScoreBadge lead={lead} />
+        </div>
       </div>
 
       {/* Rating */}
@@ -493,6 +553,63 @@ export function LeadCard({
           Note
         </button>
 
+        {(auditState === 'idle' || auditState === 'error') && (
+          <button
+            onClick={handleGenerateAudit}
+            aria-label="Generate shareable audit report"
+            className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-ink-soft transition-colors hover:bg-sand"
+          >
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            Audit
+          </button>
+        )}
+        {auditState === 'loading' && (
+          <span className="flex items-center gap-1.5 rounded-full bg-paper-2 px-2.5 py-1.5 text-xs font-medium text-stone cursor-not-allowed">
+            <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin" />
+            Generating…
+          </span>
+        )}
+        {auditState === 'done' && (
+          <span className="flex items-center gap-1">
+            <a
+              href={auditUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-full bg-signal-50 px-2.5 py-1.5 text-xs font-medium text-signal-600 transition-colors hover:bg-signal-50"
+            >
+              <ExternalLink className="h-3.5 w-3.5 shrink-0" />
+              View audit
+            </a>
+            <button
+              onClick={handleCopyAuditLink}
+              aria-label="Copy audit link"
+              title="Copy shareable link"
+              className="flex items-center rounded-full bg-paper-2 p-1.5 text-ink-soft transition-colors hover:bg-sand"
+            >
+              {auditCopied ? (
+                <Check className="h-3.5 w-3.5 shrink-0 text-green-600" />
+              ) : (
+                <Copy className="h-3.5 w-3.5 shrink-0" />
+              )}
+            </button>
+          </span>
+        )}
+
+        <button
+          onClick={() => setCompetitorsOpen((o) => !o)}
+          aria-expanded={competitorsOpen}
+          aria-label="Show nearby competitors"
+          className={cn(
+            'flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-xs font-medium transition-colors',
+            competitorsOpen
+              ? 'bg-signal-50 text-signal-600'
+              : 'bg-paper-2 text-ink-soft hover:bg-sand'
+          )}
+        >
+          <BarChart3 className="h-3.5 w-3.5 shrink-0" />
+          Competitors
+        </button>
+
         {hasWebsite && (
           <>
             {emailState === 'idle' && (
@@ -556,6 +673,13 @@ export function LeadCard({
           </>
         )}
       </div>
+
+      {auditState === 'error' && auditError && (
+        <p className="text-xs text-red-600">{auditError}</p>
+      )}
+
+      {/* Competitor comparison — mounts (and fetches) only when expanded */}
+      {competitorsOpen && <CompetitorsPanel lead={lead} />}
 
       {/* Health result */}
       {hasWebsite && healthState === 'found' && (

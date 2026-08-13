@@ -1,5 +1,5 @@
 import type { SearchParams, Lead, SearchResult } from '@/types/lead'
-import { geocodeZip } from '@/lib/geocode'
+import { resolveSearchLocation, effectiveRadiusMiles, effectiveRadiusMeters } from '@/lib/geocode'
 
 const TOMTOM_QUERY_MAP: Record<string, string> = {
   'Dentists': 'dentist',
@@ -63,8 +63,9 @@ export async function searchLeadsTomTom(params: SearchParams): Promise<SearchRes
   const apiKey = process.env.TOMTOM_API_KEY
   if (!apiKey) return { leads: [], total: 0 }
 
-  const { lat, lon } = await geocodeZip(params.zipCode)
-  const radiusMeters = Math.round(params.radiusMiles * 1609.34)
+  const loc = params.resolved ?? (await resolveSearchLocation(params))
+  const { lat, lon } = loc
+  const radiusMeters = effectiveRadiusMeters(params)
 
   const isCustom = params.category === 'Custom Keyword'
   const query = encodeURIComponent(
@@ -126,7 +127,7 @@ export async function searchLeadsTomTom(params: SearchParams): Promise<SearchRes
         linkedinUrl: null,
       }
     })
-    .filter(l => (l.distanceMiles ?? 0) <= params.radiusMiles * 1.1)
+    .filter(l => (l.distanceMiles ?? 0) <= effectiveRadiusMiles(params) * 1.1)
 
   return { leads, total: leads.length, center: { lat, lon } }
 }

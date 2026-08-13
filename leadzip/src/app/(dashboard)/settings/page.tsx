@@ -297,6 +297,7 @@ function PlanTab() {
   const [plan, setPlan] = useState<PlanId>('free')
   const [searchesUsed, setSearchesUsed] = useState(0)
   const [savedUsed, setSavedUsed] = useState(0)
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [billingLoading, setBillingLoading] = useState(false)
   const [billingError, setBillingError] = useState('')
@@ -320,12 +321,19 @@ function PlanTab() {
         // maybeSingle(): a brand-new user has no usage_limits row yet. The real
         // plan is the authoritative users_profile.plan (same source the search
         // route enforces caps against) — never assume paid "Pro".
-        const [profileRes, usageRes] = await Promise.all([
+        const [profileRes, usageRes, subRes] = await Promise.all([
           supabase.from('users_profile').select('plan').eq('id', user.id).maybeSingle(),
           supabase
             .from('usage_limits')
             .select('searches_this_month, saved_leads_count')
             .eq('user_id', user.id)
+            .maybeSingle(),
+          supabase
+            .from('subscriptions')
+            .select('status, current_period_end')
+            .eq('user_id', user.id)
+            .order('updated_at', { ascending: false })
+            .limit(1)
             .maybeSingle(),
         ])
 
@@ -333,6 +341,13 @@ function PlanTab() {
         setPlan(rawPlan === 'pro' || rawPlan === 'agency' ? rawPlan : 'free')
         setSearchesUsed(usageRes.data?.searches_this_month ?? 0)
         setSavedUsed(usageRes.data?.saved_leads_count ?? 0)
+
+        // During a trial, current_period_end IS the trial end date.
+        if (subRes.data?.status === 'trialing' && subRes.data.current_period_end) {
+          const msLeft =
+            new Date(subRes.data.current_period_end).getTime() - Date.now()
+          setTrialDaysLeft(Math.max(0, Math.ceil(msLeft / 86_400_000)))
+        }
       } catch {
         // Non-fatal — keep the free/zero defaults rather than fabricating a plan.
       } finally {
@@ -422,7 +437,14 @@ function PlanTab() {
                 <Zap className="w-4 h-4 text-lime" />
                 <span className="readout text-lime">Current Plan</span>
               </div>
-              <h3 className="font-display text-2xl font-bold">{meta.name}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-display text-2xl font-bold">{meta.name}</h3>
+                {trialDaysLeft !== null && (
+                  <span className="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-semibold text-white">
+                    Trial - {trialDaysLeft} {trialDaysLeft === 1 ? 'day' : 'days'} left
+                  </span>
+                )}
+              </div>
               <p className="text-white/80 text-sm mt-1">{meta.tagline}</p>
             </div>
             <span className="font-mono text-2xl font-bold">${meta.price}<span className="text-base font-normal text-white/70">/mo</span></span>

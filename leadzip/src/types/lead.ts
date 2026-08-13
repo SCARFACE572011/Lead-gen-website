@@ -34,6 +34,8 @@ export interface Lead {
   priceLevel?: number | null
   nearbyCompetitorCount?: number
   screenshotUrl?: string
+  pipelineStage?: PipelineStage
+  stageUpdatedAt?: string
 }
 
 export interface DigitalHealthDetails {
@@ -50,11 +52,33 @@ export interface DigitalHealthDetails {
 
 export type LeadStatus = 'new' | 'contacted' | 'interested' | 'not_interested' | 'follow_up' | 'converted'
 
+// CRM Pipeline (kanban board on /saved). Lean 7-stage funnel.
+export type PipelineStage = 'new' | 'contacted' | 'replied' | 'meeting' | 'proposal' | 'won' | 'lost'
+
+export const PIPELINE_STAGES: PipelineStage[] = ['new', 'contacted', 'replied', 'meeting', 'proposal', 'won', 'lost']
+
+export const PIPELINE_STAGE_LABELS: Record<PipelineStage, string> = {
+  new: 'New',
+  contacted: 'Contacted',
+  replied: 'Replied',
+  meeting: 'Meeting',
+  proposal: 'Proposal',
+  won: 'Won',
+  lost: 'Lost',
+}
+
 export interface SearchParams {
+  /** 5-digit US ZIP (fast path). Empty string for international searches. */
   zipCode: string
   city?: string
   state?: string
+  /** Free-text location for worldwide search, e.g. "Berlin, Germany". */
+  location?: string
+  /** ISO 3166-1 alpha-2 country biasing geocoding and provider region hints. */
+  countryCode?: string
   radiusMiles: number
+  /** Radius in km (international mode). When set, providers prefer it over radiusMiles. */
+  radiusKm?: number
   category: string
   keyword?: string
   minRating?: number
@@ -63,6 +87,10 @@ export interface SearchParams {
   noWebsite?: boolean
   hasPhone?: boolean
   excludeSaved?: boolean
+  /** Server-internal: pre-resolved geocode attached by the search API route so
+   *  providers don't geocode twice. NEVER trusted from the client — the route
+   *  overwrites it before use (a spoofed value could poison the shared cache). */
+  resolved?: import('@/lib/geocode').ResolvedLocation
 }
 
 export interface SearchResult {
@@ -71,6 +99,8 @@ export interface SearchResult {
   searchId?: string
   center?: { lat: number; lon: number }
   source?: string
+  /** Normalized human name of the searched location, e.g. "Berlin, Germany". */
+  locationLabel?: string
 }
 
 export interface SearchHistory {

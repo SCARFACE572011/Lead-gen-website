@@ -1,6 +1,6 @@
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
-import { geocodeZip } from '@/lib/geocode'
+import { resolveSearchLocation } from '@/lib/geocode'
 
 // Places API (New) — the legacy /maps/api/place endpoints are not enabled for
 // API keys created after March 2025, so all requests go to places.googleapis.com.
@@ -20,6 +20,7 @@ const FIELD_MASK = [
   'places.rating',
   'places.userRatingCount',
   'places.nationalPhoneNumber',
+  'places.internationalPhoneNumber',
   'places.websiteUri',
   'places.businessStatus',
   'places.priceLevel',
@@ -170,6 +171,7 @@ interface GooglePlaceNew {
   rating?: number
   userRatingCount?: number
   nationalPhoneNumber?: string
+  internationalPhoneNumber?: string
   websiteUri?: string
   businessStatus?: string
   priceLevel?: string
@@ -189,6 +191,9 @@ interface SearchTextRequest {
   }
   includedType?: string
   pageToken?: string
+  /** CLDR region code (e.g. "DE", "GB") — biases result formatting/ranking
+   *  toward the searched country for international searches. */
+  regionCode?: string
 }
 
 // --- Helpers ---
@@ -231,6 +236,32 @@ function parseFormattedAddress(
   return { address: cleaned, city: fallbackCity, state: fallbackState, zipCode: fallbackZip }
 }
 
+// International variant of parseFormattedAddress. Google formats non-US
+// addresses as "Street, [Postal] City, Country" — we drop the trailing country,
+// pull the city from the remaining last segment, and treat digit-bearing tokens
+// in that segment as the postal code ("10117 Berlin" → 10117 / Berlin;
+// "London SW1A 2AA" → SW1A 2AA / London).
+function parseInternationalAddress(
+  formatted: string,
+  fallbackCity: string,
+  fallbackRegion: string
+): { address: string; city: string; state: string; zipCode: string } {
+  const parts = formatted.split(',').map((p) => p.trim()).filter(Boolean)
+  if (parts.length === 0) {
+    return { address: '', city: fallbackCity, state: fallbackRegion, zipCode: '' }
+  }
+  // Last comma segment is the country — drop it when there is anything else.
+  const woCountry = parts.length > 1 ? parts.slice(0, -1) : parts
+  const cityPart = woCountry[woCountry.length - 1] ?? ''
+  const tokens = cityPart.split(/\s+/).filter(Boolean)
+  const nameTokens = tokens.filter((t) => !/\d/.test(t))
+  const postalTokens = tokens.filter((t) => /\d/.test(t))
+  const city = nameTokens.join(' ') || fallbackCity
+  const zipCode = postalTokens.join(' ')
+  const address = woCountry.slice(0, -1).join(', ') || cityPart
+  return { address, city, state: fallbackRegion, zipCode }
+}
+
 // Returns true if the business name passes the relevance check for the category.
 // Only filters when we have explicit keywords for that category.
 function isRelevant(businessName: string, category: string): boolean {
@@ -271,7 +302,8 @@ async function fetchNearbyPage(
   center: { latitude: number; longitude: number },
   radiusMeters: number,
   apiKey: string,
-  includedTypes?: string[]
+  includedTypes?: string[],
+  regionCode?: string
 ): Promise<GooglePlaceNew[]> {
   const res = await fetch(PLACES_SEARCH_NEARBY_URL, {
     method: 'POST',
@@ -285,6 +317,7 @@ async function fetchNearbyPage(
       rankPreference: 'POPULARITY',
       locationRestriction: { circle: { center, radius: radiusMeters } },
       ...(includedTypes?.length ? { includedTypes } : {}),
+      ...(regionCode ? { regionCode } : {}),
     }),
   })
   if (!res.ok) {
@@ -348,9 +381,22 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   const apiKey = process.env.GOOGLE_PLACES_API_KEY
   if (!apiKey) throw new Error('GOOGLE_PLACES_API_KEY not configured')
 
-  const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
+  // Resolve the searched location: US ZIP fast path or worldwide free text.
+  // The API route pre-resolves and attaches it (params.resolved) so interactive
+  // searches geocode exactly once; cron/direct callers resolve here.
+  const loc = params.resolved ?? (await resolveSearchLocation(params))
+  const { lat, lon, city: geoCity, state: geoState, isUS } = loc
+  const regionCode =
+    /^[A-Z]{2}$/.test(loc.countryCode) && !isUS ? loc.countryCode : undefined
+
+  // Radius: km is canonical for international searches, miles for ZIP mode.
+  const radiusMilesEffective =
+    params.radiusKm != null ? params.radiusKm * 0.621371 : params.radiusMiles
   // Text Search location bias caps at 50km regardless of what's requested
-  const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 50000)
+  const radiusMeters = Math.min(
+    Math.round(params.radiusKm != null ? params.radiusKm * 1000 : params.radiusMiles * 1609.34),
+    50000
+  )
 
   const queryTerm = CATEGORY_QUERY[params.category] ?? params.category
   const rawQuery =
@@ -366,6 +412,7 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
     locationBias: {
       circle: { center: { latitude: lat, longitude: lon }, radius: radiusMeters },
     },
+    ...(regionCode ? { regionCode } : {}),
   }
 
   // --- Strategy: typed search first, broad fallback if too few results ---
@@ -379,7 +426,7 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
     // non-business places out entirely.
     const groups = await Promise.allSettled(
       NEARBY_SMB_TYPE_GROUPS.map((types) =>
-        fetchNearbyPage({ latitude: lat, longitude: lon }, radiusMeters, apiKey, types)
+        fetchNearbyPage({ latitude: lat, longitude: lon }, radiusMeters, apiKey, types, regionCode)
       )
     )
     const seenIds = new Set<string>()
@@ -446,7 +493,9 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   // Text Search caps effective bias at ~31 miles. For larger radii we fire
   // additional 1-page searches from ring points so the full requested area
   // is covered. Parallel calls — no page-token waits needed here.
-  if (params.radiusMiles > 30) {
+  // ZIP/miles mode only: international km searches cap at 50 km, which a
+  // single bias circle already covers, so no extra billable ring calls.
+  if (params.radiusKm == null && params.radiusMiles > 30) {
     const ringCenters = generateRingCenters(lat, lon, params.radiusMiles)
     const seenPlaceIds = new Set(allResults.map((r) => r.id))
 
@@ -498,12 +547,9 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
       const pLng = place.location?.longitude
       if (!name || pLat == null || pLng == null) return null
 
-      const { address, city, state, zipCode } = parseFormattedAddress(
-        place.formattedAddress ?? '',
-        geoCity,
-        geoState,
-        params.zipCode
-      )
+      const { address, city, state, zipCode } = isUS
+        ? parseFormattedAddress(place.formattedAddress ?? '', geoCity, geoState, params.zipCode)
+        : parseInternationalAddress(place.formattedAddress ?? '', geoCity, geoState)
       const key = `${name.toLowerCase()}|${address.toLowerCase()}`
       if (seen.has(key)) return null
       seen.add(key)
@@ -513,6 +559,12 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
       // Relevance filter — drop obvious category mismatches
       if (!isRelevant(name, params.category)) return null
 
+      // US: national format as before. International: prefer the E.164-style
+      // international number (dialable from anywhere) and never reformat it.
+      const phone = isUS
+        ? place.nationalPhoneNumber ?? place.internationalPhoneNumber ?? ''
+        : place.internationalPhoneNumber ?? place.nationalPhoneNumber ?? ''
+
       return {
         id: `gp_${place.id}`,
         businessName: name,
@@ -521,7 +573,7 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
         city,
         state,
         zipCode,
-        phone: place.nationalPhoneNumber ?? '',
+        phone,
         website: place.websiteUri ?? '',
         rating: place.rating ?? null,
         reviewCount: place.userRatingCount ?? null,
@@ -534,7 +586,7 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
         businessHours: place.regularOpeningHours?.weekdayDescriptions,
       } satisfies Omit<Lead, 'leadScore' | 'status' | 'notes'>
     })
-    .filter((l): l is NonNullable<typeof l> => l !== null && l.distanceMiles <= params.radiusMiles * 1.1)
+    .filter((l): l is NonNullable<typeof l> => l !== null && l.distanceMiles <= radiusMilesEffective * 1.1)
 
   let leads: Lead[] = partialLeads.map((l) => ({
     ...l,
@@ -559,5 +611,5 @@ export async function searchLeadsGooglePlaces(params: SearchParams): Promise<Sea
   }
 
   leads.sort((a, b) => b.leadScore - a.leadScore)
-  return { leads, total: leads.length, center: { lat, lon } }
+  return { leads, total: leads.length, center: { lat, lon }, locationLabel: loc.displayName }
 }

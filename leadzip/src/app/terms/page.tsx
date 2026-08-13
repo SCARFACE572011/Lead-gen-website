@@ -1,11 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 
-export const metadata = {
-  title: "Terms of Service | LeadZipp",
+// The root layout's title template appends "| LeadZipp".
+export const metadata: Metadata = {
+  title: "Terms of Service",
   description: "Read the terms and conditions governing your use of LeadZipp.",
   alternates: { canonical: "https://leadzipp.com/terms" },
+  openGraph: {
+    title: "Terms of Service | LeadZipp",
+    description: "Read the terms and conditions governing your use of LeadZipp.",
+    url: "https://leadzipp.com/terms",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Terms of Service | LeadZipp",
+    description: "Read the terms and conditions governing your use of LeadZipp.",
+  },
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

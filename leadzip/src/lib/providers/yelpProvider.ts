@@ -1,5 +1,5 @@
 import type { SearchParams, Lead, SearchResult } from '@/types/lead'
-import { geocodeZip } from '@/lib/geocode'
+import { resolveSearchLocation, effectiveRadiusMiles, effectiveRadiusMeters } from '@/lib/geocode'
 import { calculateLeadScore } from '@/lib/scoring'
 import { formatPhone } from '@/lib/phoneFormatter'
 
@@ -79,10 +79,11 @@ export async function searchLeadsYelp(params: SearchParams): Promise<SearchResul
   const apiKey = process.env.YELP_API_KEY
   if (!apiKey) return { leads: [], total: 0 }
 
-  const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
+  const loc = params.resolved ?? (await resolveSearchLocation(params))
+  const { lat, lon, city: geoCity, state: geoState } = loc
 
   // Yelp radius is in meters, max 40,000 (≈ 24.85 miles)
-  const radiusMeters = Math.min(Math.round(params.radiusMiles * 1609.34), 40000)
+  const radiusMeters = Math.min(effectiveRadiusMeters(params), 40000)
 
   const yelpCategories = YELP_CATEGORY_MAP[params.category]
   const isCustom = params.category === 'Custom Keyword'
@@ -131,7 +132,7 @@ export async function searchLeadsYelp(params: SearchParams): Promise<SearchResul
     .filter((b) => !b.is_closed)
     .filter((b) => {
       const distanceMiles = (b.distance ?? 0) / 1609.34
-      return distanceMiles <= params.radiusMiles * 1.1
+      return distanceMiles <= effectiveRadiusMiles(params) * 1.1
     })
     .map((b): Omit<Lead, 'leadScore' | 'status' | 'notes'> | null => {
       const key = `${b.name.toLowerCase()}|${b.location.address1?.toLowerCase() ?? ''}`
@@ -152,7 +153,7 @@ export async function searchLeadsYelp(params: SearchParams): Promise<SearchResul
         city,
         state,
         zipCode,
-        phone: b.phone ? formatPhone(b.phone) : '',
+        phone: b.phone ? formatPhone(b.phone, loc.countryCode) : '',
         // b.url is the Yelp LISTING page (yelp.com/biz/...), NOT the business's
         // real website. Mapping it here would make every Yelp lead look like it
         // "has a website", breaking the core no-website signal and lead scoring.

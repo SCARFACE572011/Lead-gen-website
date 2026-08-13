@@ -1,11 +1,24 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin } from "lucide-react";
 import Navbar from "@/components/layout/Navbar";
 
-export const metadata = {
-  title: "Privacy Policy | LeadZipp",
+// The root layout's title template appends "| LeadZipp".
+export const metadata: Metadata = {
+  title: "Privacy Policy",
   description: "Learn how LeadZipp collects, uses, and protects your personal information.",
   alternates: { canonical: "https://leadzipp.com/privacy" },
+  openGraph: {
+    title: "Privacy Policy | LeadZipp",
+    description: "Learn how LeadZipp collects, uses, and protects your personal information.",
+    url: "https://leadzipp.com/privacy",
+    type: "website",
+  },
+  twitter: {
+    card: "summary",
+    title: "Privacy Policy | LeadZipp",
+    description: "Learn how LeadZipp collects, uses, and protects your personal information.",
+  },
 };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {

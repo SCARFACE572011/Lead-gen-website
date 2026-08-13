@@ -10,6 +10,8 @@ import {
 import { HeroSearchWidget } from '@/components/landing/HeroSearchWidget'
 import { HeroMap } from '@/components/landing/HeroMap'
 import { Reveal } from '@/components/landing/Reveal'
+import FaqSchema from '@/components/seo/FaqSchema'
+import SoftwareApplicationSchema from '@/components/seo/SoftwareApplicationSchema'
 
 const TRADES = [
   'Plumbers', 'Dentists', 'Roofers', 'Salons', 'HVAC', 'Law Firms', 'Restaurants',
@@ -56,8 +58,8 @@ const STATS = [
 
 const PLANS = [
   { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'Basic lead scoring'], cta: 'Start free', href: '/signup', highlight: false },
-  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'CSV, PDF & CRM export', 'Map view'], cta: 'Go Pro', href: '/signup', highlight: true },
-  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces (coming soon)', 'White-label PDFs', 'Priority support'], cta: 'Start Agency', href: '/signup', highlight: false },
+  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches', 'Email finder + lead scoring', 'CSV, PDF & CRM export', 'Map view'], cta: 'Start 7-day free trial', href: '/signup', highlight: true },
+  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Team workspaces (coming soon)', 'White-label PDFs', 'Priority support'], cta: 'Start 7-day free trial', href: '/signup', highlight: false },
 ]
 
 const FAQS = [
@@ -72,6 +74,12 @@ export default function Home() {
   const [mobileOpen, setMobileOpen] = useState(false)
   return (
     <div className="grain relative min-h-screen bg-paper text-ink">
+      {/* SEO: JSON-LD scoped to the landing page. FAQ items come from the
+          same FAQS constant the visible section renders, so the markup
+          always matches on-page content. */}
+      <SoftwareApplicationSchema />
+      <FaqSchema items={FAQS.map((f) => ({ question: f.q, answer: f.a }))} />
+
       {/* ================= NAV ================= */}
       <header className="sticky top-0 z-50 border-b border-sand/70 bg-paper/80 backdrop-blur-md">
         <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">

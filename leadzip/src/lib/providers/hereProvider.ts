@@ -1,5 +1,5 @@
 import type { SearchParams, Lead, SearchResult } from '@/types/lead'
-import { geocodeZip } from '@/lib/geocode'
+import { resolveSearchLocation, effectiveRadiusMiles, effectiveRadiusMeters } from '@/lib/geocode'
 
 // Simple text query map (more effective than category IDs for Here)
 const CATEGORY_QUERY_HERE: Record<string, string> = {
@@ -68,8 +68,9 @@ export async function searchLeadsHere(params: SearchParams): Promise<SearchResul
   const apiKey = process.env.HERE_API_KEY
   if (!apiKey) return { leads: [], total: 0 }
 
-  const { lat, lon } = await geocodeZip(params.zipCode)
-  const radiusMeters = Math.round(params.radiusMiles * 1609.34)
+  const loc = params.resolved ?? (await resolveSearchLocation(params))
+  const { lat, lon } = loc
+  const radiusMeters = effectiveRadiusMeters(params)
 
   const isCustom = params.category === 'Custom Keyword'
   const q = isCustom && params.keyword
@@ -134,7 +135,7 @@ export async function searchLeadsHere(params: SearchParams): Promise<SearchResul
         linkedinUrl: null,
       }
     })
-    .filter(l => (l.distanceMiles ?? 0) <= params.radiusMiles * 1.1)
+    .filter(l => (l.distanceMiles ?? 0) <= effectiveRadiusMiles(params) * 1.1)
 
   return { leads, total: leads.length, center: { lat, lon } }
 }

@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { MapPin, Check } from "lucide-react";
+
+// Auth pages (login, signup, forgot/reset password) must never rank in
+// search. They stay crawlable in robots.txt so Google can see this tag.
+export const metadata: Metadata = {
+  title: "Sign in",
+  robots: { index: false, follow: false },
+};
 
 const BRAND_BULLETS = [
   "Search any ZIP by category and radius",

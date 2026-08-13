@@ -13,6 +13,7 @@ import {
   MapPin,
   LogOut,
   ChevronRight,
+  TrendingUp,
   X,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -26,6 +27,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Dashboard',      href: '/dashboard',        icon: LayoutDashboard },
   { label: 'Search Leads',   href: '/search',           icon: Search },
+  { label: 'Market Gaps',    href: '/market-gaps',      icon: TrendingUp },
   { label: 'Saved Leads',    href: '/saved',            icon: Bookmark },
   { label: 'Search History', href: '/history',          icon: Clock },
   { label: 'Exports',        href: '/exports',          icon: Download },

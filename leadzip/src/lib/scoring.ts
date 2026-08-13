@@ -62,9 +62,21 @@ export function calculateLeadScore(lead: Partial<Lead>, params?: Partial<SearchP
     score += 3 // thriving reputation — needs the least help
   }
 
-  // Within close radius (+12) — local territory is easier to work.
+  // PROXIMITY (+12 max) — distance from the SEARCH CENTER, which works for any
+  // lat/lng worldwide (ZIP centroid, "Berlin, Germany", anywhere). When the
+  // searched radius is known, score relative to it so a 5 km neighborhood
+  // search and a 100-mile regional search both reward their closest leads;
+  // otherwise fall back to the original absolute mile tiers.
   if (lead.distanceMiles !== null && lead.distanceMiles !== undefined) {
-    if (lead.distanceMiles <= 5) score += 12
+    const searchRadiusMiles =
+      params?.radiusKm != null ? params.radiusKm * 0.621371 : params?.radiusMiles
+    if (searchRadiusMiles && searchRadiusMiles > 0) {
+      const frac = lead.distanceMiles / searchRadiusMiles
+      if (frac <= 0.2) score += 12
+      else if (frac <= 0.4) score += 9
+      else if (frac <= 0.8) score += 5
+      else score += 2
+    } else if (lead.distanceMiles <= 5) score += 12
     else if (lead.distanceMiles <= 10) score += 9
     else if (lead.distanceMiles <= 25) score += 5
     else score += 2

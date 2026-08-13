@@ -1,6 +1,6 @@
 import { Lead, SearchParams, SearchResult } from '@/types/lead'
 import { calculateLeadScore } from '@/lib/scoring'
-import { geocodeZip } from '@/lib/geocode'
+import { resolveSearchLocation } from '@/lib/geocode'
 import { formatPhone } from '@/lib/phoneFormatter'
 
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter'
@@ -135,7 +135,8 @@ function osmElementToPartialLead(
   centerLon: number,
   fallbackCity: string,
   fallbackState: string,
-  searchZip: string
+  searchZip: string,
+  countryCode?: string
 ): Omit<Lead, 'leadScore' | 'status' | 'notes'> | null {
   const tags = el.tags ?? {}
   const name = tags.name
@@ -160,7 +161,7 @@ function osmElementToPartialLead(
     city: tags['addr:city'] ?? fallbackCity,
     state: tags['addr:state'] ?? fallbackState,
     zipCode: tags['addr:postcode'] ?? searchZip,
-    phone: formatPhone(phone),
+    phone: formatPhone(phone, countryCode),
     website,
     rating: null,
     reviewCount: null,
@@ -173,8 +174,13 @@ function osmElementToPartialLead(
 
 export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult> {
   try {
-    const { lat, lon, city: geoCity, state: geoState } = await geocodeZip(params.zipCode)
-    const radiusM = Math.round(params.radiusMiles * 1609.34)
+    const loc = params.resolved ?? (await resolveSearchLocation(params))
+    const { lat, lon, city: geoCity, state: geoState } = loc
+    const radiusM = Math.round(
+      params.radiusKm != null ? params.radiusKm * 1000 : params.radiusMiles * 1609.34
+    )
+    const radiusMilesEffective =
+      params.radiusKm != null ? params.radiusKm * 0.621371 : params.radiusMiles
 
     let query: string
     if (params.category === 'Custom Keyword' && params.keyword) {
@@ -185,7 +191,7 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
         // No mapping for this category — return an honest empty result rather
         // than fabricated leads.
         console.warn(`[osmProvider] No OSM tags for category "${params.category}"; returning empty`)
-        return { leads: [], total: 0, center: { lat, lon }, source: 'osm' }
+        return { leads: [], total: 0, center: { lat, lon }, source: 'osm', locationLabel: loc.displayName }
       }
       query = buildOverpassQuery(tags, lat, lon, radiusM)
     }
@@ -216,7 +222,7 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
 
     const partialLeads = elements
       .map((el) =>
-        osmElementToPartialLead(el, params.category, lat, lon, geoCity, geoState, params.zipCode)
+        osmElementToPartialLead(el, params.category, lat, lon, geoCity, geoState, params.zipCode, loc.countryCode)
       )
       .filter((l): l is NonNullable<typeof l> => l !== null)
 
@@ -253,17 +259,17 @@ export async function searchLeadsOSM(params: SearchParams): Promise<SearchResult
       )
     }
 
-    leads = leads.filter((l) => (l.distanceMiles ?? 0) <= params.radiusMiles)
+    leads = leads.filter((l) => (l.distanceMiles ?? 0) <= radiusMilesEffective)
 
     leads.sort((a, b) => b.leadScore - a.leadScore)
 
     // No real businesses found — return an honest empty result. We never
     // fabricate leads to fill a sparse area.
     if (leads.length === 0) {
-      return { leads: [], total: 0, center: { lat, lon }, source: 'osm' }
+      return { leads: [], total: 0, center: { lat, lon }, source: 'osm', locationLabel: loc.displayName }
     }
 
-    return { leads, total: leads.length, center: { lat, lon }, source: 'osm' }
+    return { leads, total: leads.length, center: { lat, lon }, source: 'osm', locationLabel: loc.displayName }
   } catch (err) {
     console.error('[osmProvider] Overpass error; returning empty (no fabricated data):', err)
     return { leads: [], total: 0, source: 'osm' }

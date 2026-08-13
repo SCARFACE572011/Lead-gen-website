@@ -3,7 +3,22 @@ import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { NextResponse, type NextRequest } from 'next/server'
 import { authLimiter, checkRateLimit } from '@/lib/ratelimit'
 
-const PROTECTED_ROUTES = ['/dashboard', '/search', '/saved', '/history', '/exports', '/settings', '/admin']
+// Every private page surface. The (dashboard) layout is a client component with
+// no server guard, so this list is the only page-level auth gate: it must stay
+// in sync with NOINDEX_PATHS in next.config.ts. Note '/saved' also prefix-matches
+// '/saved-searches', but both are listed explicitly so neither can be dropped by
+// accident.
+const PROTECTED_ROUTES = [
+  '/dashboard',
+  '/search',
+  '/saved',
+  '/saved-searches',
+  '/market-gaps',
+  '/history',
+  '/exports',
+  '/settings',
+  '/admin',
+]
 // Note: /reset-password is intentionally NOT an auth route — the recovery flow
 // establishes an authenticated session before landing there, and updateUser
 // requires that session, so authenticated users must be allowed to reach it.

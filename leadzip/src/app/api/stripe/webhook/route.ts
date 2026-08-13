@@ -151,8 +151,11 @@ async function sendTrialEndingEmail(
 
 // IMPORTANT: Stripe webhooks require raw body — disable body parsing
 export async function POST(request: NextRequest) {
+  // Reachable before the signature check, so the body must not describe our
+  // config. Status stays 503 so Stripe keeps retrying once the env is fixed.
   if (!process.env.STRIPE_SECRET_KEY || !process.env.STRIPE_WEBHOOK_SECRET) {
-    return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 })
+    console.error('stripe/webhook: STRIPE_SECRET_KEY or STRIPE_WEBHOOK_SECRET is not configured')
+    return NextResponse.json({ error: 'Webhook unavailable' }, { status: 503 })
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: STRIPE_API_VERSION })
@@ -164,8 +167,12 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET!)
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Webhook signature verification failed'
-    return NextResponse.json({ error: message }, { status: 400 })
+    // Anyone can POST here, and Stripe's verification error text describes the
+    // expected signature and timestamp tolerance, so it is logged, not returned.
+    // Status stays 400: a signature failure is permanent, so Stripe should not
+    // retry it.
+    console.error('stripe/webhook: signature verification failed', err)
+    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
   // Use service role key to bypass RLS for webhook updates

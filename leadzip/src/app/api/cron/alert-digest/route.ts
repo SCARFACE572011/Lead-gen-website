@@ -2,23 +2,59 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import { searchLeadsCombined } from '@/lib/providers/combinedProvider'
+import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
+import { isUsZip } from '@/lib/geocode'
 import type { SearchParams, SearchResult, Lead } from '@/types/lead'
 import { SITE_URL } from '@/lib/siteUrl'
 
 const siteUrl = SITE_URL
 
-// Cache TTL — keep in sync with src/app/api/leads/search/route.ts (12h). Every
-// cache MISS bills the paid Google Places API, so alert diffs must reuse the same
-// leads_cache pool the search route warms instead of re-billing on every run.
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000 // 12 hours
+// Cache key + TTL come from src/lib/leadsCache.ts. Every cache MISS bills the paid
+// Google Places API, so alert diffs must reuse the same leads_cache pool the search
+// route warms instead of re-billing on every run.
 
-// Raw-pool cache key. MUST match buildCacheKey() in the search route so the cron
-// and interactive searches share cache entries: zip | category | radius only.
-function buildCacheKey(params: SearchParams): string {
-  const zip = params.zipCode.trim()
-  const cat = (params.category || '').trim()
-  const radius = params.radiusMiles ?? 25
-  return `${zip}|${cat}|${radius}`
+/**
+ * Rebuild the SearchParams an interactive search would have used for a saved row,
+ * so this cron lands on the SAME cache key.
+ *
+ * saved_searches stores the location in one text `zip` column: a US ZIP for the ZIP
+ * fast path, or free text ("Berlin, Germany") for a worldwide search. Treating that
+ * free text as a ZIP built the key "Berlin, Germany|Plumbers|6", which no
+ * interactive search can ever produce, so every nightly run re-billed the provider
+ * and shared nothing back. Mirroring the search route's own mode detection puts
+ * international rows on the "intl:" key instead.
+ *
+ * countryCode is feature-detected: saved_searches may or may not have the
+ * country_code column yet, and this reads whichever is true (the row comes from a
+ * `select('*')`, so a missing column is simply absent).
+ */
+function paramsForSavedSearch(row: Record<string, unknown>): SearchParams {
+  const locationText = ((row.zip as string | null) ?? '').trim()
+  const countryCode = ((row.country_code as string | null | undefined) ?? '').trim().toUpperCase()
+  const usIntent = countryCode === '' || countryCode === 'US'
+  // Radius is an integer-MILES column, so the international branch has to convert
+  // back to km. The shared builder does that exactly as the search route does when
+  // no radiusKm is present (round(miles * 1.60934)), so a 6-mile row keys as 10km.
+  // KNOWN LIMITATION: the km -> integer-miles -> km round-trip is lossy for two of
+  // the five radius options the UI offers. 5/10/50 km land back on themselves, but
+  // 1 km saves as 1 mi and keys as 2km, and 25 km saves as 16 mi and keys as 26km.
+  // Those two still miss the interactive pool (they at least share with each other
+  // run to run). A radius_km column on saved_searches would close the gap.
+  const radiusMiles = (row.radius as number | null) ?? 25
+  const keyword = (row.keyword as string | null) ?? undefined
+  const category = (row.category as string | null) ?? ''
+
+  if (usIntent && isUsZip(locationText)) {
+    return { zipCode: locationText, radiusMiles, category, keyword }
+  }
+  return {
+    zipCode: '',
+    location: locationText,
+    countryCode: countryCode || undefined,
+    radiusMiles,
+    category,
+    keyword,
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -85,12 +121,7 @@ export async function GET(request: NextRequest) {
 
   for (const row of savedSearches) {
     try {
-      const params: SearchParams = {
-        zipCode: row.zip as string,
-        radiusMiles: row.radius as number,
-        category: row.category as string,
-        keyword: (row.keyword as string | null) ?? undefined,
-      }
+      const params = paramsForSavedSearch(row as Record<string, unknown>)
 
       // Route through leads_cache first (same key / service-role pattern as the
       // search route). Only fetch live on a MISS, then write the pool back so the
@@ -142,11 +173,15 @@ export async function GET(request: NextRequest) {
 
         const firstName = profile.full_name?.split(' ')[0] ?? 'there'
         const n = newLeads.length
+        // The /search page accepts an international location string in ?zip and a
+        // ?country hint, so pass the country through when the row carries one —
+        // otherwise the rerun link resolves to a different place than the alert.
         const searchUrl = [
           `${siteUrl}/search`,
           `?zip=${encodeURIComponent(row.zip as string)}`,
           `&radius=${row.radius}`,
           `&category=${encodeURIComponent(row.category as string)}`,
+          params.countryCode ? `&country=${encodeURIComponent(params.countryCode)}` : '',
           row.keyword ? `&keyword=${encodeURIComponent(row.keyword as string)}` : '',
         ].join('')
 

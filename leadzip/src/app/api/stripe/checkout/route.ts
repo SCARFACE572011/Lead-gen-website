@@ -18,10 +18,12 @@ const VALID_PLANS = ['pro', 'agency']
 const VALID_BILLING = ['monthly', 'annual']
 
 export async function POST(request: NextRequest) {
-  // Check Stripe is configured
+  // Check Stripe is configured. The response never names the missing env var:
+  // config state is operator information, so it goes to the server log only.
   if (!process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY.startsWith('sk_placeholder')) {
+    console.error('stripe/checkout: STRIPE_SECRET_KEY is missing or still a placeholder')
     return NextResponse.json(
-      { error: 'Stripe not configured. Add STRIPE_SECRET_KEY to environment variables.' },
+      { error: 'Billing is temporarily unavailable. Please try again later.' },
       { status: 503 }
     )
   }
@@ -33,6 +35,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Deactivated accounts keep a valid session until it expires, so every
+  // route re-checks status rather than trusting middleware alone.
+  const { data: profile } = await supabase
+    .from('users_profile')
+    .select('status')
+    .eq('id', user.id)
+    .maybeSingle()
+  if (profile?.status === 'deactivated') {
+    return NextResponse.json({ error: 'Account deactivated' }, { status: 403 })
+  }
+
+  // `promo` says the visitor came through the 15%-off popup. It can only ever
+  // NARROW eligibility: the server decides who qualifies, and this flag decides
+  // whether an otherwise-eligible visitor actually claimed the offer. Setting it
+  // by hand grants nothing.
   let body: { plan?: string; billing?: string; promo?: boolean }
   try {
     body = await request.json()
@@ -40,7 +57,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
   }
 
-  const { plan = 'pro', billing = 'monthly', promo = false } = body ?? {}
+  const { plan = 'pro', billing = 'monthly', promo: claimedPromo } = body ?? {}
 
   if (!VALID_PLANS.includes(plan)) {
     return NextResponse.json({ error: 'Invalid plan' }, { status: 400 })
@@ -51,26 +68,18 @@ export async function POST(request: NextRequest) {
 
   const priceId = billing === 'annual' ? PLAN_PRICE_IDS[plan].annual : PLAN_PRICE_IDS[plan].monthly
   if (!priceId || priceId.includes('placeholder')) {
+    // The exact env var name stays in the server log, never in the response.
+    console.error(
+      `stripe/checkout: missing price id for plan=${plan} billing=${billing} ` +
+        `(STRIPE_PRICE_${plan.toUpperCase()}_${billing.toUpperCase()})`
+    )
     return NextResponse.json(
-      {
-        error: `Checkout for the ${plan} ${billing} plan is not configured. Set the STRIPE_PRICE_${plan.toUpperCase()}_${billing.toUpperCase()} environment variable to a real Stripe price ID.`,
-      },
+      { error: 'That plan is not available for checkout right now. Please try again later.' },
       { status: 503 }
     )
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' })
-
-  // New-signup promo: when the visitor came through the 15%-off popup we
-  // auto-apply the coupon (15% off the first charge). Stripe forbids combining
-  // an auto-applied discount with allow_promotion_codes, so it's one or the other.
-  // With a trial, Stripe applies the coupon to the first PAID invoice (the one
-  // generated when the trial ends), so promo + trial compose correctly.
-  const promoCoupon = process.env.STRIPE_PROMO_COUPON
-  const applyPromo = promo === true && !!promoCoupon
-  const discountConfig = applyPromo
-    ? { discounts: [{ coupon: promoCoupon! }] }
-    : { allow_promotion_codes: true }
 
   // ── Trial-abuse guard ─────────────────────────────────────────────────────
   // The 7-day free trial is only for users who have NEVER had a Stripe
@@ -117,6 +126,25 @@ export async function POST(request: NextRequest) {
 
   const trialEligible = !hadSubscription
 
+  // New-signup promo: the 15%-off welcome offer is for genuinely new customers
+  // who actually claimed it through the popup. Two conditions, and the client
+  // controls only the weaker one:
+  //   * trialEligible  - server-derived (our subscriptions row plus a live
+  //     Stripe lookup). This is the gate. It used to be absent, so any returning
+  //     subscriber could POST {"promo":true} and discount themselves.
+  //   * claimedPromo   - the popup flag. It can only narrow, never grant, so
+  //     visitors who never saw the offer still get the promo-code box instead of
+  //     a silent discount.
+  // Stripe forbids combining an auto-applied discount with
+  // allow_promotion_codes, so it is one or the other. With a trial, Stripe
+  // applies the coupon to the first PAID invoice (the one generated when the
+  // trial ends), so promo + trial compose correctly.
+  const promoCoupon = process.env.STRIPE_PROMO_COUPON
+  const applyPromo = trialEligible && claimedPromo === true && !!promoCoupon
+  const discountConfig = applyPromo
+    ? { discounts: [{ coupon: promoCoupon! }] }
+    : { allow_promotion_codes: true }
+
   try {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
@@ -153,7 +181,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ url: session.url })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Checkout failed'
-    return NextResponse.json({ error: message }, { status: 500 })
+    // Stripe error text names price ids, customer ids, coupon ids and account
+    // state, so it stays server-side.
+    console.error('stripe/checkout: failed to create checkout session', err)
+    return NextResponse.json(
+      { error: 'Could not start checkout. Please try again.' },
+      { status: 500 }
+    )
   }
 }

@@ -201,120 +201,48 @@ export function signalsFromDetails(details: DigitalHealthDetails): WebsiteSignal
 // ---------------------------------------------------------------------------
 // Server-side website probe. NEVER call from the client — it exists so the
 // audit flow can verify a site resolves, has SSL, and shows basic conversion
-// signals with one short, size-capped fetch. Includes SSRF guards.
+// signals with one short, size-capped fetch.
+//
+// The SSRF guard lives in src/lib/safeFetch.ts and is shared with
+// /api/leads/enrich/health so the two can never drift apart again. It resolves
+// DNS, rejects every non-public address, and pins the socket to the address it
+// validated (a hostname string check alone is bypassable with a public wildcard
+// resolver such as 169.254.169.254.nip.io).
+//
+// safeFetch is loaded lazily: this module is also imported by client components
+// for pure scoring, and the probe path must never be pulled into their bundle.
 // ---------------------------------------------------------------------------
-
-const BLOCKED_TLDS = new Set(['localhost', 'local', 'internal', 'intranet', 'corp', 'home', 'lan', 'test'])
-
-function isPrivateIpv4(hostname: string): boolean {
-  const octets = hostname.split('.').map(Number)
-  if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o) || o < 0 || o > 255)) {
-    return false
-  }
-  const [a, b] = octets
-  if (a === 0 || a === 10 || a === 127) return true
-  if (a === 169 && b === 254) return true
-  if (a === 172 && b >= 16 && b <= 31) return true
-  if (a === 192 && b === 168) return true
-  if (a === 100 && b >= 64 && b <= 127) return true
-  return false
-}
-
-function isBlockedIpv6(bracketed: string): boolean {
-  const addr = bracketed.slice(1, -1).toLowerCase()
-  if (addr === '::' || addr === '::1') return true
-  if (/^fe[89ab]/.test(addr)) return true
-  if (addr.startsWith('fc') || addr.startsWith('fd')) return true
-  if (addr.startsWith('::ffff:')) return true
-  if (addr.startsWith('64:ff9b:')) return true
-  return false
-}
-
-function isSafeUrl(url: string): boolean {
-  let parsed: URL
-  try {
-    parsed = new URL(url)
-  } catch {
-    return false
-  }
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
-  if (parsed.username || parsed.password) return false
-  const hostname = parsed.hostname.toLowerCase()
-  if (!hostname) return false
-  if (hostname.startsWith('[')) return !isBlockedIpv6(hostname)
-  if (isPrivateIpv4(hostname)) return false
-  const labels = hostname.replace(/\.$/, '').split('.')
-  if (labels.length < 2) return false
-  if (BLOCKED_TLDS.has(labels[labels.length - 1])) return false
-  return true
-}
 
 const PROBE_MAX_BYTES = 256 * 1024
 const PROBE_MAX_REDIRECTS = 3
 
 /**
- * Fetch a lead's website server-side (short timeout, capped body, redirects
- * revalidated hop by hop) and derive live health signals. Returns
- * { reachable: false } on any failure so callers can score unreachable sites.
+ * Fetch a lead's website server-side (short timeout, capped body, every
+ * redirect hop re-validated) and derive live health signals. Returns
+ * { reachable: false } on any failure or refusal so callers can score
+ * unreachable sites without special-casing errors.
  */
 export async function probeWebsite(
   website: string,
   timeoutMs = 5000
 ): Promise<WebsiteSignals> {
   const startUrl = normalizeUrl(website)
-  if (!startUrl || !isSafeUrl(startUrl)) return { reachable: false }
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
-  const started = Date.now()
+  if (!startUrl) return { reachable: false }
 
   try {
-    let currentUrl = startUrl
-    let res: Response | undefined
-    for (let hop = 0; ; hop++) {
-      res = await fetch(currentUrl, {
-        signal: controller.signal,
-        redirect: 'manual',
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LeadZipp/1.0)' },
-      })
-      const location = res.headers.get('location')
-      if (res.status >= 300 && res.status < 400 && location) {
-        if (hop >= PROBE_MAX_REDIRECTS) return { reachable: false }
-        const nextUrl = new URL(location, currentUrl).toString()
-        if (!isSafeUrl(nextUrl)) return { reachable: false }
-        currentUrl = nextUrl
-        continue
-      }
-      break
-    }
-    if (!res || !res.ok) return { reachable: false }
+    const { safeProbe } = await import('./safeFetch')
+    const res = await safeProbe(startUrl, {
+      timeoutMs,
+      maxBytes: PROBE_MAX_BYTES,
+      maxRedirects: PROBE_MAX_REDIRECTS,
+      userAgent: 'Mozilla/5.0 (compatible; LeadZipp/1.0)',
+    })
+    if (!res.ok) return { reachable: false }
 
-    // Read at most PROBE_MAX_BYTES of the body for signal detection
-    let html = ''
-    const reader = res.body?.getReader()
-    if (reader) {
-      const chunks: Uint8Array[] = []
-      let total = 0
-      while (total < PROBE_MAX_BYTES) {
-        const { done, value } = await reader.read()
-        if (done || !value) break
-        chunks.push(value)
-        total += value.byteLength
-      }
-      reader.cancel().catch(() => {})
-      const merged = new Uint8Array(total)
-      let offset = 0
-      for (const chunk of chunks) {
-        merged.set(chunk, offset)
-        offset += chunk.byteLength
-      }
-      html = new TextDecoder().decode(merged)
-    }
-    const elapsed = Date.now() - started
-
+    const html = res.body
     return {
       reachable: true,
-      https: currentUrl.startsWith('https://'),
+      https: res.finalUrl.startsWith('https://'),
       mobileResponsive:
         html.includes('<meta name="viewport"') || html.includes("<meta name='viewport'"),
       hasAnalytics:
@@ -327,11 +255,9 @@ export async function probeWebsite(
       hasContactForm:
         html.includes('<form') ||
         /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/.test(html),
-      fastLoad: elapsed < 3000,
+      fastLoad: res.elapsedMs < 3000,
     }
   } catch {
     return { reachable: false }
-  } finally {
-    clearTimeout(timeoutId)
   }
 }

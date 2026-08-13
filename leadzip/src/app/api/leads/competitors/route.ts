@@ -25,11 +25,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { success, retryAfter } = await checkRateLimit(competitorsLimiter, user.id)
-  if (!success) {
+  try {
+    const { success, retryAfter } = await checkRateLimit(competitorsLimiter, user.id)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests', retryAfter },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  } catch (err) {
+    // Limiter outage: fail CLOSED. Every request here is a billable Places call,
+    // so an unmetered path would put spend at risk.
+    console.warn('[competitors] rate limiter error — failing closed', err)
     return NextResponse.json(
-      { error: 'Too many requests', retryAfter },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      { error: 'Competitor analysis is temporarily unavailable. Please try again in a moment.', retryAfter: 30 },
+      { status: 503, headers: { 'Retry-After': '30' } }
     )
   }
 
@@ -60,12 +70,19 @@ export async function POST(request: Request) {
     )
   }
 
+  // ISO 3166-1 alpha-2, when the caller knows it. Without it a 5-digit postal
+  // code is assumed to be a US ZIP, which is how a Berlin lead used to resolve
+  // to a US location and return competitors from the wrong continent.
+  const rawCountry = typeof lead.countryCode === 'string' ? lead.countryCode.trim().toUpperCase() : ''
+  const countryCode = /^[A-Z]{2}$/.test(rawCountry) ? rawCountry : undefined
+
   const input: CompetitorInput = {
     businessName: lead.businessName.trim().slice(0, 200),
     category: lead.category.trim().slice(0, 100),
     latitude: hasCoords ? (lead.latitude as number) : null,
     longitude: hasCoords ? (lead.longitude as number) : null,
     zipCode: hasZip ? (lead.zipCode as string).trim().slice(0, 10) : undefined,
+    countryCode,
     website: typeof lead.website === 'string' ? lead.website : null,
     rating: typeof lead.rating === 'number' ? lead.rating : null,
     reviewCount: typeof lead.reviewCount === 'number' ? lead.reviewCount : null,

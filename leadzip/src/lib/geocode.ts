@@ -54,7 +54,40 @@ interface NominatimResult {
   }
 }
 
+/**
+ * US ZIP to coordinates.
+ *
+ * Google first, Nominatim as the fallback. Nominatim is a free community
+ * service under a 1 request/second fair-use policy with no SLA, and it was the
+ * ONLY resolver here while it sat in front of every US search, which is the
+ * core product path. A throttled or unreachable Nominatim surfaced to the user
+ * as "We couldn't find 30301" on a perfectly valid ZIP. The worldwide path
+ * already preferred Google, so this brings the older ZIP path in line.
+ *
+ * If no Google key is configured, behavior is exactly as before.
+ */
 export async function geocodeZip(zipCode: string): Promise<GeocodedZip> {
+  try {
+    const resolved = await geocodeGoogle(zipCode, 'US')
+    const stateAbbrFromGoogle = stateNameToAbbr(resolved.state ?? '')
+    return {
+      lat: resolved.lat,
+      lon: resolved.lon,
+      city: resolved.city ?? '',
+      state: resolved.state ?? '',
+      stateAbbr: stateAbbrFromGoogle,
+      areaCode: STATE_AREA_CODES[stateAbbrFromGoogle] ?? '555',
+    }
+  } catch (err) {
+    // A genuine "no such ZIP" is authoritative, so do not spend a second
+    // lookup on it. Anything else (no key, quota, network) falls through.
+    if (err instanceof LocationNotFoundError) throw err
+  }
+
+  return geocodeZipViaNominatim(zipCode)
+}
+
+async function geocodeZipViaNominatim(zipCode: string): Promise<GeocodedZip> {
   const url = `${NOMINATIM_URL}?postalcode=${encodeURIComponent(zipCode)}&country=US&format=json&limit=1&addressdetails=1`
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 5000) // 5s max — never block the search pipeline

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { chatLimiter, chatDailyLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { getClientIp } from '@/lib/clientIp'
 import { SYSTEM_PROMPT, answerFromFaq } from './knowledge'
 
 // Cheap, fast model for a support chat: short replies, low latency.
@@ -12,20 +13,6 @@ const MAX_REPLY_TOKENS = 300
 interface ChatTurn {
   role: 'user' | 'assistant'
   content: string
-}
-
-// Best-effort client IP for keying the rate limiters (same pattern as the
-// anonymous search route): first x-forwarded-for value, then x-real-ip, then a
-// shared 'anon' bucket so a missing IP fails safe rather than open.
-function getClientIp(request: NextRequest): string {
-  const xff = request.headers.get('x-forwarded-for')
-  if (xff) {
-    const first = xff.split(',')[0]?.trim()
-    if (first) return first
-  }
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp) return realIp
-  return 'anon'
 }
 
 // Whitelist roles and cap both count and per-message length so a hostile
@@ -65,19 +52,29 @@ async function askClaude(apiKey: string, history: ChatTurn[], message: string): 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
 
-  const burst = await checkRateLimit(chatLimiter, ip)
-  if (!burst.success) {
-    return NextResponse.json(
-      { error: 'Too many messages. Please wait a moment.', retryAfter: burst.retryAfter },
-      { status: 429, headers: { 'Retry-After': String(burst.retryAfter) } }
-    )
-  }
-  const daily = await checkRateLimit(chatDailyLimiter, ip)
-  if (!daily.success) {
-    return NextResponse.json(
-      { error: 'Daily chat limit reached. Please email support instead.', retryAfter: daily.retryAfter },
-      { status: 429, headers: { 'Retry-After': String(daily.retryAfter) } }
-    )
+  // Limiter outage (e.g. Upstash unreachable): fail OPEN into FAQ mode rather
+  // than 500ing the widget on the public marketing site. The FAQ engine is
+  // local, free, and zero-cost, so an unmetered request there is harmless. The
+  // paid Anthropic path stays CLOSED below — it is never entered unmetered.
+  let limiterDown = false
+  try {
+    const burst = await checkRateLimit(chatLimiter, ip)
+    if (!burst.success) {
+      return NextResponse.json(
+        { error: 'Too many messages. Please wait a moment.', retryAfter: burst.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(burst.retryAfter) } }
+      )
+    }
+    const daily = await checkRateLimit(chatDailyLimiter, ip)
+    if (!daily.success) {
+      return NextResponse.json(
+        { error: 'Daily chat limit reached. Please email support instead.', retryAfter: daily.retryAfter },
+        { status: 429, headers: { 'Retry-After': String(daily.retryAfter) } }
+      )
+    }
+  } catch (err) {
+    console.warn('[chat] rate limiter error — falling back to FAQ mode', err)
+    limiterDown = true
   }
 
   let body: { message?: unknown; history?: unknown }
@@ -95,9 +92,10 @@ export async function POST(request: NextRequest) {
 
   // AI mode when a key is configured; keyword FAQ engine otherwise. Any API
   // failure (bad key, outage, refusal, empty reply) degrades to the FAQ engine
-  // instead of erroring, so the widget always answers.
+  // instead of erroring, so the widget always answers. An unusable rate limiter
+  // also skips the paid call: unmetered spend is never worth it.
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (apiKey) {
+  if (apiKey && !limiterDown) {
     try {
       const reply = await askClaude(apiKey, history, message)
       if (reply) {

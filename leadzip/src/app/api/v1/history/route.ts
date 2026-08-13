@@ -24,11 +24,21 @@ export async function GET(request: NextRequest) {
   const limiter = validated.plan === 'agency' ? apiKeyLimiterAgency
     : validated.plan === 'pro' ? apiKeyLimiterPro
     : apiKeyLimiterFree
-  const { success, retryAfter } = await checkRateLimit(limiter, validated.userId)
-  if (!success) {
+  try {
+    const { success, retryAfter } = await checkRateLimit(limiter, validated.userId)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Daily API limit reached', retryAfter, plan: validated.plan },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  } catch (err) {
+    // Limiter outage: fail CLOSED. This is the daily plan quota, so serving
+    // unmetered requests would let any key exceed its purchased allowance.
+    console.warn('[v1/history] rate limiter error, failing closed', err)
     return NextResponse.json(
-      { error: 'Daily API limit reached', retryAfter, plan: validated.plan },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      { error: 'Rate limiting is temporarily unavailable. Please retry in a moment.', retryAfter: 30 },
+      { status: 503, headers: { 'Retry-After': '30' } }
     )
   }
 

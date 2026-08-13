@@ -7,6 +7,7 @@ import {
   effectiveRadiusMiles,
 } from '@/lib/geocode'
 import type { SearchParams, Lead } from '@/types/lead'
+import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 import {
   searchLimiterFree,
   searchLimiterPaid,
@@ -15,65 +16,33 @@ import {
   checkRateLimit,
 } from '@/lib/ratelimit'
 
-// Best-effort client IP for keying the anonymous rate limiter. Prefer the first
-// value of x-forwarded-for (the original client), fall back to x-real-ip, then a
-// shared 'anon' bucket so a missing IP still fails safe (shared cap) rather than open.
-function getClientIp(request: NextRequest): string {
-  const xff = request.headers.get('x-forwarded-for')
-  if (xff) {
-    const first = xff.split(',')[0]?.trim()
-    if (first) return first
-  }
-  const realIp = request.headers.get('x-real-ip')?.trim()
-  if (realIp) return realIp
-  return 'anon'
-}
+import { getClientIp } from '@/lib/clientIp'
 
-// Cache TTL for the leads_cache pool. Bumped 2h → 12h: every cache MISS hits the
-// paid Google Places API (~$0.10/search), so a longer TTL directly protects gross
-// margin. 12h keeps repeat prospecting / saved-search workflows on cached data for
-// a full work day while staying fresh enough that listings don't go stale.
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000 // 12 hours
-
-function buildCacheKey(params: SearchParams): string {
-  // Cache by the raw search POOL. Refinement filters (noWebsite / minReviews /
-  // minRating) are NOT part of the key — they're applied to the cached pool per
-  // request (see applyPoolFilters), so refining stays a cache HIT.
-  //
-  // EXCEPTION: for a "Custom Keyword" search the keyword IS the query — providers
-  // fetch a completely different pool per keyword — so it MUST be part of the key,
-  // or e.g. a "sushi" pool would be served for a later "plumbers" search on the
-  // same zip. Normal category keys are left unchanged so existing cache still hits.
-  const cat = (params.category || '').trim()
-  const kwSuffix =
-    cat === 'Custom Keyword' ? `|${(params.keyword || '').trim().toLowerCase()}` : ''
-
-  // International / free-text searches get their own namespaced key built from
-  // the normalized location text + country + km radius. Deterministic from the
-  // request alone (no geocoding needed to check the cache), and it can never
-  // collide with a legacy ZIP key thanks to the "intl:" prefix — existing
-  // cached ZIP rows keep hitting exactly as before.
-  const location = (params.location ?? '').trim()
-  if (location) {
-    const norm = location.toLowerCase().replace(/\s+/g, ' ').replace(/\s*,\s*/g, ',')
-    const cc = (params.countryCode ?? '').trim().toLowerCase()
-    const km = params.radiusKm ?? Math.round((params.radiusMiles ?? 25) * 1.60934)
-    return `intl:${cc}:${norm}|${cat}|${km}km${kwSuffix}`
-  }
-
-  const zip = params.zipCode.trim()
-  const radius = params.radiusMiles ?? 25
-  return `${zip}|${cat}|${radius}${kwSuffix}`
-}
+// Cache key + TTL now live in src/lib/leadsCache.ts so every reader and writer of
+// leads_cache (this route, /api/v1/search, market-gaps, and both crons) agrees on
+// the key format and on how long a row lives. The ZIP key format is unchanged.
 
 // Refinement filters applied to the cached POOL on BOTH cache hit and miss, so the
 // pool stays filter-agnostic and refining never triggers a new billable fetch.
-// NOTE: providers also pre-filter minRating/hasWebsite/hasPhone at fetch time, so a
-// freshly-fetched pool may already be narrowed by those params.
+//
+// EVERY narrowing filter the caller asked for must be applied HERE and nowhere
+// else. Providers can also pre-filter minRating/hasWebsite/hasPhone at fetch time,
+// but this route deliberately withholds those params from the provider call (see
+// providerParams below) so the pool it caches is genuinely raw. Passing them
+// through poisoned the shared pool: a "4.0+ stars" search wrote a 4.0+-only pool
+// under the filter-agnostic key, and the next person to search that same
+// zip/category/radius — say with the "No Website" preset — got a cache HIT over
+// only the highest-rated businesses, the exact inverse of what they asked for.
 function applyPoolFilters(leads: Lead[], params: SearchParams): Lead[] {
   let out = leads
   if (params.noWebsite === true) {
     out = out.filter((l) => !l.website)
+  }
+  if (params.hasWebsite === true) {
+    out = out.filter((l) => !!l.website)
+  }
+  if (params.hasPhone === true) {
+    out = out.filter((l) => !!l.phone)
   }
   if (params.minReviews != null && params.minReviews > 0) {
     out = out.filter((l) => (l.reviewCount ?? 0) >= params.minReviews!)
@@ -155,10 +124,38 @@ export async function POST(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
     // ── Cache check ───────────────────────────────────────────────────────────
+    // Guarded by its own anonymous throttle. A cache HIT costs nothing at the
+    // provider, but the cached pool IS the product: names, addresses, phones,
+    // ratings. Cache keys are trivially enumerable (zip|category|radius) and the
+    // leads_cache policy allows anon SELECT, so an unguarded hit path let a
+    // logged-out client walk every warm key and drain the corpus without an
+    // account, never reaching the limits further down. Cheap, so it runs first.
     if (isSupabaseConfigured) {
       try {
         const { createClient } = await import('@/lib/supabase/server')
         const supabase = await createClient()
+
+        const { data: { user: cacheUser } } = await supabase.auth.getUser()
+        if (!cacheUser) {
+          const ip = getClientIp(request)
+          try {
+            const burst = await checkRateLimit(anonSearchBurstLimiter, ip)
+            if (!burst.success) {
+              return NextResponse.json(
+                { error: 'Too many requests', retryAfter: burst.retryAfter },
+                { status: 429, headers: { 'Retry-After': String(burst.retryAfter) } }
+              )
+            }
+          } catch (err) {
+            // Fail closed: an unmetered cache path is a scraping hole.
+            console.warn('[search] anon cache-read limiter error, failing closed', err)
+            return NextResponse.json(
+              { error: 'Too many requests', retryAfter: 60 },
+              { status: 429, headers: { 'Retry-After': '60' } }
+            )
+          }
+        }
+
         const cacheKey = buildCacheKey(body)
 
         const { data: cached } = await supabase
@@ -197,7 +194,10 @@ export async function POST(request: NextRequest) {
           } catch { /* non-fatal */ }
 
           const firstWithCoords = pool.find((l) => l.latitude != null && l.longitude != null)
-          // Approximate fetchedAt from expires_at - TTL
+          // Derive fetchedAt from expires_at - TTL. leads_cache has no fetched_at
+          // column, so this is only correct while EVERY writer uses the shared
+          // CACHE_TTL_MS — which they now do (the prefetch cron used to write 24h
+          // here, making cron-warmed rows look 12 hours fresher than they were).
           const fetchedAt = cached.expires_at
             ? new Date(new Date(cached.expires_at as string).getTime() - CACHE_TTL_MS).toISOString()
             : new Date().toISOString()
@@ -337,17 +337,44 @@ export async function POST(request: NextRequest) {
         }
 
         // Paid plan: daily fair-use soft cap — protects gross margin from runaway
-        // API cost. Counts today's LIVE searches from search_history (cache hits
-        // return before this point and never bill, so they don't count). Admins exempt.
+        // API cost. Cache hits return before this point and never bill, so they
+        // don't count. Admins exempt.
+        //
+        // The count comes from usage_limits.searches_today, NOT from
+        // search_history. Those were the same table, and DELETE /api/history
+        // lets a user clear their own history with the service role, so the cap
+        // could be reset at will by clearing history between batches. The
+        // counter is service-role/RPC written and user-readable only.
+        // Falls back to the old history count until the daily-counter migration
+        // has been applied.
         if (role !== 'admin' && plan !== 'free') {
           try {
             const startOfDay = new Date()
             startOfDay.setUTCHours(0, 0, 0, 0)
-            const { count: todayCount } = await supabase
-              .from('search_history')
-              .select('id', { count: 'exact', head: true })
+            const today = startOfDay.toISOString().slice(0, 10)
+
+            let todayCount: number | null = null
+            const { data: usageRow } = await supabase
+              .from('usage_limits')
+              .select('searches_today, searches_today_date')
               .eq('user_id', user.id)
-              .gte('created_at', startOfDay.toISOString())
+              .maybeSingle()
+
+            if (usageRow && 'searches_today' in usageRow) {
+              // A stale date means the counter belongs to a previous day.
+              todayCount =
+                usageRow.searches_today_date === today
+                  ? (usageRow.searches_today as number) ?? 0
+                  : 0
+            } else {
+              const { count } = await supabase
+                .from('search_history')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', user.id)
+                .gte('created_at', startOfDay.toISOString())
+              todayCount = count ?? 0
+            }
+
             if ((todayCount ?? 0) >= PAID_DAILY_FAIR_USE) {
               return NextResponse.json(
                 {
@@ -388,7 +415,19 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Live fetch (the billable provider call) ───────────────────────────────
-    const results = await searchLeads(body)
+    // Send the provider the POOL-defining params only. minRating / hasWebsite /
+    // hasPhone are pure post-filters in every provider (they do not change the
+    // upstream query or its cost), so withholding them costs nothing and keeps the
+    // pool we are about to cache raw and reusable. They are applied to the response
+    // by applyPoolFilters below, exactly as they already are on a cache HIT — so
+    // the caller sees the same leads either way.
+    const providerParams: SearchParams = {
+      ...body,
+      minRating: undefined,
+      hasWebsite: undefined,
+      hasPhone: undefined,
+    }
+    const results = await searchLeads(providerParams)
 
     // Snapshot the raw provider pool BEFORE refinement filters or per-user marks.
     // This is what gets cached — shared and filter-agnostic — so later refines are
@@ -477,11 +516,18 @@ export async function POST(request: NextRequest) {
             result_count: results.total,
           })
 
-          // increment_searches is SECURITY DEFINER, so it runs with elevated
-          // privileges regardless of caller — fine to invoke via the session client.
-          // Its fallback (direct usage_limits read + update) MUST use the admin
-          // client, since a direct usage_limits write is service-role-only post-lockdown.
-          const { error: rpcError } = await supabase.rpc('increment_searches', { uid: user.id })
+          // increment_daily_searches bumps BOTH the monthly total and the
+          // tamper-proof daily counter the fair-use cap reads, rolling the day
+          // over itself. It is SECURITY DEFINER, so the session client is fine.
+          // Older databases only have increment_searches, so fall back to it
+          // until the daily-counter migration has been applied; the cap falls
+          // back to counting history in exactly that case.
+          let { error: rpcError } = await supabase.rpc('increment_daily_searches', {
+            uid: user.id,
+          })
+          if (rpcError) {
+            ;({ error: rpcError } = await supabase.rpc('increment_searches', { uid: user.id }))
+          }
           if (rpcError) {
             const { data } = await admin
               .from('usage_limits')

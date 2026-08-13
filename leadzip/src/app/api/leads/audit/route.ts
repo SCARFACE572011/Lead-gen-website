@@ -82,11 +82,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { success, retryAfter } = await checkRateLimit(auditLimiter, user.id)
-  if (!success) {
+  try {
+    const { success, retryAfter } = await checkRateLimit(auditLimiter, user.id)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests', retryAfter },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  } catch (err) {
+    // Limiter outage: fail CLOSED. Each audit does an outbound website probe plus
+    // a DB write, so an unmetered path is worth more than the lost request.
+    console.warn('[audit] rate limiter error — failing closed', err)
     return NextResponse.json(
-      { error: 'Too many requests', retryAfter },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      { error: 'Audits are temporarily unavailable. Please try again in a moment.', retryAfter: 30 },
+      { status: 503, headers: { 'Retry-After': '30' } }
     )
   }
 
@@ -132,11 +142,14 @@ export async function POST(request: Request) {
 
   if (error) {
     if (isMissingTableError(error)) {
+      // Operator-facing detail stays in the logs: the response is rendered
+      // verbatim to paying customers, so it must not name internal files.
+      console.error(
+        'audit: audit_reports table is missing. Run supabase/migrations/20260812_audit_reports.sql on this environment.',
+        error
+      )
       return NextResponse.json(
-        {
-          error:
-            'Audit reports are not set up yet. Run the audit_reports migration first (supabase/migrations/20260812_audit_reports.sql).',
-        },
+        { error: 'Audit reports are not enabled yet. We are on it.' },
         { status: 503 }
       )
     }

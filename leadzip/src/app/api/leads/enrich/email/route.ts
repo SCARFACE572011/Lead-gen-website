@@ -35,11 +35,20 @@ export async function POST(request: Request) {
   }
 
   // 2. Rate limit
-  const { success, retryAfter } = await checkRateLimit(enrichEmailLimiter, user.id)
-  if (!success) {
+  try {
+    const { success, retryAfter } = await checkRateLimit(enrichEmailLimiter, user.id)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests', retryAfter },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  } catch (err) {
+    // Limiter outage: fail CLOSED. Every call here spends Hunter.io credits.
+    console.warn('[enrich/email] rate limiter error, failing closed', err)
     return NextResponse.json(
-      { error: 'Too many requests', retryAfter },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      { error: 'Email lookup is temporarily unavailable. Please retry in a moment.', retryAfter: 30 },
+      { status: 503, headers: { 'Retry-After': '30' } }
     )
   }
 

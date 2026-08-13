@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   Search,
   Download,
@@ -23,7 +23,7 @@ import {
   Columns3,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { Lead, LeadStatus, PipelineStage, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
+import { Lead, LeadStatus, PipelineStage, PIPELINE_STAGES, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
 import { exportToCSV } from '@/lib/export'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
@@ -32,6 +32,9 @@ import ProposalModal from '@/components/leads/ProposalModal'
 
 const STORAGE_KEY = 'leadzip_saved_leads'
 const VIEW_KEY = 'leadzip_saved_view'
+// Device-local stage moves, kept only while the pipeline migration is pending.
+// Shape: { [leadId]: PipelineStage }
+const STAGE_KEY = 'leadzip_pipeline_stages'
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
@@ -57,6 +60,43 @@ const SORT_OPTIONS: { value: SortOption; label: string }[] = [
   { value: 'category', label: 'Category' },
   { value: 'rating', label: 'Rating' },
 ]
+
+// Null-safe read of the pending-migration stage map: missing, empty, corrupt or
+// hand-edited values all collapse to an empty map instead of throwing.
+function readStageOverrides(): Record<string, PipelineStage> {
+  try {
+    const raw = localStorage.getItem(STAGE_KEY)
+    if (!raw) return {}
+    const parsed: unknown = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return {}
+    const valid: Record<string, PipelineStage> = {}
+    for (const [id, stage] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof stage === 'string' && (PIPELINE_STAGES as string[]).includes(stage)) {
+        valid[id] = stage as PipelineStage
+      }
+    }
+    return valid
+  } catch {
+    return {}
+  }
+}
+
+// Writes the whole map, dropping the key entirely once nothing is left to replay.
+function writeStageOverrides(map: Record<string, PipelineStage>) {
+  try {
+    if (Object.keys(map).length === 0) {
+      localStorage.removeItem(STAGE_KEY)
+      return
+    }
+    localStorage.setItem(STAGE_KEY, JSON.stringify(map))
+  } catch { /* non-fatal */ }
+}
+
+function writeStageOverride(id: string, stage: PipelineStage) {
+  const map = readStageOverrides()
+  map[id] = stage
+  writeStageOverrides(map)
+}
 
 function ScoreBadge({ score }: { score: number }) {
   const color =
@@ -309,6 +349,64 @@ export default function SavedLeadsPage() {
     }
   }, [])
 
+  const stageFlushRunning = useRef(false)
+
+  // One-time catch-up after the migration finally runs: push the stage moves
+  // this device kept while the column was missing, then drop the map so it can
+  // never replay. Never blocks the board and never throws.
+  const flushStageOverrides = useCallback(async (loaded: Lead[]) => {
+    if (stageFlushRunning.current) return
+    stageFlushRunning.current = true
+    try {
+      const overrides = readStageOverrides()
+      const pending: Record<string, PipelineStage> = {}
+
+      for (const [id, stage] of Object.entries(overrides)) {
+        const lead = loaded.find((l) => l.id === id)
+        // Drop overrides for leads that are gone, and never overwrite a stage
+        // the user set elsewhere after migrating: a non-default server value wins.
+        if (!lead || (lead.pipelineStage ?? 'new') !== 'new' || stage === 'new') continue
+        pending[id] = stage
+      }
+
+      const migrated: Record<string, PipelineStage> = {}
+      const failed: Record<string, PipelineStage> = {}
+
+      for (const [id, stage] of Object.entries(pending)) {
+        try {
+          const res = await fetch('/api/leads/pipeline', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ leadId: id, stage }),
+          })
+          if (res.ok) {
+            migrated[id] = stage
+          } else if (res.status !== 404) {
+            // 404 means the lead is gone or not ours, so it can never flush.
+            // Anything else may be transient, so keep it for the next load.
+            failed[id] = stage
+          }
+        } catch {
+          failed[id] = stage
+        }
+      }
+
+      // Keep only what still needs another attempt
+      writeStageOverrides(failed)
+
+      if (Object.keys(migrated).length > 0) {
+        setLeads((prev) =>
+          prev.map((l) => (migrated[l.id] ? { ...l, pipelineStage: migrated[l.id] } : l))
+        )
+        toast.success('Restored your saved pipeline stages')
+      }
+    } catch {
+      // Non-fatal: the overrides stay on disk for the next load
+    } finally {
+      stageFlushRunning.current = false
+    }
+  }, [])
+
   const loadLeads = useCallback(async () => {
     setLoading(true)
     setLoadError(false)
@@ -331,37 +429,50 @@ export default function SavedLeadsPage() {
           if (data && data.length > 0) {
             // Feature-detect the pipeline columns: select('*') simply omits them
             // when the one-time migration hasn't run yet.
-            setPipelineMigrationNeeded(!('pipeline_stage' in data[0]))
-            setLeads(
-              data.map((l) => ({
-                id: l.id,
-                businessName: l.business_name,
-                category: l.category,
-                address: l.address ?? '',
-                city: l.city ?? '',
-                state: l.state ?? '',
-                zipCode: l.zip_code ?? '',
-                phone: l.phone ?? '',
-                website: l.website ?? '',
-                rating: l.rating ?? null,
-                reviewCount: l.review_count ?? null,
-                latitude: null,
-                longitude: null,
-                distanceMiles: null,
-                leadScore: l.lead_score ?? 0,
-                status: (l.status as LeadStatus) ?? 'new',
-                notes: l.notes ?? '',
-                savedAt: l.saved_at,
-                employeeCount: l.employee_count ?? null,
-                revenueEstimate: l.revenue_estimate ?? null,
-                facebookUrl: l.facebook_url ?? null,
-                instagramUrl: l.instagram_url ?? null,
-                linkedinUrl: l.linkedin_url ?? null,
-                email: l.email ?? undefined,
-                pipelineStage: (l.pipeline_stage as PipelineStage) ?? 'new',
-                stageUpdatedAt: l.stage_updated_at ?? undefined,
-              }))
-            )
+            const migrationNeeded = !('pipeline_stage' in data[0])
+            setPipelineMigrationNeeded(migrationNeeded)
+            // Without the column every row reads back as "new", so replay the
+            // stage moves this device kept while the migration is pending.
+            // Once it has run the server value wins and the map is ignored.
+            const stageOverrides = migrationNeeded ? readStageOverrides() : {}
+            const mapped: Lead[] = data.map((l) => ({
+              id: l.id,
+              businessName: l.business_name,
+              category: l.category,
+              address: l.address ?? '',
+              city: l.city ?? '',
+              state: l.state ?? '',
+              zipCode: l.zip_code ?? '',
+              phone: l.phone ?? '',
+              website: l.website ?? '',
+              rating: l.rating ?? null,
+              reviewCount: l.review_count ?? null,
+              latitude: null,
+              longitude: null,
+              distanceMiles: null,
+              leadScore: l.lead_score ?? 0,
+              status: (l.status as LeadStatus) ?? 'new',
+              notes: l.notes ?? '',
+              savedAt: l.saved_at,
+              employeeCount: l.employee_count ?? null,
+              revenueEstimate: l.revenue_estimate ?? null,
+              facebookUrl: l.facebook_url ?? null,
+              instagramUrl: l.instagram_url ?? null,
+              linkedinUrl: l.linkedin_url ?? null,
+              email: l.email ?? undefined,
+              pipelineStage:
+                (migrationNeeded
+                  ? stageOverrides[l.id]
+                  : (l.pipeline_stage as PipelineStage)) ?? 'new',
+              stageUpdatedAt: l.stage_updated_at ?? undefined,
+            }))
+            setLeads(mapped)
+            // Migration has run: catch the server up on anything this device
+            // staged while it was pending. Deliberately not awaited so a slow
+            // or failing flush never holds up the board.
+            if (!migrationNeeded) {
+              void flushStageOverrides(mapped)
+            }
             return
           }
           // Signed in but no server-side leads yet — fall through to localStorage
@@ -395,7 +506,7 @@ export default function SavedLeadsPage() {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [flushStageOverrides])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -420,29 +531,39 @@ export default function SavedLeadsPage() {
   }, [])
 
   const handleStatusChange = async (id: string, status: LeadStatus) => {
+    const snapshot = leads
     const updated = leads.map((l) => (l.id === id ? { ...l, status } : l))
     saveToStorage(updated)
 
     if (isSupabaseConfigured) {
       try {
         const supabase = createClient()
-        await supabase.from('leads').update({ status }).eq('id', id)
+        const { error } = await supabase.from('leads').update({ status }).eq('id', id)
+        if (error) throw error
       } catch {
-        // Non-fatal
+        // Persisting the status failed — roll back so the row doesn't quietly
+        // revert on the next load
+        saveToStorage(snapshot)
+        toast.error('Failed to update status')
       }
     }
   }
 
   const handleNotesChange = async (id: string, notes: string) => {
+    const snapshot = leads
     const updated = leads.map((l) => (l.id === id ? { ...l, notes } : l))
     saveToStorage(updated)
 
     if (isSupabaseConfigured) {
       try {
         const supabase = createClient()
-        await supabase.from('leads').update({ notes }).eq('id', id)
+        const { error } = await supabase.from('leads').update({ notes }).eq('id', id)
+        if (error) throw error
       } catch {
-        // Non-fatal
+        // Persisting the note failed — roll back so the edit doesn't quietly
+        // revert on the next load
+        saveToStorage(snapshot)
+        toast.error('Failed to save note')
       }
     }
   }
@@ -466,7 +587,9 @@ export default function SavedLeadsPage() {
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
         if (data?.migrationRequired) {
-          // Column not migrated yet — keep the move locally and surface the banner
+          // Column not migrated yet: keep the move on this device so it survives
+          // a reload, and surface the banner.
+          writeStageOverride(id, stage)
           setPipelineMigrationNeeded(true)
           return
         }

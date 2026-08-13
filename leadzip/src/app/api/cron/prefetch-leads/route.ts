@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { searchLeadsCombined } from '@/lib/providers/combinedProvider'
+import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 import type { SearchParams } from '@/types/lead'
 
 // Vercel Cron: runs nightly at 3am UTC (see vercel.json)
 // Reads the 20 most-searched ZIP+category combos from search_history and pre-warms the cache.
 // Secure this route with CRON_SECRET env var.
-
-const CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h for pre-fetched results
+//
+// TTL: this cron used to write its own 24h expiry into rows every other module
+// treats as 12h. That did not just make rows outlive their intended freshness —
+// the search route derives a row's fetched-at time as `expires_at - 12h` for the
+// UI freshness badge (leads_cache has no fetched_at column), so a cron-warmed row
+// reported itself as 12 hours newer than it actually was. It now uses the shared
+// CACHE_TTL_MS, which makes that derivation correct again.
 
 export async function GET(request: NextRequest) {
   // Verify the request is from Vercel Cron (or manual trigger with the secret)
@@ -86,7 +92,12 @@ export async function GET(request: NextRequest) {
         continue
       }
 
-      const cacheKey = `${zipCode}|${category}|25`
+      // Shared builder, so a warmed row is readable by the interactive search.
+      // NOTE: search_history stores international searches' location text in the
+      // same zip_code column and carries no country code, so an international row
+      // still warms a legacy-shaped key that the interactive intl key can never
+      // match. Fixing that needs a country column on search_history.
+      const cacheKey = buildCacheKey({ zipCode, category, radiusMiles: 25 })
       const { error: upsertError } = await supabase.from('leads_cache').upsert({
         cache_key: cacheKey,
         leads: result.leads,

@@ -3,32 +3,21 @@ import { validateApiKey, extractBearerKey } from '@/lib/api-key'
 import { searchLeads } from '@/lib/providers/leadDataProvider'
 import { apiKeyLimiterFree, apiKeyLimiterPro, apiKeyLimiterAgency, checkRateLimit } from '@/lib/ratelimit'
 import type { SearchParams, Lead } from '@/types/lead'
+import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 
-// Cache TTL for the shared leads_cache pool — mirrors the interactive search route
-// (src/app/api/leads/search/route.ts). Every cache MISS hits the paid provider
-// (~$0.10/search), so routing v1 through the same cache protects gross margin and
-// keeps API results consistent with the app. Previously v1 called the provider on
-// every request with no cache read/write at all (finding H4).
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000 // 12 hours
+// Cache key + TTL come from src/lib/leadsCache.ts, shared with the interactive
+// search route, market-gaps and both crons, so v1 and the app hit the same rows.
+// Every cache MISS hits the paid provider (~$0.10/search), so routing v1 through
+// the same cache protects gross margin and keeps API results consistent with the
+// app. (v1 previously called the provider on every request with no cache at all.)
 
-function buildCacheKey(params: SearchParams): string {
-  // Same key scheme as the interactive route: cache by the raw POOL (zip|cat|radius),
-  // except a "Custom Keyword" search fetches a different pool per keyword, so the
-  // keyword MUST be part of the key there. Normal category keys stay keyword-free so
-  // v1 and the app share the same cache entries.
-  const zip = params.zipCode.trim()
-  const cat = (params.category || '').trim()
-  const radius = params.radiusMiles ?? 25
-  if (cat === 'Custom Keyword') {
-    return `${zip}|${cat}|${radius}|${(params.keyword || '').trim().toLowerCase()}`
-  }
-  return `${zip}|${cat}|${radius}`
-}
-
-// Reproduce the provider's own post-filters on a cached pool so a cache HIT is
-// narrowed exactly like a fresh fetch would be for the params v1 accepts
-// (minRating / hasWebsite / hasPhone / keyword). Custom Keyword is excluded from
-// the keyword filter — there the keyword is the query and lives in the cache key.
+// The caller's narrowing filters, applied to the raw POOL on BOTH cache hit and
+// miss. This is the ONLY place they are applied: the provider call below
+// deliberately withholds minRating / hasWebsite / hasPhone so the pool written to
+// the shared cache stays raw. Passing them through meant one filtered API call
+// could poison the filter-agnostic key for every later reader, the app included.
+// Custom Keyword is excluded from the keyword filter: there the keyword is the
+// query itself and lives in the cache key.
 function applyV1Filters(leads: Lead[], params: SearchParams): Lead[] {
   let out = leads
   if (params.minRating != null && params.minRating > 0) {
@@ -63,11 +52,21 @@ export async function POST(request: NextRequest) {
   const limiter = validated.plan === 'agency' ? apiKeyLimiterAgency
     : validated.plan === 'pro' ? apiKeyLimiterPro
     : apiKeyLimiterFree
-  const { success, retryAfter } = await checkRateLimit(limiter, validated.userId)
-  if (!success) {
+  try {
+    const { success, retryAfter } = await checkRateLimit(limiter, validated.userId)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Daily API limit reached', retryAfter, plan: validated.plan },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  } catch (err) {
+    // Limiter outage: fail CLOSED. This is the daily plan quota in front of a
+    // paid provider, so serving unmetered requests would uncap API spend.
+    console.warn('[v1/search] rate limiter error — failing closed', err)
     return NextResponse.json(
-      { error: 'Daily API limit reached', retryAfter, plan: validated.plan },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      { error: 'Rate limiting is temporarily unavailable. Please retry in a moment.', retryAfter: 30 },
+      { status: 503, headers: { 'Retry-After': '30' } }
     )
   }
 
@@ -144,16 +143,28 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const results = await searchLeads(params)
+    // Pool-defining params only. minRating / hasWebsite / hasPhone are pure
+    // post-filters in every provider (they do not change the upstream query or its
+    // cost), so withholding them costs nothing and keeps the cached pool raw.
+    const providerParams: SearchParams = {
+      ...params,
+      minRating: undefined,
+      hasWebsite: undefined,
+      hasPhone: undefined,
+    }
+    const results = await searchLeads(providerParams)
 
-    // Cache write — skip EMPTY pools (never pin "0 results" for the TTL). Store the
-    // raw provider pool so later requests (app or API) reuse it.
-    if (admin && results.leads.length > 0) {
+    // Snapshot the raw provider pool BEFORE filtering — this is what gets cached,
+    // so later requests (app or API) can refine it any way they like.
+    const poolLeads = results.leads
+
+    // Cache write — skip EMPTY pools (never pin "0 results" for the TTL).
+    if (admin && poolLeads.length > 0) {
       try {
         await admin.from('leads_cache').upsert({
           cache_key: cacheKey,
-          leads: results.leads,
-          total: results.total,
+          leads: poolLeads,
+          total: poolLeads.length,
           source: results.source ?? 'osm',
           expires_at: new Date(Date.now() + CACHE_TTL_MS).toISOString(),
         })
@@ -162,9 +173,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Narrow for THIS response, identically to the cache-hit path above.
+    const leads = applyV1Filters(poolLeads, params)
+
     return NextResponse.json({
-      leads: results.leads,
-      total: results.total,
+      leads,
+      total: leads.length,
       meta: {
         zipCode: params.zipCode,
         radiusMiles: params.radiusMiles,

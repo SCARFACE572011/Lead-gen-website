@@ -1,4 +1,4 @@
-import { geocodeZip } from '@/lib/geocode'
+import { LocationNotFoundError, resolveSearchLocation } from '@/lib/geocode'
 
 /**
  * COMPETITOR ANALYSIS — top nearby same-category businesses for a lead.
@@ -11,7 +11,7 @@ import { geocodeZip } from '@/lib/geocode'
  *
  * COUPLING NOTE: googlePlacesProvider exports only the full search today; if a
  * lighter `fetchPage`-style helper is ever exported there, this wrapper can be
- * collapsed onto it. Until then the only shared surface is `geocodeZip`.
+ * collapsed onto it. Until then the only shared surface is `resolveSearchLocation`.
  */
 
 const PLACES_SEARCH_TEXT_URL = 'https://places.googleapis.com/v1/places:searchText'
@@ -39,6 +39,9 @@ export interface CompetitorInput {
   latitude?: number | null
   longitude?: number | null
   zipCode?: string
+  /** ISO 3166-1 alpha-2 for the lead's country. Without it a 5-digit postal
+   *  code is treated as a US ZIP. */
+  countryCode?: string
   address?: string
   website?: string | null
   rating?: number | null
@@ -104,16 +107,35 @@ export async function findCompetitors(input: CompetitorInput): Promise<Competito
   }
 
   // Center the search on the lead itself when we have coordinates; otherwise
-  // fall back to geocoding its ZIP.
+  // fall back to geocoding its postal code. resolveSearchLocation is used rather
+  // than geocodeZip because the latter pins every lookup to &country=US, which
+  // silently resolved international postal codes (Berlin's 10117) to a US
+  // location and returned competitors from the wrong continent.
   let lat = input.latitude ?? null
   let lon = input.longitude ?? null
   if (lat == null || lon == null) {
     if (!input.zipCode) {
       throw new CompetitorLookupError('Lead has no coordinates or ZIP code', 'no_location')
     }
-    const geo = await geocodeZip(input.zipCode)
-    lat = geo.lat
-    lon = geo.lon
+    try {
+      const geo = await resolveSearchLocation({
+        zipCode: input.zipCode,
+        countryCode: input.countryCode,
+      })
+      lat = geo.lat
+      lon = geo.lon
+    } catch (err) {
+      if (err instanceof LocationNotFoundError) {
+        throw new CompetitorLookupError(
+          'Could not locate this lead from its postal code. Try again from a lead with a map location.',
+          'no_location'
+        )
+      }
+      throw new CompetitorLookupError(
+        err instanceof Error ? `Geocoding failed: ${err.message}` : 'Geocoding failed',
+        'provider_error'
+      )
+    }
   }
 
   const query =

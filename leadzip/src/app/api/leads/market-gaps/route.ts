@@ -5,16 +5,15 @@ import { NextRequest, NextResponse } from 'next/server'
 // provider layer is refactored, keeping that one export stable keeps this route working.
 import { searchLeads } from '@/lib/providers/leadDataProvider'
 import type { Lead, SearchParams } from '@/types/lead'
+import { buildCacheKey as buildLeadsCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 import { marketGapsLimiter, checkRateLimit } from '@/lib/ratelimit'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
 
-// Must mirror /api/leads/search: same TTL, same key shape, so both features share
-// one cache pool and a Market Gaps run warms the cache for regular searches (and
-// vice versa).
-const CACHE_TTL_MS = 12 * 60 * 60 * 1000
+// TTL comes from src/lib/leadsCache.ts, shared with /api/leads/search and both
+// crons, so every feature agrees on how long a cached pool lives.
 const RADIUS_MILES = 25
 
 // Preset high-value categories. Names MUST match LEAD_CATEGORIES entries exactly:
@@ -29,8 +28,11 @@ const GAP_CATEGORIES = [
 ] as const
 
 function buildCacheKey(zip: string, category: string): string {
-  // Parity with /api/leads/search buildCacheKey for non-keyword categories.
-  return `${zip.trim()}|${category}|${RADIUS_MILES}`
+  // Delegates to the shared builder so Market Gaps can never drift from
+  // /api/leads/search: a Market Gaps run warms the cache for regular searches and
+  // vice versa. GAP_CATEGORIES are never "Custom Keyword", so this always lands on
+  // the legacy `{zip}|{category}|{radiusMiles}` shape.
+  return buildLeadsCacheKey({ zipCode: zip, category, radiusMiles: RADIUS_MILES })
 }
 
 export interface CategoryGap {

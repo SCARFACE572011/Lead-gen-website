@@ -112,6 +112,36 @@ async function generateWithClaude(lead: ProposalLeadInput): Promise<ProposalOutp
 
 export async function POST(request: NextRequest) {
   try {
+    // Auth guards the paid AI path (and casual scraping). It is deliberately
+    // NOT nested inside `if (isSupabaseConfigured)`: when this block was
+    // conditional, an unset or placeholder NEXT_PUBLIC_SUPABASE_URL turned the
+    // route into a fully unauthenticated endpoint in front of the paid
+    // Anthropic API. A misconfigured Supabase must deny, never open up.
+    if (!isSupabaseConfigured) {
+      console.error('proposal: Supabase is not configured, refusing to serve')
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+    }
+
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    // Deactivated accounts keep a valid session until it expires, so the paid
+    // path re-checks status instead of trusting middleware alone.
+    const { data: profile } = await supabase
+      .from('users_profile')
+      .select('status')
+      .eq('id', user.id)
+      .maybeSingle()
+    if (profile?.status === 'deactivated') {
+      return NextResponse.json({ error: 'Account deactivated' }, { status: 403 })
+    }
+
     const body = (await request.json()) as { lead?: Partial<ProposalLeadInput> }
     const raw = body.lead
 
@@ -131,30 +161,21 @@ export async function POST(request: NextRequest) {
       reviewCount: typeof raw.reviewCount === 'number' ? raw.reviewCount : null,
     }
 
-    // Auth + rate limit guard the paid AI path (and casual scraping) in prod.
-    if (isSupabaseConfigured) {
-      const { createClient } = await import('@/lib/supabase/server')
-      const supabase = await createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Rate limit runs after the lead is built so the limiter-outage fallback
+    // can still answer with a free template.
+    try {
+      const { success, retryAfter } = await checkRateLimit(proposalLimiter, user.id)
+      if (!success) {
+        return NextResponse.json(
+          { error: 'Too many requests', retryAfter },
+          { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+        )
       }
-      try {
-        const { success, retryAfter } = await checkRateLimit(proposalLimiter, user.id)
-        if (!success) {
-          return NextResponse.json(
-            { error: 'Too many requests', retryAfter },
-            { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-          )
-        }
-      } catch {
-        // Limiter outage: fail CLOSED only for the paid AI path; templates are free.
-        if (process.env.ANTHROPIC_API_KEY) {
-          const output = generateProposalTemplates(lead)
-          return NextResponse.json({ output, source: 'template', angle: detectAngle(lead) })
-        }
+    } catch {
+      // Limiter outage: fail CLOSED only for the paid AI path; templates are free.
+      if (process.env.ANTHROPIC_API_KEY) {
+        const output = generateProposalTemplates(lead)
+        return NextResponse.json({ output, source: 'template', angle: detectAngle(lead) })
       }
     }
 

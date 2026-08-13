@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import type { DigitalHealthDetails } from '@/types/lead'
 import { enrichHealthLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { safeProbe } from '@/lib/safeFetch'
 
 const SIGNAL_POINTS: Record<keyof DigitalHealthDetails, number> = {
   hasWebsite: 10,
@@ -22,73 +23,15 @@ function computeScore(details: DigitalHealthDetails): number {
   )
 }
 
-// TLDs that only resolve on internal networks — never fetch them server-side
-const BLOCKED_TLDS = new Set([
-  'localhost',
-  'local',
-  'internal',
-  'intranet',
-  'corp',
-  'home',
-  'lan',
-  'test',
-])
-
-// The WHATWG URL parser normalizes decimal/octal/hex IPv4 forms
-// (e.g. http://2130706433/) to dotted-quad, so octet checks are reliable here.
-function isPrivateIpv4(hostname: string): boolean {
-  const octets = hostname.split('.').map(Number)
-  if (octets.length !== 4 || octets.some((o) => !Number.isInteger(o) || o < 0 || o > 255)) {
-    return false // not an IPv4 literal
-  }
-  const [a, b] = octets
-  if (a === 0 || a === 10 || a === 127) return true // "this net", private, loopback
-  if (a === 169 && b === 254) return true // link-local
-  if (a === 172 && b >= 16 && b <= 31) return true // private
-  if (a === 192 && b === 168) return true // private
-  if (a === 100 && b >= 64 && b <= 127) return true // CGNAT
-  return false
-}
-
-function isBlockedIpv6(bracketed: string): boolean {
-  const addr = bracketed.slice(1, -1).toLowerCase() // strip [ ]
-  if (addr === '::' || addr === '::1') return true // unspecified, loopback
-  if (/^fe[89ab]/.test(addr)) return true // link-local fe80::/10
-  if (addr.startsWith('fc') || addr.startsWith('fd')) return true // ULA fc00::/7
-  if (addr.startsWith('::ffff:')) return true // IPv4-mapped
-  if (addr.startsWith('64:ff9b:')) return true // NAT64
-  return false
-}
-
-function isSafeUrl(url: string): boolean {
-  let parsed: URL
-  try {
-    parsed = new URL(url)
-  } catch {
-    return false
-  }
-
-  // Only plain http/https
-  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false
-
-  // No embedded credentials
-  if (parsed.username || parsed.password) return false
-
-  const hostname = parsed.hostname.toLowerCase()
-  if (!hostname) return false
-
-  // IPv6 literals come back bracketed, e.g. [::1]
-  if (hostname.startsWith('[')) return !isBlockedIpv6(hostname)
-
-  if (isPrivateIpv4(hostname)) return false
-
-  // Block single-label hosts (only resolvable on internal DNS) and internal TLDs
-  const labels = hostname.replace(/\.$/, '').split('.')
-  if (labels.length < 2) return false
-  if (BLOCKED_TLDS.has(labels[labels.length - 1])) return false
-
-  return true
-}
+// SSRF protection is NOT implemented here. It lives in src/lib/safeFetch.ts,
+// shared with the audit probe in src/lib/healthScore.ts, because this route
+// previously carried a byte-for-byte copy of a hostname-string guard and the
+// two copies could drift. That guard was bypassable with a public wildcard
+// resolver (169.254.169.254.nip.io and friends); safeProbe resolves DNS,
+// rejects every non-public address, pins the socket to the validated address,
+// and repeats the whole check on each redirect hop.
+const MAX_BYTES = 512 * 1024
+const MAX_REDIRECTS = 3
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -99,11 +42,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { success, retryAfter } = await checkRateLimit(enrichHealthLimiter, user.id)
-  if (!success) {
+  try {
+    const { success, retryAfter } = await checkRateLimit(enrichHealthLimiter, user.id)
+    if (!success) {
+      return NextResponse.json(
+        { error: 'Too many requests', retryAfter },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      )
+    }
+  } catch (err) {
+    // Limiter outage: fail CLOSED. This route makes an outbound request to a
+    // user-supplied host, so it must never run unmetered.
+    console.warn('[enrich/health] rate limiter unavailable — failing closed', err)
     return NextResponse.json(
-      { error: 'Too many requests', retryAfter },
-      { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      { error: 'Health checks are temporarily unavailable. Please try again in a moment.', retryAfter: 30 },
+      { status: 503, headers: { 'Retry-After': '30' } }
     )
   }
 
@@ -121,75 +74,26 @@ export async function POST(request: Request) {
 
   const url = /^https?:\/\//i.test(website) ? website : `https://${website}`
 
-  if (!isSafeUrl(url)) {
-    return NextResponse.json({ error: 'unreachable' })
-  }
-
-  const controller = new AbortController()
-  const timeoutId = setTimeout(() => controller.abort(), 5000)
-  const fetchStart = Date.now()
-
   let html = ''
+  let fetchMs = 0
   try {
-    // Follow redirects manually and re-validate every hop with isSafeUrl.
-    // With default redirect handling a public URL could 30x to
-    // 169.254.169.254 / localhost (SSRF); bound the chain to a few hops.
-    const MAX_REDIRECTS = 3
-    let currentUrl = url
-    let res: Response | undefined
-    for (let hop = 0; ; hop++) {
-      res = await fetch(currentUrl, {
-        signal: controller.signal,
-        redirect: 'manual',
-        headers: { 'User-Agent': 'Mozilla/5.0 (compatible; LeadZipp/1.0)' },
-      })
-      const location = res.headers.get('location')
-      if (res.status >= 300 && res.status < 400 && location) {
-        if (hop >= MAX_REDIRECTS) {
-          clearTimeout(timeoutId)
-          return NextResponse.json({ error: 'unreachable' })
-        }
-        const nextUrl = new URL(location, currentUrl).toString()
-        if (!isSafeUrl(nextUrl)) {
-          clearTimeout(timeoutId)
-          return NextResponse.json({ error: 'unreachable' })
-        }
-        currentUrl = nextUrl
-        continue
-      }
-      break
-    }
-    clearTimeout(timeoutId)
-    if (!res || !res.ok) {
+    const res = await safeProbe(url, {
+      timeoutMs: 5000,
+      maxBytes: MAX_BYTES,
+      maxRedirects: MAX_REDIRECTS,
+      userAgent: 'Mozilla/5.0 (compatible; LeadZipp/1.0)',
+    })
+    if (!res.ok) {
       return NextResponse.json({ error: 'unreachable' })
     }
-    const MAX_BYTES = 512 * 1024
-    const reader = res.body?.getReader()
-    const chunks: Uint8Array[] = []
-    let total = 0
-    if (reader) {
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done || !value) break
-        chunks.push(value)
-        total += value.byteLength
-        if (total >= MAX_BYTES) break
-      }
-    }
-    html = new TextDecoder().decode(
-      chunks.reduce((acc, chunk) => {
-        const merged = new Uint8Array(acc.byteLength + chunk.byteLength)
-        merged.set(acc)
-        merged.set(chunk, acc.byteLength)
-        return merged
-      }, new Uint8Array(0))
-    )
+    html = res.body
+    fetchMs = res.elapsedMs
   } catch {
-    clearTimeout(timeoutId)
+    // Refused by the SSRF guard, DNS failure, timeout or transport error. The
+    // caller gets the same opaque answer either way so this cannot be used to
+    // probe what does or does not exist on the internal network.
     return NextResponse.json({ error: 'unreachable' })
   }
-
-  const fetchMs = Date.now() - fetchStart
 
   const details: DigitalHealthDetails = {
     hasWebsite: true,

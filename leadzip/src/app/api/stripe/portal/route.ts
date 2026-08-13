@@ -5,7 +5,11 @@ import { SITE_URL } from '@/lib/siteUrl'
 
 export async function POST() {
   if (!process.env.STRIPE_SECRET_KEY) {
-    return NextResponse.json({ error: 'Stripe not configured' }, { status: 503 })
+    console.error('stripe/portal: STRIPE_SECRET_KEY is not configured')
+    return NextResponse.json(
+      { error: 'Billing is temporarily unavailable. Please try again later.' },
+      { status: 503 }
+    )
   }
 
   // Only the authenticated caller's own billing portal — never trust a
@@ -23,6 +27,7 @@ export async function POST() {
     .maybeSingle()
 
   if (subError) {
+    console.error('stripe/portal: subscription lookup failed', subError)
     return NextResponse.json({ error: 'Failed to look up subscription' }, { status: 500 })
   }
   if (!subscription?.stripe_customer_id) {
@@ -38,7 +43,12 @@ export async function POST() {
     })
     return NextResponse.json({ url: session.url })
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : 'Portal session failed'
-    return NextResponse.json({ error: message }, { status: 500 })
+    // Stripe error text names customer ids and account state, so it stays
+    // server-side.
+    console.error('stripe/portal: failed to create billing portal session', err)
+    return NextResponse.json(
+      { error: 'Could not open the billing portal. Please try again.' },
+      { status: 500 }
+    )
   }
 }

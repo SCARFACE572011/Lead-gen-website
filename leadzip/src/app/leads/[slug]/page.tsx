@@ -88,6 +88,7 @@ export default async function LeadsLocationPage({
       />
       <FaqSchema items={page.faqs} />
 
+      <main>
       {/* ================= HERO ================= */}
       <section className="topo relative overflow-hidden text-white">
         <div className="mx-auto grid max-w-6xl items-start gap-12 px-5 py-14 sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
@@ -403,6 +404,7 @@ export default async function LeadsLocationPage({
           </div>
         </div>
       </section>
+      </main>
 
       <SiteFooter />
     </div>

@@ -42,7 +42,10 @@ export default function AuthLayout({
   return (
     <div className="flex min-h-screen bg-paper">
       {/* ── Left brand panel (desktop only) ── */}
-      <div className="relative hidden shrink-0 flex-col justify-between overflow-hidden bg-forest px-10 py-10 lg:flex lg:w-[480px] xl:w-[540px] xl:px-14">
+      <aside
+        aria-label="About LeadZipp"
+        className="relative hidden shrink-0 flex-col justify-between overflow-hidden bg-forest px-10 py-10 lg:flex lg:w-[480px] xl:w-[540px] xl:px-14"
+      >
         {/* Map-grid texture */}
         <div
           aria-hidden="true"
@@ -124,10 +127,10 @@ export default function AuthLayout({
             Terms
           </Link>
         </p>
-      </div>
+      </aside>
 
       {/* ── Right form panel ── */}
-      <div className="flex flex-1 flex-col items-center justify-center bg-paper px-4 py-12 sm:px-8">
+      <main className="flex flex-1 flex-col items-center justify-center bg-paper px-4 py-12 sm:px-8">
         {/* Mobile logo */}
         <Link href="/" className="mb-8 flex items-center gap-2.5 lg:hidden">
           <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal">
@@ -140,7 +143,7 @@ export default function AuthLayout({
         </Link>
 
         <div className="w-full max-w-sm">{children}</div>
-      </div>
+      </main>
     </div>
   );
 }

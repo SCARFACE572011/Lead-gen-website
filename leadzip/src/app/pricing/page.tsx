@@ -444,6 +444,7 @@ export default function PricingPage() {
     <div className="grain relative flex min-h-screen flex-col bg-paper text-ink">
       <Navbar />
 
+      <main>
       {/* ── Header ── */}
       <section className="map-grid relative border-b border-sand bg-paper-2 pb-16 pt-28 lg:pb-20">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
@@ -625,6 +626,7 @@ export default function PricingPage() {
           </Link>
         </div>
       </section>
+      </main>
 
       {/* Footer mini */}
       <footer className="border-t border-white/10 bg-forest-900 py-6">

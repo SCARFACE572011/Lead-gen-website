@@ -66,6 +66,7 @@ export default function LeadsIndex() {
       />
       <FaqSchema items={FAQS} />
 
+      <main>
       {/* HERO */}
       <section className="topo relative overflow-hidden text-white">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-22">
@@ -254,6 +255,7 @@ export default function LeadsIndex() {
           </div>
         </div>
       </section>
+      </main>
 
       <SiteFooter />
     </div>

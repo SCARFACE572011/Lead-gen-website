@@ -39,6 +39,7 @@ export default function BlogIndex() {
     <div className="grain relative min-h-screen bg-paper text-ink">
       <SiteHeader />
 
+      <main>
       {/* Header */}
       <section className="border-b border-sand bg-paper-2 map-grid">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">
@@ -119,6 +120,7 @@ export default function BlogIndex() {
           </Link>
         </div>
       </section>
+      </main>
 
       <SiteFooter />
     </div>

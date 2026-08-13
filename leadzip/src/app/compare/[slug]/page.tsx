@@ -74,6 +74,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
     <div className="grain relative min-h-screen bg-paper text-ink">
       <SiteHeader />
 
+      <main>
       <BreadcrumbSchema
         items={[
           { name: 'Home', url: SITE_URL },
@@ -171,7 +172,12 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
             </p>
           </div>
 
-          <div className="mt-12 overflow-x-auto">
+          <div
+            className="mt-12 overflow-x-auto"
+            tabIndex={0}
+            role="region"
+            aria-label={`Feature comparison table: LeadZipp vs ${page.competitor}`}
+          >
             <table className="w-full min-w-[720px] border-separate border-spacing-0 overflow-hidden rounded-2xl border border-sand bg-white text-left">
               <thead>
                 <tr className="bg-forest text-white">
@@ -370,6 +376,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
           </div>
         </div>
       </section>
+      </main>
 
       <SiteFooter />
     </div>

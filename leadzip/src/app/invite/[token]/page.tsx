@@ -55,7 +55,7 @@ export default function InvitePage() {
   }
 
   return (
-    <div className="grain relative min-h-screen bg-paper flex items-center justify-center px-4 text-ink">
+    <main className="grain relative min-h-screen bg-paper flex items-center justify-center px-4 text-ink">
       <div className="bg-white border border-sand rounded-2xl shadow-card card-lift max-w-md w-full p-8">
         <div className="flex justify-center mb-6">
           <div className="relative w-14 h-14 rounded-2xl bg-signal/10 flex items-center justify-center">
@@ -149,6 +149,6 @@ export default function InvitePage() {
           </div>
         )}
       </div>
-    </div>
+    </main>
   )
 }

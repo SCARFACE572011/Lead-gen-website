@@ -137,6 +137,8 @@ export default function Home() {
         )}
       </header>
 
+      {/* ================= MAIN ================= */}
+      <main>
       {/* ================= HERO ================= */}
       <section className="topo relative overflow-hidden text-white">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-16 sm:py-24 lg:grid-cols-2">
@@ -394,6 +396,7 @@ export default function Home() {
           </p>
         </div>
       </section>
+      </main>
 
       {/* ================= FOOTER ================= */}
       <footer className="bg-forest-900 py-14 text-white/70">

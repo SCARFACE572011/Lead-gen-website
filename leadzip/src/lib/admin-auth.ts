@@ -6,14 +6,6 @@ type AuthUser = {
   email?: string | null
 }
 
-// Transitional fallback for installations that have not yet applied
-// 20260812_admin_allowlist.sql. It is used only when Postgres explicitly says
-// the table does not exist; all other database errors fail closed.
-const LEGACY_PLATFORM_ADMIN_EMAILS = new Set([
-  'scarface572011@live.com',
-  'jezdangomez@gmail.com',
-])
-
 type AdminResult =
   | { ok: true; userId: string; email: string }
   | { ok: false; response: NextResponse }
@@ -62,11 +54,8 @@ export async function hasPlatformAdminAccess(
 
   if (profileResult.error) return false
 
-  const allowlistTableMissing = allowlistResult.error &&
-    ['42P01', 'PGRST205'].includes(allowlistResult.error.code)
-  const isAllowlisted = allowlistTableMissing
-    ? LEGACY_PLATFORM_ADMIN_EMAILS.has(email)
-    : !allowlistResult.error && allowlistResult.data?.email === email
+  const isAllowlisted =
+    !allowlistResult.error && allowlistResult.data?.email === email
 
   return (
     profileResult.data?.role === 'admin' &&

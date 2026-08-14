@@ -65,12 +65,12 @@ export function LeadChart({ data }: LeadChartProps) {
           <CartesianGrid strokeDasharray="3 3" stroke="#E7E1D4" vertical={false} />
           <XAxis
             dataKey="name"
-            tick={{ fontSize: 11, fill: '#79705F', fontWeight: 500, fontFamily: 'var(--font-mono), "Space Mono", ui-monospace, monospace' }}
+            tick={{ fontSize: 11, fill: '#79705F', fontWeight: 500, fontFamily: 'var(--font-mono-stack)' }}
             axisLine={false}
             tickLine={false}
           />
           <YAxis
-            tick={{ fontSize: 11, fill: '#79705F', fontFamily: 'var(--font-mono), "Space Mono", ui-monospace, monospace' }}
+            tick={{ fontSize: 11, fill: '#79705F', fontFamily: 'var(--font-mono-stack)' }}
             axisLine={false}
             tickLine={false}
             allowDecimals={false}

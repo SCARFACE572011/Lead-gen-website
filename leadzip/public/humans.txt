@@ -25,7 +25,6 @@
   Data sources ....... Google Places, Yelp
 
   Design system: "Signal" — warm paper, signal orange,
-  and deep map-green. Typefaces: Bricolage Grotesque
-  (display), Hanken Grotesk (body), Space Mono (data).
+  deep map-green, and resilient local system typography.
 
   Last updated: 2026-08

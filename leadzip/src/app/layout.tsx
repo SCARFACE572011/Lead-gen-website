@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Script from "next/script";
@@ -35,30 +34,6 @@ ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'
 });
 ${GA4_ID && !GTM_ID ? `if(granted){w.__leadzipGa4Configured=true;w.gtag('js',new Date());w.gtag('config',${JSON.stringify(GA4_ID)});}` : ""}
 })(window);`;
-
-// Display — characterful modern grotesque, used with restraint for headlines
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  display: "swap",
-});
-
-// Body — warm, highly readable
-const hanken = Hanken_Grotesk({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  display: "swap",
-});
-
-// Data — ZIP codes, coordinates, stats rendered like map readouts
-const spaceMono = Space_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
 
 const SITE_TITLE =
   "Local Business Leads by ZIP Code | LeadZipp";
@@ -140,10 +115,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${bricolage.variable} ${hanken.variable} ${spaceMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className="h-full antialiased">
       <body className="min-h-full flex flex-col font-sans overflow-x-hidden">
         {HAS_GOOGLE_ANALYTICS && (
           <Script id="google-consent-default" strategy="beforeInteractive">

@@ -410,7 +410,7 @@ function PaymentBanner() {
   if (paymentStatus === "cancelled") {
     return (
       <div className="mb-8 rounded-2xl border border-signal/25 bg-signal-50 p-4 text-center text-signal-600">
-        Payment cancelled. You can upgrade anytime from the pricing page.
+        Payment canceled. You can upgrade anytime from the pricing page.
       </div>
     );
   }

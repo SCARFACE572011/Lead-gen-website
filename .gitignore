@@ -31,3 +31,8 @@ data/*.db
 
 # Claude Code local settings (personal overrides only)
 .claude/settings.local.json
+
+# Outreach targets and strategy (repo is public on GitHub, keep these private)
+data/target-agencies.csv
+data/leads.json
+outreach/

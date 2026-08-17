@@ -212,7 +212,12 @@ export default function WebDesignOutreachKitPage() {
                 <FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> Download tracker.csv
               </a>
             </div>
-            <div className="overflow-x-auto rounded-3xl border border-sand bg-white p-4 shadow-card">
+            <div
+              className="overflow-x-auto rounded-3xl border border-sand bg-white p-4 shadow-card"
+              role="region"
+              aria-label="Sample prospect tracker rows"
+              tabIndex={0}
+            >
               <table className="w-full min-w-[620px] text-left text-sm">
                 <thead><tr className="border-b border-sand text-xs uppercase tracking-wide text-stone">
                   <th className="p-3">Company</th><th className="p-3">Signal</th><th className="p-3">Status</th><th className="p-3">Next action</th>

@@ -7,6 +7,12 @@ import {
 } from '@/lib/proposalTemplates'
 import { proposalLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
+import {
+  buildFeatureQuotaExceededBody,
+  buildFeatureUsageUnavailableBody,
+  reserveFeatureUsage,
+} from '@/lib/featureUsage'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -150,29 +156,92 @@ export async function POST(request: NextRequest) {
       reviewCount: typeof raw.reviewCount === 'number' ? raw.reviewCount : null,
     }
 
-    // Rate limit runs after the lead is built so the limiter-outage fallback
-    // can still answer with a free template.
-    try {
-      const { success, retryAfter } = await checkRateLimit(proposalLimiter, user.id)
-      if (!success) {
-        return NextResponse.json(
-          { error: 'Too many requests', retryAfter },
-          { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-        )
-      }
-    } catch {
-      // Limiter outage: fail CLOSED only for the paid AI path; templates are free.
-      if (process.env.ANTHROPIC_API_KEY) {
-        const output = generateProposalTemplates(lead)
-        return NextResponse.json({ output, source: 'template', angle: detectAngle(lead) })
-      }
-    }
-
     if (process.env.ANTHROPIC_API_KEY) {
+      // The burst limit protects only the paid AI path. When it denies or is
+      // unavailable, keep the customer's workflow moving with a free template.
+      try {
+        const { success, retryAfter } = await checkRateLimit(proposalLimiter, user.id)
+        if (!success) {
+          const output = generateProposalTemplates(lead)
+          return NextResponse.json({
+            output,
+            source: 'template',
+            angle: detectAngle(lead),
+            aiQuota: {
+              error: 'AI generation is temporarily rate limited. A smart template was provided instead.',
+              code: 'AI_RATE_LIMITED',
+              retryAfter,
+              upgradeRequired: false,
+            },
+          })
+        }
+      } catch {
+        const output = generateProposalTemplates(lead)
+        return NextResponse.json({
+          output,
+          source: 'template',
+          angle: detectAngle(lead),
+          aiQuota: {
+            error: 'AI generation is temporarily unavailable. A smart template was provided instead.',
+            code: 'AI_RATE_LIMIT_UNAVAILABLE',
+            upgradeRequired: false,
+          },
+        })
+      }
+
+      // Templates are free and always remain usable. Reserve only when the
+      // request is about to cross the paid Anthropic boundary; a quota or
+      // ledger outage therefore downgrades gracefully instead of blocking the
+      // user's outreach workflow.
+      const usageDb = createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      )
+      const reservation = await reserveFeatureUsage(usageDb, user.id, 'ai_proposal')
+      if (!reservation.ok || !reservation.usage.allowed) {
+        const output = generateProposalTemplates(lead)
+        return NextResponse.json({
+          output,
+          source: 'template',
+          angle: detectAngle(lead),
+          aiQuota: reservation.ok
+            ? buildFeatureQuotaExceededBody(reservation.usage)
+            : buildFeatureUsageUnavailableBody('ai_proposal'),
+        })
+      }
+
       const aiOutput = await generateWithClaude(lead)
       if (aiOutput) {
-        return NextResponse.json({ output: aiOutput, source: 'ai', angle: detectAngle(lead) })
+        return NextResponse.json({
+          output: aiOutput,
+          source: 'ai',
+          angle: detectAngle(lead),
+          aiQuota: {
+            used: reservation.usage.used,
+            limit: reservation.usage.limit,
+            remaining: reservation.usage.remaining,
+            resetAt: reservation.usage.resetAt,
+          },
+        })
       }
+
+      // The provider was attempted (and may have consumed upstream quota), so
+      // be honest that the reservation was used even though templates rescued
+      // the customer-facing result.
+      const output = generateProposalTemplates(lead)
+      return NextResponse.json({
+        output,
+        source: 'template',
+        angle: detectAngle(lead),
+        aiQuota: {
+          used: reservation.usage.used,
+          limit: reservation.usage.limit,
+          remaining: reservation.usage.remaining,
+          resetAt: reservation.usage.resetAt,
+          providerAttempted: true,
+        },
+      })
     }
 
     const output = generateProposalTemplates(lead)

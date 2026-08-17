@@ -18,12 +18,12 @@ const schema = {
   url: SITE_URL,
   brand: { "@id": `${SITE_URL}/#organization` },
   description:
-    "Type a ZIP code and get a scored list of real local businesses from live Google Places and Yelp data, with phones, websites, and owner emails, ready to export to CSV, PDF, or your CRM.",
+    "Type a ZIP code and get a scored list of real local businesses from live listing data, with phones, websites, and business contact emails, ready to export to CSV, PDF, or your CRM.",
   featureList: [
     "Local business search by ZIP code, city, category, and radius",
     "Opportunity scoring from 0 to 100",
     "Business phone, website, rating, and review data",
-    "Decision-maker email finder",
+    "Business contact email finder",
     "CSV, PDF, HubSpot, Pipedrive, and GoHighLevel export",
   ],
   offers: [
@@ -41,7 +41,7 @@ const schema = {
       price: "25",
       priceCurrency: "USD",
       description:
-        "Unlimited searches, email finder, lead scoring, CSV export, and search history.",
+        "100 new live territory searches and 100 business-email credits per billing period, bulk ZIP search, full CSV export, and CRM push.",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
         price: "25",
@@ -68,7 +68,7 @@ const schema = {
       price: "50",
       priceCurrency: "USD",
       description:
-        "Everything in Pro plus unlimited saved leads, advanced filters, and priority support with onboarding.",
+        "Everything in Pro plus 300 pooled live searches, 500 pooled email credits, 10,000 saved leads per member, five seats, and API access.",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
         price: "50",

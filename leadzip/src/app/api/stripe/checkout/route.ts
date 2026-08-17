@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { createClient } from '@/lib/supabase/server'
 import { SITE_URL } from '@/lib/siteUrl'
+import { paidPlanFromStripePriceId } from '@/lib/stripe/subscriptionSync'
 
 const PLAN_PRICE_IDS: Record<string, { monthly: string | undefined; annual: string | undefined }> = {
   pro: {
@@ -79,6 +80,17 @@ export async function POST(request: NextRequest) {
     )
   }
 
+  // The selected server-side Price is the entitlement authority. Fail closed
+  // if environment configuration is duplicated or maps this plan to another
+  // tier; client-supplied plan text alone never grants access.
+  if (paidPlanFromStripePriceId(priceId) !== plan) {
+    console.error(`stripe/checkout: Stripe Price mapping is invalid for plan=${plan} billing=${billing}`)
+    return NextResponse.json(
+      { error: 'That plan is not available for checkout right now. Please try again later.' },
+      { status: 503 }
+    )
+  }
+
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: '2026-04-22.dahlia' })
 
   // ── Trial-abuse guard ─────────────────────────────────────────────────────
@@ -91,16 +103,22 @@ export async function POST(request: NextRequest) {
   // RLS allows a user to read their own subscriptions row, so the session
   // client is fine here.
   let existingCustomerId: string | null = null
+  let existingSubscriptionId: string | null = null
+  let recordedSubscriptionStatus: string | null = null
+  let customerLookupFailed = false
   let hadSubscription = false
+  let activeSubscription: Stripe.Subscription | null = null
   {
     const { data: subRow } = await supabase
       .from('subscriptions')
-      .select('stripe_customer_id, stripe_subscription_id')
+      .select('stripe_customer_id, stripe_subscription_id, status')
       .eq('user_id', user.id)
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle()
     if (subRow?.stripe_subscription_id) hadSubscription = true
+    if (subRow?.stripe_subscription_id) existingSubscriptionId = subRow.stripe_subscription_id
+    if (subRow?.status) recordedSubscriptionStatus = subRow.status
     if (subRow?.stripe_customer_id) existingCustomerId = subRow.stripe_customer_id
   }
 
@@ -109,22 +127,126 @@ export async function POST(request: NextRequest) {
       const customer = await stripe.customers.retrieve(existingCustomerId)
       if (customer.deleted) {
         existingCustomerId = null
-      } else if (!hadSubscription) {
+      } else {
         const subs = await stripe.subscriptions.list({
           customer: existingCustomerId,
           status: 'all',
-          limit: 1,
+          limit: 10,
         })
         if (subs.data.length > 0) hadSubscription = true
+        activeSubscription =
+          subs.data.find((subscription) =>
+            subscription.status === 'active' || subscription.status === 'trialing'
+          ) ?? null
       }
-    } catch {
-      // Stale or mode-mismatched customer id — ignore it and let Checkout
-      // create a fresh customer from the email instead of failing checkout.
+    } catch (error) {
+      // A failed customer lookup is not permission to create another
+      // subscription. The subscription-id fallback below gets one more chance
+      // to resolve Stripe's authoritative state.
+      console.warn('stripe/checkout: customer subscription lookup failed', error)
+      customerLookupFailed = true
+    }
+  }
+
+  if (!activeSubscription && existingSubscriptionId) {
+    try {
+      const subscription = await stripe.subscriptions.retrieve(existingSubscriptionId)
+      hadSubscription = true
+      existingCustomerId =
+        typeof subscription.customer === 'string'
+          ? subscription.customer
+          : subscription.customer.id
+      if (subscription.status === 'active' || subscription.status === 'trialing') {
+        activeSubscription = subscription
+      }
+    } catch (error) {
+      console.warn('stripe/checkout: recorded subscription lookup failed', error)
+      if (recordedSubscriptionStatus === 'active' || recordedSubscriptionStatus === 'trialing') {
+        return NextResponse.json(
+          { error: 'We could not verify your current subscription. Please try again or contact support.' },
+          { status: 503 }
+        )
+      }
       existingCustomerId = null
     }
   }
 
+  if (customerLookupFailed && !existingSubscriptionId) {
+    existingCustomerId = null
+  }
+
   const trialEligible = !hadSubscription
+
+  // Never create a second subscription for an active customer. Plan changes
+  // go through Stripe's hosted confirmation flow, which previews the billing
+  // impact and replaces the existing subscription item. This prevents a
+  // Pro-to-Agency click from double-billing the customer and stops competing
+  // webhooks from fighting over one local subscription row.
+  if (activeSubscription && existingCustomerId) {
+    const currentItem = activeSubscription.items.data[0]
+    if (!currentItem) {
+      console.error(`stripe/checkout: active subscription ${activeSubscription.id} has no item`)
+      return NextResponse.json(
+        { error: 'We could not update this subscription. Please contact support.' },
+        { status: 409 }
+      )
+    }
+
+    try {
+      let portal: Stripe.BillingPortal.Session
+      if (currentItem.price.id === priceId) {
+        portal = await stripe.billingPortal.sessions.create({
+          customer: existingCustomerId,
+          return_url: `${SITE_URL}/settings`,
+        })
+      } else {
+        portal = await stripe.billingPortal.sessions.create({
+          customer: existingCustomerId,
+          return_url: `${SITE_URL}/settings`,
+          flow_data: {
+            type: 'subscription_update_confirm',
+            after_completion: {
+              type: 'redirect',
+              redirect: {
+                return_url: `${SITE_URL}/dashboard?payment=success&plan=${plan}&billing=${billing}`,
+              },
+            },
+            subscription_update_confirm: {
+              subscription: activeSubscription.id,
+              items: [{
+                id: currentItem.id,
+                price: priceId,
+                quantity: 1,
+              }],
+            },
+          },
+        })
+      }
+
+      return NextResponse.json({
+        url: portal.url,
+        action: currentItem.price.id === priceId ? 'manage_existing' : 'update_existing',
+      })
+    } catch (err) {
+      // A portal configuration can omit subscription switching. Fall back to
+      // the regular portal instead of ever falling through to a second Checkout
+      // subscription. The customer can manage/cancel there or contact support.
+      console.error('stripe/checkout: plan-update portal flow unavailable, opening portal home', err)
+      try {
+        const portal = await stripe.billingPortal.sessions.create({
+          customer: existingCustomerId,
+          return_url: `${SITE_URL}/settings`,
+        })
+        return NextResponse.json({ url: portal.url, action: 'manage_existing' })
+      } catch (portalError) {
+        console.error('stripe/checkout: customer portal unavailable', portalError)
+        return NextResponse.json(
+          { error: 'Could not open subscription management. Please try again.' },
+          { status: 500 }
+        )
+      }
+    }
+  }
 
   // New-signup promo: the 15%-off welcome offer is for genuinely new customers
   // who actually claimed it through the popup. Two conditions, and the client
@@ -179,6 +301,17 @@ export async function POST(request: NextRequest) {
           : {}),
         metadata: { plan, billing, user_id: user.id },
       },
+    }, {
+      // Collapses rapid double-clicks/retries into one Checkout Session. The
+      // ten-minute bucket still lets a customer intentionally retry later.
+      idempotencyKey: [
+        'subscription-checkout',
+        user.id,
+        plan,
+        billing,
+        applyPromo ? 'promo' : 'standard',
+        Math.floor(Date.now() / 600_000),
+      ].join(':'),
     })
 
     return NextResponse.json({ url: session.url })

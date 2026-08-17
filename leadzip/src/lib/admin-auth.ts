@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { isPlatformAdminRecord } from '@/lib/adminPolicy'
 
 type AuthUser = {
   id: string
@@ -54,13 +55,10 @@ export async function hasPlatformAdminAccess(
 
   if (profileResult.error) return false
 
-  const isAllowlisted =
-    !allowlistResult.error && allowlistResult.data?.email === email
-
-  return (
-    profileResult.data?.role === 'admin' &&
-    profileResult.data?.status !== 'deactivated' &&
-    isAllowlisted
+  return isPlatformAdminRecord(
+    profileResult.data,
+    allowlistResult.error ? null : allowlistResult.data?.email,
+    email
   )
 }
 

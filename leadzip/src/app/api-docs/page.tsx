@@ -156,7 +156,7 @@ export default function ApiDocsPage() {
               <Badge color="bg-lime text-forest">v1</Badge>
             </div>
             <p className="text-base text-ink-soft">
-              Programmatic access to your leads, search history, and search engine. All endpoints
+              Agency programmatic access to your leads, search history, and search engine. All endpoints
               require an API key generated from{' '}
               <Link href="/settings" className="font-medium text-signal hover:underline">
                 Settings → API
@@ -167,7 +167,7 @@ export default function ApiDocsPage() {
 
           <Section title="Authentication" id="auth">
             <div className="mb-4 rounded-lg border border-signal/20 bg-signal-50 px-4 py-3 text-sm text-ink">
-              Keep your API key secret — it grants full access to your account data.
+              Keep your API key secret. It grants full access to your account data.
             </div>
             <p className="mb-2 text-sm text-ink-soft">
               Pass your key as a Bearer token in the <code className="rounded bg-paper-2 px-1 text-ink">Authorization</code> header:
@@ -181,27 +181,27 @@ export default function ApiDocsPage() {
                 <thead className="bg-paper-2">
                   <tr>
                     <th className="px-4 py-2.5 text-left font-semibold text-ink-soft">Plan</th>
-                    <th className="px-4 py-2.5 text-left font-semibold text-ink-soft">Daily requests</th>
+                    <th className="px-4 py-2.5 text-left font-semibold text-ink-soft">Access</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr className="border-t border-sand">
                     <td className="px-4 py-2.5 text-ink-soft">Free</td>
-                    <td className="px-4 py-2.5 text-ink-soft">100</td>
+                    <td className="px-4 py-2.5 text-stone">Not included</td>
                   </tr>
                   <tr className="border-t border-sand">
                     <td className="px-4 py-2.5 text-ink-soft">Pro</td>
-                    <td className="px-4 py-2.5 text-ink-soft">1,000</td>
+                    <td className="px-4 py-2.5 text-stone">Not included</td>
                   </tr>
                   <tr className="border-t border-sand">
                     <td className="px-4 py-2.5 text-ink-soft">Agency</td>
-                    <td className="px-4 py-2.5 text-ink-soft">10,000</td>
+                    <td className="px-4 py-2.5 text-ink-soft">500 requests/day</td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p className="mt-3 text-xs text-stone">
-              When rate limited, the API returns HTTP 429 with a <code className="rounded bg-paper-2 px-1 text-ink">retryAfter</code> timestamp (Unix seconds).
+              Live search cache misses also share the Agency workspace&apos;s 300-search monthly allowance. Cached API search responses consume an API request but no live-search allowance. When rate limited, the API returns HTTP 429.
             </p>
           </Section>
 
@@ -261,7 +261,7 @@ export default function ApiDocsPage() {
             <Endpoint
               method="POST"
               path="/api/v1/search"
-              description="Run a new lead search programmatically. Counts against your plan's search quota."
+              description="Run a new lead search programmatically. A cache miss spends one live search from the workspace's 300 monthly allowance; a cached response spends none."
               params={[
                 { name: 'query', type: 'string', required: true, desc: 'Business type or keyword (e.g. "plumbers")' },
                 { name: 'location', type: 'string', required: true, desc: 'City, state, or zip code' },
@@ -307,8 +307,8 @@ export default function ApiDocsPage() {
                     ['401', 'Missing or invalid API key'],
                     ['403', 'Account deactivated'],
                     ['422', 'Missing required parameters'],
-                    ['429', 'Daily rate limit exceeded — check retryAfter'],
-                    ['500', 'Internal server error — try again shortly'],
+                    ['429', 'Daily rate limit exceeded. Check retryAfter'],
+                    ['500', 'Internal server error. Try again shortly'],
                   ].map(([status, meaning]) => (
                     <tr key={status} className="border-t border-sand">
                       <td className="px-4 py-2.5">

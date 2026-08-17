@@ -314,6 +314,13 @@ export interface SafeProbeOptions {
   /** Redirect hops allowed. Every hop is re-validated. Default 3. */
   maxRedirects?: number
   userAgent?: string
+  /**
+   * Optional server-side gate invoked after the current hop's URL and DNS
+   * address have passed validation and been pinned, immediately before opening
+   * the socket. Throwing cancels the request. This is useful for durable usage
+   * reservations that must not charge malformed or SSRF-blocked targets.
+   */
+  beforeRequest?: (url: string) => void | Promise<void>
 }
 
 export interface SafeProbeResult {
@@ -446,6 +453,7 @@ export async function safeProbe(rawUrl: string, options: SafeProbeOptions = {}):
     // Re-validated from scratch on every hop: syntax, DNS, and the pin.
     const pin = await resolveAndValidate(url.hostname)
     const mod = url.protocol === 'https:' ? await loadHttps() : await loadHttp()
+    await options.beforeRequest?.(url.toString())
     const res = await requestOnce(url, pin, mod, {
       headers,
       timeoutMs: Math.max(1, deadline - Date.now()),

@@ -1,11 +1,15 @@
 // Shared knowledge base for the LeadZipp chat assistant.
 //
-// Facts below are sourced from the live marketing pages so the bot never
-// invents pricing or features:
+// Every allowance quoted below comes from the canonical policy modules, never
+// from marketing aspiration:
+//   - src/lib/planPolicy.ts        (searches, saved leads, seats, API, exports)
+//   - src/lib/emailCreditPolicy.ts (trial email-credit allowances)
+// The marketing pages that must agree with those numbers:
 //   - src/app/page.tsx          (landing: features, data sources, FAQs)
 //   - src/app/pricing/page.tsx  (plans, prices, trial, refunds, billing)
 //   - src/app/api-docs/page.tsx (API endpoints, quotas, support email)
-// If those pages change, update PRODUCT_FACTS and the FAQ entries together.
+// If the policy modules change, update PRODUCT_FACTS and the FAQ entries
+// together so the bot cannot quote a retired limit.
 
 export const SUPPORT_EMAIL = 'support@leadzipp.com'
 
@@ -14,19 +18,23 @@ LeadZipp (leadzipp.com) is a B2B local lead generation SaaS. A user types a US Z
 
 Core features:
 - Lead scoring: every business gets a 0 to 100 opportunity score. Signals like no website, few reviews, or a low rating push a business up the list because those owners are most likely to need help.
-- Email finder: for any business with a website, one tap returns the best contact email with a confidence badge (verified, likely, or pattern-based).
+- Email finder: for any business with a website, one tap returns the best contact email with a confidence badge (verified, likely, or pattern-based). It is metered in credits and every plan includes some. A credit is only spent on a successful new lookup, so cached results, failed lookups and pattern-based guesses cost nothing.
 - Exports: CSV, branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel.
 - Map view: see leads plotted across the neighborhood, claim a ZIP, and get emailed when new businesses open in that area.
 - Filters: radius, rating, review count, has-website, category.
 - Saved leads with notes and status tracking, plus search history on paid plans.
 
+What counts as a search: a "live search" is a new search that reaches the data providers, in other words a cache miss. Rerunning a search that is already cached, or refining filters on a result set you already pulled, does not consume any live-search allowance.
+
 Plans and pricing (monthly, or about 20% less with annual billing):
-- Free: $0 forever. 25 searches per month, 25 saved leads, basic lead scoring, lead details and contact info. No credit card required. Anonymous visitors can also run 5 free searches per day before creating an account.
-- Pro: $25/mo ($20/mo billed annually). Unlimited searches, 1,000 saved leads, advanced lead scoring, email finder, CSV export, search history, lead notes and status tracking, priority email support.
-- Agency: $50/mo ($40/mo billed annually). Everything in Pro plus unlimited saved leads, advanced filters, white-label PDFs, priority support with onboarding. Team workspace is coming soon.
+- Free: $0 forever. 25 new live searches per month and up to 25 per day, 25 saved leads, 3 saved searches, 5 lifetime email credits, lead scoring, lead details and contact info, and CSV export of the first 25 rows. No credit card required. Anonymous visitors can also run 5 free searches per day before creating an account.
+- Pro: $25/mo ($20/mo billed annually). 100 new live territory searches per calendar month and up to 50 per day, 100 business-email credits per calendar month, bulk search up to 10 ZIPs, 1,000 saved leads, 25 saved searches, 10 active alerts, full exports, CRM push, and priority email support. Cached reruns and filter refinements do not consume live-search allowance.
+- Agency: $50/mo ($40/mo billed annually). Everything in Pro plus 300 live searches per calendar month and up to 150 per day, and 500 email credits per calendar month, both pooled across a five-seat workspace. Also 10,000 saved leads per member, 100 saved searches, 50 active alerts, bulk search up to 25 ZIPs, API access at 500 requests/day, and priority onboarding.
+- Included email credits do not roll over. Free's 5 credits are a one-time starter balance rather than a monthly grant. Annual billing does not change the monthly credit allowance.
 
 Trials and offers:
 - Pro and Agency both come with a 7-day free trial. A card is required at signup, and when the 7 days end the card is automatically charged for the chosen plan. Cancel anytime before day 7 and you are not charged. Checkout is handled securely by Stripe.
+- Trial allowances are smaller than full plan allowances. A Pro trial includes 25 live searches and 20 email credits. An Agency trial includes 75 pooled live searches and 50 pooled email credits. Full plan limits apply once paid access begins.
 - Separate from the trial, there is a 14-day money-back guarantee on paid plans: not satisfied within the first 14 days of a paid plan, contact us for a full refund.
 - New signups get 15% off their first month, applied automatically at checkout.
 
@@ -35,8 +43,8 @@ Billing:
 - Users can upgrade or downgrade anytime; changes take effect at the start of the next billing cycle. Cancel anytime.
 
 Developer API:
-- API keys are generated from the dashboard. Endpoints: GET /api/v1/leads (saved leads), GET /api/v1/history (past searches), POST /api/v1/search (run a search; counts against the plan quota).
-- Daily API quotas: Free 100 requests/day, Pro 1,000/day, Agency 10,000/day.
+- API keys are generated from the dashboard. Endpoints: GET /api/v1/leads (saved leads), GET /api/v1/history (past searches), POST /api/v1/search (run a search; a cache miss spends one live search from the workspace allowance, a cached response spends none).
+- API access is an Agency feature with 500 requests/day. API cache misses share the workspace's 300 monthly live-search allowance.
 
 Troubleshooting basics:
 - Login problems: use the password reset at leadzipp.com/forgot-password, and check for the verification email after signup (including spam).
@@ -74,19 +82,19 @@ const FAQ_ENTRIES: FaqEntry[] = [
     id: 'pricing',
     keywords: ['pricing', 'price', 'prices', 'cost', 'how much', 'plans', 'plan', 'subscription', 'expensive', 'cheap'],
     answer:
-      'LeadZipp has three plans: Free ($0, 25 searches a month), Pro ($25/mo with unlimited searches, email finder, and CSV export), and Agency ($50/mo with unlimited saved leads and white-label PDFs). Annual billing saves about 20%, and Pro and Agency both start with a 7-day free trial. You can compare everything at leadzipp.com/pricing.',
+      'LeadZipp has three plans: Free ($0, 25 new live searches a month and 5 lifetime email credits), Pro ($25/mo with 100 live searches, 100 email credits a month, bulk ZIP search, and full exports), and Agency ($50/mo with 300 live searches and 500 email credits pooled across 5 seats, 10,000 saved leads per member, and API access). Cached reruns and filter refinements are free. Annual billing saves about 20%, and Pro and Agency both start with a 7-day free trial. You can compare everything at leadzipp.com/pricing.',
   },
   {
     id: 'free-plan',
     keywords: ['free plan', 'free account', 'starter', 'no credit card', 'free forever', 'is it free'],
     answer:
-      'Yes, the Free plan is $0 forever: 25 searches a month, 25 saved leads, and basic lead scoring, with no credit card required. You can even run 5 searches a day before creating an account. Sign up at leadzipp.com/signup to start.',
+      'Yes, the Free plan is $0 forever: 25 new live searches a month, 25 saved leads, 3 saved searches, 5 welcome email credits, and lead scoring, with no credit card required. Rerunning a cached search or refining filters does not use your allowance. You can even run 5 searches a day before creating an account. Sign up at leadzipp.com/signup to start.',
   },
   {
     id: 'trial',
     keywords: ['trial', 'free trial', 'try it', 'try before', '7 day', '7-day', 'trial period'],
     answer:
-      'Pro and Agency both come with a 7-day free trial. A card is required at signup, and when the 7 days end it is charged automatically for your chosen plan, so cancel anytime before day 7 if it is not for you and you will not be charged. On top of that, paid plans have a separate 14-day money-back guarantee.',
+      'Pro and Agency both come with a 7-day free trial. A card is required at signup, and when the 7 days end it is charged automatically for your chosen plan, so cancel anytime before day 7 if it is not for you and you will not be charged. Pro trials include 25 live searches and 20 email credits, Agency trials include 75 pooled live searches and 50 pooled email credits, and the full plan limits apply once paid access begins. On top of that, paid plans have a separate 14-day money-back guarantee.',
   },
   {
     id: 'discount',
@@ -104,25 +112,25 @@ const FAQ_ENTRIES: FaqEntry[] = [
     id: 'lead-scoring',
     keywords: ['score', 'scoring', 'scored', 'ranked', 'ranking', '0-100', 'high scoring', 'opportunity'],
     answer:
-      'Every business gets a 0 to 100 opportunity score. Signals like having no website, few reviews, or a low rating push a lead up your list, because those owners are the most likely to say yes to your services. Advanced scoring comes with the Pro and Agency plans.',
+      'Every business gets a 0 to 100 opportunity score. Signals like having no website, few reviews, or a low rating push a lead up your list, because those owners are the most likely to say yes to your services. Scoring is on every plan, including Free.',
   },
   {
     id: 'email-finder',
     keywords: ['email finder', 'find email', 'find emails', 'contact email', 'owner email', 'email address', 'decision maker'],
     answer:
-      'For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based). The email finder is included in the Pro and Agency plans, and both start with a 7-day free trial.',
+      'For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based). Every plan includes credits: Free comes with 5 welcome credits that do not reset, Pro includes 100 a month, and Agency includes 500 a month pooled across the workspace. A credit is only spent on a successful new lookup, so cached results, failed lookups and pattern-based guesses are free.',
   },
   {
     id: 'exports',
     keywords: ['export', 'exports', 'csv', 'pdf', 'hubspot', 'pipedrive', 'gohighlevel', 'crm', 'download leads', 'spreadsheet'],
     answer:
-      'You can export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel with email, phone, score, and every field included. Exports are part of the Pro and Agency plans. Agency also unlocks white-label PDFs.',
+      'You can export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel with email, phone, score, and every field included. Free includes CSV export of the first 25 rows; full CSV, branded PDF and CRM push come with Pro and Agency. Agency also unlocks white-label PDFs.',
   },
   {
     id: 'saved-leads',
     keywords: ['saved leads', 'save leads', 'save a lead', 'saving', 'notes', 'status tracking', 'lead limit'],
     answer:
-      'Saved leads keep your prospects in one place: Free includes 25, Pro includes 1,000, and Agency is unlimited. On paid plans you can also add notes and track status on each lead, plus see your full search history.',
+      'Saved leads keep your prospects in one place: Free includes 25, Pro includes 1,000, and Agency includes 10,000 per member. Saved searches follow the same shape, at 3 on Free, 25 on Pro and 100 on Agency. On paid plans you can also add notes and track status on each lead, plus see your full search history.',
   },
   {
     id: 'data-sources',
@@ -134,7 +142,7 @@ const FAQ_ENTRIES: FaqEntry[] = [
     id: 'map-view',
     keywords: ['map', 'map view', 'territory', 'claim a zip', 'alerts', 'new businesses'],
     answer:
-      'Map view plots your leads across the neighborhood so you can work a whole territory at once. You can claim a ZIP and get emailed when new businesses open in that area, so you reach them before competitors do. Map view is included with Pro.',
+      'Map view plots your leads across the neighborhood so you can work a whole territory at once. You can claim a ZIP and get emailed when new businesses open in that area, so you reach them before competitors do. Map view and new-business alerts are included with Pro and Agency.',
   },
   {
     id: 'cancel-refund',
@@ -164,7 +172,7 @@ const FAQ_ENTRIES: FaqEntry[] = [
     id: 'api',
     keywords: ['api', 'api key', 'api keys', 'integrate', 'integration', 'endpoint', 'developer', 'programmatic', 'webhook'],
     answer:
-      'LeadZipp has a REST API: generate a key from your dashboard, then use GET /api/v1/leads, GET /api/v1/history, and POST /api/v1/search. Daily quotas are 100 requests on Free, 1,000 on Pro, and 10,000 on Agency. Full docs live at leadzipp.com/api-docs.',
+      'LeadZipp REST API access is included with Agency: generate a key from Settings, then use GET /api/v1/leads, GET /api/v1/history, and POST /api/v1/search. The API allows 500 requests per day, and live cache-miss searches share the workspace monthly search allowance. Full docs live at leadzipp.com/api-docs.',
   },
   {
     id: 'human',

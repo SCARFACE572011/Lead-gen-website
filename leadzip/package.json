@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test:unit": "node --test tests/*.test.mjs",
+    "build:migrations": "node scripts/build-pending-migrations.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

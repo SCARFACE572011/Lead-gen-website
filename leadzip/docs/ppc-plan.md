@@ -169,11 +169,18 @@ expected return per dollar, and it is not close.
 
 ### 1.6 A margin risk worth flagging
 
-Pro includes **unlimited searches** at roughly $0.10 per search in Places calls. The users
-most attracted by an ad promising unlimited search are the heaviest users, and they are
-the least profitable. A Pro user running 200 searches a month costs $20 in COGS against
-$25 in revenue. Paid acquisition selects for exactly this cohort. Consider a fair-use
-ceiling before scaling any channel.
+**Update, 2026-08-17: resolved in product.** When this plan was written, Pro included
+**unlimited searches** at roughly $0.10 per search in Places calls. The users most
+attracted by an ad promising unlimited search are the heaviest users, and they are the
+least profitable. A Pro user running 200 searches a month cost $20 in COGS against $25 in
+revenue, and paid acquisition selects for exactly that cohort.
+
+LeadZipp has since moved to a metered model. A live search is a cache miss; cached reruns
+and filter refinements cost nothing. Free gets 25 live searches a month, Pro 100, and
+Agency 300 pooled across the workspace. At the same $0.10 per search that caps worst-case
+Places spend at about $10 on a $25 Pro seat, so the fair-use ceiling this section asked
+for now exists. The click-price arithmetic in 1.1 through 1.5 is unaffected and still
+stands.
 
 ---
 
@@ -342,7 +349,7 @@ Display path: `/no-website` (10) `/by-zip` (6)
 | 9 | Built For Web Agencies | 22 |
 | 10 | 7-Day Free Trial | 16 |
 | 11 | Pro Is $25 A Month | 18 |
-| 12 | Free Plan, 25 Searches | 22 |
+| 12 | Free Plan, 25 Live Searches | 27 |
 | 13 | Export Your List To CSV | 23 |
 | 14 | Stop Guessing Who To Call | 25 |
 | 15 | One Search, Full Call List | 26 |
@@ -354,7 +361,7 @@ Display path: `/no-website` (10) `/by-zip` (6)
 | 1 | Find local businesses with no website, thin reviews or a weak rating. Search any ZIP code. | 90 |
 | 2 | Live Google and Yelp listings, scored so the biggest gaps sit at the top of your list. | 86 |
 | 3 | Pro is $25 a month after a 7-day free trial. Card required, cancel by day 7 to pay $0. | 86 |
-| 4 | Free plan: 25 searches a month, no card. Pro adds unlimited searches and CSV export. | 84 |
+| 4 | Free plan: 25 live searches a month, no card. Pro adds 100 and full CSV export. | 79 |
 
 Description 3 is mandatory in the rotation and must be pinned to position 1 or 2. Google's
 Dishonest Pricing Practices policy, enforced since 28 October 2025, requires clear
@@ -406,7 +413,7 @@ Display path: `/local-leads` (11) `/agencies` (9)
 | See Pricing | 11 | Free, Pro at $25, Agency at $50 | 31 | Annual billing saves 20% | 24 | `/pricing` |
 | Compare Tools | 13 | Honest side by side breakdowns | 30 | Apollo, Hunter, ZoomInfo | 24 | `/compare` |
 | Browse By City | 14 | Location guides for 12 US metros | 32 | Plus 12 international cities | 28 | `/leads` |
-| Start Free | 10 | 25 searches a month, no card | 28 | Upgrade only when you need to | 29 | `/signup` |
+| Start Free | 10 | 25 live searches a month, no card | 33 | Upgrade only when you need to | 29 | `/signup` |
 
 **Callouts** (25 max)
 
@@ -650,8 +657,8 @@ stays permanently invisible. Build it before launch, not after.
 | `checkout_started` | Successful POST to `/api/stripe/checkout`, before the Stripe redirect |
 
 **This is the single most important instruction in the tracking section: `signup_completed`
-must never be the optimization target.** The free plan gives 25 searches a month with no
-card, verified at `src/app/api/leads/search/route.ts:300`. That is enough for a freelancer
+must never be the optimization target.** The free plan gives 25 live searches a month with
+no card, and cached reruns are free on top of that. That is enough for a freelancer
 to work a small territory indefinitely. If free signup is the conversion goal, Google will
 optimize hard toward people who want a free tool forever, the dashboard will show a
 falling cost per conversion, and revenue will be zero. This is the most common way a plan
@@ -724,22 +731,32 @@ distinguish a good campaign from a bad one, and Google cannot bid.
 payment is invisible to the ad platform forever.
 
 **5. Decide what the free plan is for.**
-25 searches a month with no card is generous enough to replace the paid product for a
+25 live searches a month with no card is generous enough to replace the paid product for a
 freelancer working one small territory. That may be an excellent product decision. It is a
 disqualifying paid-acquisition decision, because paid traffic will always take the free
 door. Either accept that and do not run ads, or make the trial the primary CTA on paid
 landing pages and move the free plan to a secondary link. A third option is to keep 25
 searches but gate export, so free demonstrates value without replacing the product.
 
-**6. Reconcile the pricing page with the product you actually shipped.**
-`/pricing` lists, for Pro: unlimited searches, 1,000 saved leads, advanced lead scoring,
-lead details and contact info, CSV export, search history, lead notes and status tracking,
-and priority email support. It lists "Advanced filters" as **not** included on Pro.
+**Update, 2026-08-17:** the third option shipped. Free keeps its 25 live searches but
+exports only the first 25 rows, and the Email Finder is capped at 5 lifetime credits. The
+choice between the first two options is still open.
 
-It does not mention the email finder, PDF export, CRM push, map view, digital health
+**6. Reconcile the pricing page with the product you actually shipped.**
+**Update, 2026-08-17: done.** `/pricing` now lists the metered allowances (25, 100 and 300
+live searches; 5, 100 and 500 email credits), the saved-lead and saved-search limits, the
+seat count and the API quota, and it no longer claims unlimited anything. The gap below is
+kept as the record of why the work was needed, not as a live action item.
+
+At the time of writing, `/pricing` listed, for Pro: unlimited searches, 1,000 saved leads,
+advanced lead scoring, lead details and contact info, CSV export, search history, lead
+notes and status tracking, and priority email support. It listed "Advanced filters" as
+**not** included on Pro.
+
+It did not mention the email finder, PDF export, CRM push, map view, digital health
 scores, shareable audit reports, the CRM pipeline, the market gap finder, or the 5-format
-outreach generator, all of which either shipped today or are marketed on
-`src/lib/comparePages.ts`. That is a large release that the page a buyer reads does not
+outreach generator, all of which either shipped that day or are marketed on
+`src/lib/comparePages.ts`. That was a large release that the page a buyer reads did not
 know about.
 
 Two consequences. First, ad copy cannot claim those features, which is why section 4 does
@@ -777,7 +794,7 @@ drive the entire conclusion.
 
 | ID | Assumption | Value | Basis | Risk if wrong |
 | --- | --- | --- | --- | --- |
-| A1 | Average Pro searches per month | 60 | None. Pure estimate | COGS moves $0 to $20/mo. At 200 searches, contribution falls to $4/mo and paid is impossible at any CPC |
+| A1 | Average Pro live searches per month | 60 | None. Pure estimate | COGS moves $0 to $10/mo. The metered plan caps Pro at 100 live searches a month, so the old 200-search worst case can no longer happen; the cap bounds this risk rather than removing it |
 | A2 | Stripe fees | 2.9% + $0.30 | Standard US card pricing | Low |
 | A3 | Contribution margin per Pro month | $18 (72%) | Derived from A1, A2 | Moderate |
 | A4 | Average retention | 6 months | Brief's 4 to 8 band. No data | At 4 months, contribution LTV is $72 and the ceiling drops to $54 with no growth headroom. At 12 months it is $216 and annual-style economics apply |

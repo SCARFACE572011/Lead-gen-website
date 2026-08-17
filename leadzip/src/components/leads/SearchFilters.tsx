@@ -14,6 +14,7 @@ interface SearchFiltersProps {
   searchMode: 'single' | 'bulk'
   onSearchModeChange: (mode: 'single' | 'bulk') => void
   maxBulkZips: number
+  bulkEnabled: boolean
 }
 
 const RADIUS_OPTIONS = [
@@ -252,6 +253,7 @@ export function SearchFilters({
   searchMode,
   onSearchModeChange,
   maxBulkZips,
+  bulkEnabled,
 }: SearchFiltersProps) {
   const [locationInput, setLocationInput] = useState(
     initialValues?.location ?? initialValues?.zipCode ?? ''
@@ -422,14 +424,19 @@ export function SearchFilters({
             </button>
             <button
               type="button"
-              onClick={() => onSearchModeChange('bulk')}
+              onClick={() => {
+                if (bulkEnabled) onSearchModeChange('bulk')
+                else window.location.href = '/pricing'
+              }}
               aria-pressed={searchMode === 'bulk'}
+              title={bulkEnabled ? `Search up to ${maxBulkZips} ZIPs at once` : 'Bulk ZIP search is included with Pro and Agency'}
               className={cn(
                 'rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
-                searchMode === 'bulk' ? 'bg-card text-ink shadow-sm' : 'text-stone hover:text-ink'
+                searchMode === 'bulk' ? 'bg-card text-ink shadow-sm' : 'text-stone hover:text-ink',
+                !bulkEnabled && 'text-signal'
               )}
             >
-              Multiple ZIPs
+              {bulkEnabled ? 'Multiple ZIPs' : 'Bulk · Pro'}
             </button>
           </div>
         </div>

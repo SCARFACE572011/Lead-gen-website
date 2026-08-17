@@ -24,7 +24,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Lead, LeadStatus, PipelineStage, PIPELINE_STAGES, STATUS_LABELS, STATUS_COLORS } from '@/types/lead'
-import { exportReturnedLeadsCsv } from '@/lib/leadBulkActions'
+import { exportAllSavedLeadsCsv, exportReturnedLeadsCsv, LeadBulkActionError } from '@/lib/leadBulkActions'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import PipelineBoard from '@/components/leads/PipelineBoard'
@@ -35,8 +35,23 @@ const VIEW_KEY = 'leadzip_saved_view'
 // Device-local stage moves, kept only while the pipeline migration is pending.
 // Shape: { [leadId]: PipelineStage }
 const STAGE_KEY = 'leadzip_pipeline_stages'
+const SAVED_PAGE_SIZE = 200
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+
+interface SavedLeadsResponse {
+  leads?: Lead[]
+  error?: string
+  pipelineMigrationNeeded?: boolean
+  pagination?: {
+    page: number
+    pageSize: number
+    offset: number
+    nextOffset: number
+    total: number
+    hasMore: boolean
+  }
+}
 
 async function currentUserId(): Promise<string> {
   const { data: { user } } = await createClient().auth.getUser()
@@ -96,6 +111,16 @@ function writeStageOverrides(map: Record<string, PipelineStage>) {
     }
     localStorage.setItem(STAGE_KEY, JSON.stringify(map))
   } catch { /* non-fatal */ }
+}
+
+// Export failures split in two: the server writes messages meant for customers,
+// while anything else is a raw browser failure (a connection dropped part way
+// through the download, for example). Those get logged and replaced with a
+// short line, never shown as "Failed to fetch".
+function exportErrorMessage(error: unknown): string {
+  if (error instanceof LeadBulkActionError) return error.message
+  console.error('[saved] export failed', error)
+  return 'Export did not finish. Please check your connection and try again.'
 }
 
 function writeStageOverride(id: string, stage: PipelineStage) {
@@ -336,7 +361,10 @@ export default function SavedLeadsPage() {
   const [sortBy, setSortBy] = useState<SortOption>('score')
   const [mounted, setMounted] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [loadError, setLoadError] = useState(false)
+  const [totalLeads, setTotalLeads] = useState(0)
+  const [hasMore, setHasMore] = useState(false)
   const [confirmingBulkDelete, setConfirmingBulkDelete] = useState(false)
   const [view, setView] = useState<SavedView>('list')
   const [proposalLead, setProposalLead] = useState<Lead | null>(null)
@@ -369,9 +397,11 @@ export default function SavedLeadsPage() {
 
       for (const [id, stage] of Object.entries(overrides)) {
         const lead = loaded.find((l) => l.id === id)
-        // Drop overrides for leads that are gone, and never overwrite a stage
-        // the user set elsewhere after migrating: a non-default server value wins.
-        if (!lead || (lead.pipelineStage ?? 'new') !== 'new' || stage === 'new') continue
+        // With paginated saved leads an override can belong to a page that has
+        // not loaded yet. Preserve it until that lead is seen; a non-default
+        // server value still wins once its page arrives.
+        if (!lead) continue
+        if ((lead.pipelineStage ?? 'new') !== 'new' || stage === 'new') continue
         pending[id] = stage
       }
 
@@ -397,8 +427,11 @@ export default function SavedLeadsPage() {
         }
       }
 
-      // Keep only what still needs another attempt
-      writeStageOverrides(failed)
+      const unloaded = Object.fromEntries(
+        Object.entries(overrides).filter(([id]) => !loaded.some((lead) => lead.id === id))
+      ) as Record<string, PipelineStage>
+      // Keep transient failures plus overrides whose page has not loaded yet.
+      writeStageOverrides({ ...unloaded, ...failed })
 
       if (Object.keys(migrated).length > 0) {
         setLeads((prev) =>
@@ -413,96 +446,81 @@ export default function SavedLeadsPage() {
     }
   }, [])
 
-  const loadLeads = useCallback(async () => {
-    setLoading(true)
-    setLoadError(false)
+  const loadLeads = useCallback(async (offset = 0, append = false) => {
+    if (append) setLoadingMore(true)
+    else {
+      setLoading(true)
+      setLoadError(false)
+    }
     try {
       if (isSupabaseConfigured) {
-        const supabase = createClient()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
+        const response = await fetch(`/api/leads/saved?offset=${offset}&pageSize=${SAVED_PAGE_SIZE}`)
+        const data = (await response.json().catch(() => ({}))) as SavedLeadsResponse
+        if (!response.ok) throw new Error(data.error ?? 'Could not load saved leads')
 
-        if (user) {
-          const { data, error } = await supabase
-            .from('leads')
-            .select('*')
-            .eq('user_id', user.id)
-            .order('created_at', { ascending: false })
+        const serverLeads = data.leads ?? []
+        if (serverLeads.length > 0 || append) {
+          const migrationNeeded = data.pipelineMigrationNeeded === true
+          setPipelineMigrationNeeded(migrationNeeded)
+          const stageOverrides = migrationNeeded ? readStageOverrides() : {}
+          const mapped = serverLeads.map((lead) => ({
+            ...lead,
+            pipelineStage: migrationNeeded
+              ? stageOverrides[lead.id] ?? 'new'
+              : lead.pipelineStage ?? 'new',
+          }))
 
-          if (error) throw error
+          setLeads((previous) => {
+            const combined = append
+              ? [...previous, ...mapped.filter((lead) => !previous.some((item) => item.id === lead.id))]
+              : mapped
+            try {
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(combined.slice(0, SAVED_PAGE_SIZE)))
+            } catch { /* the server remains authoritative */ }
+            return combined
+          })
+          setTotalLeads(data.pagination?.total ?? mapped.length)
+          setHasMore(data.pagination?.hasMore === true)
 
-          if (data && data.length > 0) {
-            // Feature-detect the pipeline columns: select('*') simply omits them
-            // when the one-time migration hasn't run yet.
-            const migrationNeeded = !('pipeline_stage' in data[0])
-            setPipelineMigrationNeeded(migrationNeeded)
-            // Without the column every row reads back as "new", so replay the
-            // stage moves this device kept while the migration is pending.
-            // Once it has run the server value wins and the map is ignored.
-            const stageOverrides = migrationNeeded ? readStageOverrides() : {}
-            const mapped: Lead[] = data.map((l) => ({
-              id: l.id,
-              businessName: l.business_name,
-              category: l.category,
-              address: l.address ?? '',
-              city: l.city ?? '',
-              state: l.state ?? '',
-              zipCode: l.zip_code ?? '',
-              phone: l.phone ?? '',
-              website: l.website ?? '',
-              rating: l.rating ?? null,
-              reviewCount: l.review_count ?? null,
-              latitude: null,
-              longitude: null,
-              distanceMiles: null,
-              leadScore: l.lead_score ?? 0,
-              status: (l.status as LeadStatus) ?? 'new',
-              notes: l.notes ?? '',
-              savedAt: l.saved_at,
-              employeeCount: l.employee_count ?? null,
-              revenueEstimate: l.revenue_estimate ?? null,
-              facebookUrl: l.facebook_url ?? null,
-              instagramUrl: l.instagram_url ?? null,
-              linkedinUrl: l.linkedin_url ?? null,
-              email: l.email ?? undefined,
-              pipelineStage:
-                (migrationNeeded
-                  ? stageOverrides[l.id]
-                  : (l.pipeline_stage as PipelineStage)) ?? 'new',
-              stageUpdatedAt: l.stage_updated_at ?? undefined,
-            }))
-            setLeads(mapped)
-            // Migration has run: catch the server up on anything this device
-            // staged while it was pending. Deliberately not awaited so a slow
-            // or failing flush never holds up the board.
-            if (!migrationNeeded) {
-              void flushStageOverrides(mapped)
-            }
-            return
-          }
-          // Signed in but no server-side leads yet — fall through to localStorage
+          // Migration has run: catch the server up on anything this device
+          // staged while it was pending. Deliberately not awaited so a slow
+          // or failing flush never holds up the board.
+          if (!migrationNeeded) void flushStageOverrides(mapped)
+          return
         }
+        // Signed in but no server-side leads yet — fall through to localStorage.
       }
 
       // Fallback: load from localStorage (Supabase not configured / no user / empty)
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         try {
-          setLeads(JSON.parse(raw) as Lead[])
+          const localLeads = JSON.parse(raw) as Lead[]
+          setLeads(localLeads)
+          setTotalLeads(localLeads.length)
         } catch {
           setLeads([])
+          setTotalLeads(0)
         }
       } else {
         setLeads([])
+        setTotalLeads(0)
       }
+      setHasMore(false)
     } catch {
+      if (append) {
+        toast.error('Could not load more leads. Please retry.')
+        return
+      }
       // Genuine failure — try localStorage before surfacing an error so a
       // transient network blip doesn't hide an existing pipeline
       const raw = localStorage.getItem(STORAGE_KEY)
       if (raw) {
         try {
-          setLeads(JSON.parse(raw) as Lead[])
+          const localLeads = JSON.parse(raw) as Lead[]
+          setLeads(localLeads)
+          setTotalLeads(localLeads.length)
+          setHasMore(false)
           return
         } catch {
           // corrupt cache — fall through to the error state
@@ -510,7 +528,8 @@ export default function SavedLeadsPage() {
       }
       setLoadError(true)
     } finally {
-      setLoading(false)
+      if (append) setLoadingMore(false)
+      else setLoading(false)
     }
   }, [flushStageOverrides])
 
@@ -532,7 +551,9 @@ export default function SavedLeadsPage() {
   }
 
   const saveToStorage = useCallback((updated: Lead[]) => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated))
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated.slice(0, SAVED_PAGE_SIZE)))
+    } catch { /* the server remains authoritative */ }
     setLeads(updated)
   }, [])
 
@@ -618,21 +639,40 @@ export default function SavedLeadsPage() {
   }
 
   const restoreLead = useCallback(async (lead: Lead) => {
-    setLeads((prev) => {
-      const next = [lead, ...prev.filter((l) => l.id !== lead.id)]
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
-      return next
-    })
-    if (isSupabaseConfigured) {
+    const writeLocal = (next: Lead[]) => {
       try {
-        await fetch('/api/leads/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ lead }),
-        })
-      } catch {
-        // Non-fatal — localStorage is already restored
-      }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(next.slice(0, SAVED_PAGE_SIZE)))
+      } catch { /* the server remains authoritative */ }
+      return next
+    }
+
+    setLeads((prev) => writeLocal([lead, ...prev.filter((l) => l.id !== lead.id)]))
+
+    if (!isSupabaseConfigured) {
+      setTotalLeads((previous) => previous + 1)
+      return
+    }
+
+    // The total only moves once the server confirms the row is back, otherwise
+    // the count on screen drifts away from what the customer actually has.
+    try {
+      const res = await fetch('/api/leads/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ lead }),
+      })
+      const data: { insertedCount?: number; error?: string } = await res
+        .json()
+        .catch(() => ({}))
+      if (!res.ok) throw new Error(data.error || `save responded ${res.status}`)
+      // An older response without the count still means "accepted", so treat a
+      // missing field as one row rather than losing the increment.
+      const inserted = typeof data.insertedCount === 'number' ? data.insertedCount : 1
+      if (inserted > 0) setTotalLeads((previous) => previous + 1)
+    } catch (error) {
+      console.error('[saved] undo restore failed', error)
+      setLeads((prev) => writeLocal(prev.filter((l) => l.id !== lead.id)))
+      toast.error('Could not restore that lead. Please try again.')
     }
   }, [])
 
@@ -661,6 +701,7 @@ export default function SavedLeadsPage() {
       }
     }
 
+    setTotalLeads((previous) => Math.max(0, previous - 1))
     toast.success('Lead deleted', removed ? {
       action: { label: 'Undo', onClick: () => restoreLead(removed) },
     } : undefined)
@@ -693,6 +734,7 @@ export default function SavedLeadsPage() {
       }
     }
 
+    setTotalLeads((previous) => Math.max(0, previous - count))
     toast.success(`${count} lead${count !== 1 ? 's' : ''} deleted`)
   }
 
@@ -747,15 +789,16 @@ export default function SavedLeadsPage() {
   }
 
   const handleExportAll = async () => {
-    if (leads.length === 0) return
+    if (totalLeads === 0) return
     try {
-      const result = await exportReturnedLeadsCsv(leads, {
-        filename: `leadzipp-saved-${Date.now()}`,
-      })
+      const options = { filename: `leadzipp-saved-${Date.now()}` }
+      const result = isSupabaseConfigured
+        ? await exportAllSavedLeadsCsv(options)
+        : await exportReturnedLeadsCsv(leads, options)
       toast.success(`Exported ${result.exportedCount} lead${result.exportedCount !== 1 ? 's' : ''}`)
       if (result.planCapped && result.upgradeNotice) toast.info(result.upgradeNotice)
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Export failed — please try again')
+      toast.error(exportErrorMessage(error))
     }
   }
 
@@ -768,8 +811,11 @@ export default function SavedLeadsPage() {
       })
       toast.success(`Exported ${result.exportedCount} lead${result.exportedCount !== 1 ? 's' : ''}`)
       if (result.planCapped && result.upgradeNotice) toast.info(result.upgradeNotice)
+      if (result.requestCapped) {
+        toast.info('This selection was very large, so the first 2,000 leads were exported. Split it into smaller selections for the rest.')
+      }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Export failed — please try again')
+      toast.error(exportErrorMessage(error))
     }
   }
 
@@ -814,12 +860,12 @@ export default function SavedLeadsPage() {
               <p className="text-sm text-ink-soft mt-1.5">Manage and track your prospect pipeline</p>
             </div>
             <span className="bg-signal text-white text-sm font-mono font-semibold px-3 py-1 rounded-full self-start">
-              {leads.length}
+              {totalLeads}
             </span>
           </div>
           <button
             onClick={handleExportAll}
-            disabled={leads.length === 0}
+            disabled={totalLeads === 0}
             className="inline-flex items-center gap-2 bg-ink text-paper text-sm font-semibold px-5 py-2.5 rounded-full hover:bg-forest transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Download className="w-4 h-4" />
@@ -972,7 +1018,7 @@ export default function SavedLeadsPage() {
             </select>
           </div>
           <span className="text-xs text-stone ml-auto">
-            <span className="font-mono">{filtered.length}</span> of <span className="font-mono">{leads.length}</span> leads
+            <span className="font-mono">{filtered.length}</span> shown · <span className="font-mono">{totalLeads}</span> total
           </span>
         </div>
 
@@ -1098,6 +1144,22 @@ export default function SavedLeadsPage() {
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {!loading && !loadError && hasMore && (
+          <div className="mt-5 flex flex-col items-center gap-2">
+            <button
+              onClick={() => loadLeads(leads.length, true)}
+              disabled={loadingMore}
+              className="inline-flex items-center gap-2 border border-sand bg-card text-ink text-sm font-semibold px-5 py-2.5 rounded-full hover:border-signal/40 hover:text-signal transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loadingMore ? <RefreshCw className="w-4 h-4 animate-spin" /> : <ChevronDown className="w-4 h-4" />}
+              {loadingMore ? 'Loading…' : `Load more (${Math.max(0, totalLeads - leads.length).toLocaleString()} remaining)`}
+            </button>
+            {(searchQuery || statusFilter !== 'all') && (
+              <p className="text-xs text-stone">Search and filters apply to the leads currently loaded.</p>
+            )}
           </div>
         )}
       </div>

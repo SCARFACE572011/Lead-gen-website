@@ -5,9 +5,7 @@ import Script from "next/script";
 import { ThemeProvider } from "next-themes";
 import { CookieConsent } from "@/components/CookieConsent"
 import { AnalyticsScripts } from "@/components/AnalyticsScripts";
-import { OnboardingModal } from "@/components/OnboardingModal";
-import { PromoPopup } from "@/components/PromoPopup";
-import { ChatWidget } from "@/components/chat/ChatWidget";
+import { DeferredWidgets } from "@/components/landing/DeferredWidgets";
 import StructuredData from "@/components/seo/StructuredData";
 import { SITE_URL } from "@/components/seo/site";
 
@@ -129,9 +127,7 @@ export default function RootLayout({
         {children}
         <Toaster richColors position="top-center" />
         <CookieConsent />
-        <OnboardingModal />
-        <PromoPopup />
-        <ChatWidget />
+        <DeferredWidgets />
         <AnalyticsScripts />
         </ThemeProvider>
       </body>

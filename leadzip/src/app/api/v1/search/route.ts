@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { validateApiKey, extractBearerKey } from '@/lib/api-key'
+import {
+  validateApiKey,
+  extractBearerKey,
+  resolveApiAccess,
+  legacyApiAccessHeaders,
+} from '@/lib/api-key'
 import { searchLeads } from '@/lib/providers/leadDataProvider'
-import { apiKeyLimiterFree, apiKeyLimiterPro, apiKeyLimiterAgency, checkRateLimit } from '@/lib/ratelimit'
+import {
+  apiKeyLimiterFree,
+  apiKeyLimiterPro,
+  apiKeyLimiterAgency,
+  checkRateLimit,
+} from '@/lib/ratelimit'
 import type { SearchParams, Lead } from '@/types/lead'
 import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
+import { reserveLiveSearch } from '@/lib/searchUsage'
 
 // Cache key + TTL come from src/lib/leadsCache.ts, shared with the interactive
 // search route, market-gaps and both crons, so v1 and the app hit the same rows.
@@ -18,6 +29,16 @@ import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 // could poison the filter-agnostic key for every later reader, the app included.
 // Custom Keyword is excluded from the keyword filter: there the keyword is the
 // query itself and lives in the cache key.
+// reserveLiveSearch already reports a missing RPC distinctly, but the same
+// migration also creates the tables and columns the RPC reads. If the function
+// exists and its schema does not, Postgres raises undefined_table /
+// undefined_column from inside it, which arrives here as a generic failure.
+// Treat that as "the allowance schema is not deployed yet" too, so a half
+// applied migration cannot 503 every API search.
+function isMissingSchema(message: string): boolean {
+  return /does not exist|schema cache/i.test(message)
+}
+
 function applyV1Filters(leads: Lead[], params: SearchParams): Lead[] {
   let out = leads
   if (params.minRating != null && params.minRating > 0) {
@@ -43,30 +64,51 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing API key. Pass Authorization: Bearer <key>' }, { status: 401 })
   }
 
-  const validated = await validateApiKey(raw)
-  if (!validated) {
+  const auth = await validateApiKey(raw)
+  if (auth.status === 'unavailable') {
+    // We could not check the key, so we must not claim it is invalid.
+    return NextResponse.json(
+      { error: 'Could not verify your API key right now. Please retry in a moment.' },
+      { status: 503, headers: { 'Retry-After': '30' } }
+    )
+  }
+  if (auth.status !== 'valid') {
     return NextResponse.json({ error: 'Invalid or revoked API key' }, { status: 401 })
   }
+  const validated = auth.key
 
-  // Rate limit by plan
-  const limiter = validated.plan === 'agency' ? apiKeyLimiterAgency
-    : validated.plan === 'pro' ? apiKeyLimiterPro
+  const access = resolveApiAccess(validated)
+  if (!access.allowed) {
+    return NextResponse.json(
+      { error: access.message, upgradeRequired: true, plan: validated.plan },
+      { status: 403 }
+    )
+  }
+  // Grandfathered Free/Pro keys keep the quota they were sold until the sunset
+  // date and carry the deprecation notice on every response.
+  const legacyHeaders = access.legacy ? legacyApiAccessHeaders() : {}
+  const limiter =
+    access.quotaPlan === 'agency' ? apiKeyLimiterAgency
+    : access.quotaPlan === 'pro' ? apiKeyLimiterPro
     : apiKeyLimiterFree
+
   try {
-    const { success, retryAfter } = await checkRateLimit(limiter, validated.userId)
+    const { success, retryAfter } = validated.role === 'admin'
+      ? { success: true, retryAfter: 0 }
+      : await checkRateLimit(limiter, validated.quotaSubjectUserId)
     if (!success) {
       return NextResponse.json(
         { error: 'Daily API limit reached', retryAfter, plan: validated.plan },
-        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+        { status: 429, headers: { ...legacyHeaders, 'Retry-After': String(retryAfter) } }
       )
     }
   } catch (err) {
     // Limiter outage: fail CLOSED. This is the daily plan quota in front of a
     // paid provider, so serving unmetered requests would uncap API spend.
-    console.warn('[v1/search] rate limiter error — failing closed', err)
+    console.warn('[v1/search] rate limiter error, failing closed', err)
     return NextResponse.json(
       { error: 'Rate limiting is temporarily unavailable. Please retry in a moment.', retryAfter: 30 },
-      { status: 503, headers: { 'Retry-After': '30' } }
+      { status: 503, headers: { ...legacyHeaders, 'Retry-After': '30' } }
     )
   }
 
@@ -125,21 +167,73 @@ export async function POST(request: NextRequest) {
 
       if (cached && ((cached.leads as Lead[])?.length ?? 0) > 0) {
         const leads = applyV1Filters((cached.leads as Lead[]) ?? [], params)
-        return NextResponse.json({
-          leads,
-          total: leads.length,
-          meta: {
-            zipCode: params.zipCode,
-            radiusMiles: params.radiusMiles,
-            category: params.category,
-            plan: validated.plan,
-            fromCache: true,
+        return NextResponse.json(
+          {
+            leads,
+            total: leads.length,
+            meta: {
+              zipCode: params.zipCode,
+              radiusMiles: params.radiusMiles,
+              category: params.category,
+              plan: validated.plan,
+              fromCache: true,
+            },
           },
-        })
+          { headers: legacyHeaders }
+        )
       }
     } catch (err) {
       console.warn('[v1/search] cache read failed — falling through to live fetch', err)
     }
+  }
+
+
+  // Cache misses reach a paid provider and therefore share the Agency
+  // workspace's 300 monthly live-search allowance. API request quota and live
+  // data quota are deliberately separate: cached API reads cost no search.
+  if (admin) {
+    // Pass the actor, not the pooled owner. The RPC resolves the shared billing
+    // subject itself while preserving that an admin-owner's teammate is a normal
+    // Agency seat (only the actual platform admin is exempt).
+    const reservation = await reserveLiveSearch(admin, validated.userId)
+    if (reservation.status === 'reserved') {
+      if (!reservation.reservation.allowed) {
+        const daily = reservation.reservation.reason === 'daily'
+        return NextResponse.json(
+          {
+            error: daily ? 'Daily live-search limit reached' : 'Monthly live-search limit reached',
+            plan: reservation.reservation.plan ?? validated.plan,
+            limit: daily
+              ? reservation.reservation.dailyLimit
+              : reservation.reservation.monthlyLimit,
+            retryAfter: daily ? 'tomorrow' : 'next month',
+          },
+          { status: 429, headers: legacyHeaders }
+        )
+      }
+    } else if (reservation.status === 'error' && !isMissingSchema(reservation.message)) {
+      // The metering path answered with a real failure. Refuse rather than
+      // hand out an unmetered paid-provider call.
+      console.error('[v1/search] live-search reservation failed:', reservation.message)
+      return NextResponse.json(
+        { error: 'Search metering is temporarily unavailable. Please retry in a moment.' },
+        { status: 503, headers: { ...legacyHeaders, 'Retry-After': '30' } }
+      )
+    } else {
+      // The allowance schema does not exist in this database yet (the migration
+      // has not been applied). Before it existed the daily API quota checked
+      // above was the only meter on this path, so fall back to exactly that
+      // instead of 503-ing a working integration on deploy day.
+      console.warn(
+        '[v1/search] live-search allowance schema is missing, falling back to the daily API quota. Apply supabase/migrations/20260815_product_allowances.sql.',
+        reservation.status === 'error' ? reservation.message : ''
+      )
+    }
+  } else {
+    // No Supabase service credentials: the live-search allowance cannot be
+    // metered here, and the daily API quota above remains the only bound. This
+    // matches the behaviour before allowances existed.
+    console.warn('[v1/search] Supabase is not configured, live-search allowance not metered')
   }
 
   try {
@@ -176,18 +270,24 @@ export async function POST(request: NextRequest) {
     // Narrow for THIS response, identically to the cache-hit path above.
     const leads = applyV1Filters(poolLeads, params)
 
-    return NextResponse.json({
-      leads,
-      total: leads.length,
-      meta: {
-        zipCode: params.zipCode,
-        radiusMiles: params.radiusMiles,
-        category: params.category,
-        plan: validated.plan,
+    return NextResponse.json(
+      {
+        leads,
+        total: leads.length,
+        meta: {
+          zipCode: params.zipCode,
+          radiusMiles: params.radiusMiles,
+          category: params.category,
+          plan: validated.plan,
+        },
       },
-    })
+      { headers: legacyHeaders }
+    )
   } catch (err) {
     console.error('[v1/search]', err)
-    return NextResponse.json({ error: 'Search failed' }, { status: 500 })
+    return NextResponse.json(
+      { error: 'Search failed' },
+      { status: 500, headers: legacyHeaders }
+    )
   }
 }

@@ -6,8 +6,33 @@ import { buildCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 import { isUsZip } from '@/lib/geocode'
 import type { SearchParams, SearchResult, Lead } from '@/types/lead'
 import { SITE_URL } from '@/lib/siteUrl'
+import { resolveProductAccess } from '@/lib/productAccess'
+import { getPlanPolicy } from '@/lib/planPolicy'
 
 const siteUrl = SITE_URL
+
+// ── How an alert refresh is accounted for ───────────────────────────────────
+// Saved-search alerts are a BACKGROUND feature with their own published
+// entitlement (activeAlerts per plan), so this digest must NOT spend the
+// interactive live-search allowance the customer bought to use themselves.
+// Charging it there is self-defeating: a Pro account with 10 active alerts
+// would burn ~300 live searches a month against a 100-search allowance, so the
+// alerts alone would exhaust the plan inside two weeks and the customer could
+// never run a search of their own. Alerts would also silently die the moment
+// the interactive allowance ran out, which is the opposite of what the feature
+// promises.
+//
+// Alerts get their OWN cap instead, and it is the one already published:
+// at most ONE billable provider refresh per active alert per nightly run.
+// Warm-cache alert checks cost nothing upstream and are not counted. That
+// ceiling is exactly the plan's active-alert entitlement (Free 0, Pro 10,
+// Agency 50 shared by the workspace), which the loop below already enforces
+// when deciding which saved searches run at all, so upstream spend stays
+// bounded at 10 or 50 provider calls per subject per night.
+//
+// Platform admins have no active-alert cap, so they get an absolute per-run
+// ceiling rather than an unbounded one.
+const ADMIN_ALERT_REFRESH_CAP_PER_RUN = 50
 
 // Cache key + TTL come from src/lib/leadsCache.ts. Every cache MISS bills the paid
 // Google Places API, so alert diffs must reuse the same leads_cache pool the search
@@ -97,6 +122,7 @@ export async function GET(request: NextRequest) {
     .from('saved_searches')
     .select('*')
     .eq('alert_enabled', true)
+    .order('created_at', { ascending: true })
 
   if (fetchError) {
     console.error('alert-digest: failed to fetch saved searches', fetchError)
@@ -121,10 +147,42 @@ export async function GET(request: NextRequest) {
     (profiles ?? []).map((p) => [p.id as string, { email: p.email as string, full_name: p.full_name as string | undefined }])
   )
 
+  const alertAccess = new Map<
+    string,
+    { subjectUserId: string; limit: number | null }
+  >()
+  for (const userId of userIds) {
+    const access = await resolveProductAccess(supabase, userId)
+    if (!access) {
+      // Deactivated, or the profile read failed. Either way we cannot tell what
+      // this account is entitled to, so we do not spend on its behalf.
+      console.error(`alert-digest: no product access resolved for user ${userId}, skipping`)
+      continue
+    }
+    alertAccess.set(userId, {
+      subjectUserId: access.quotaSubjectUserId,
+      limit: access.role === 'admin' ? null : getPlanPolicy(access.plan).activeAlerts,
+    })
+  }
+
   let processed = 0
   let emailed = 0
+  let quotaSkipped = 0
+  let entitlementSkipped = 0
+  const processedBySubject = new Map<string, number>()
+  const refreshedBySubject = new Map<string, number>()
 
   for (const row of savedSearches) {
+    const access = alertAccess.get(row.user_id as string)
+    const alreadyProcessed = access
+      ? processedBySubject.get(access.subjectUserId) ?? 0
+      : 0
+    if (!access || (access.limit !== null && alreadyProcessed >= access.limit)) {
+      entitlementSkipped++
+      continue
+    }
+    processedBySubject.set(access.subjectUserId, alreadyProcessed + 1)
+
     try {
       const params = paramsForSavedSearch(row as Record<string, unknown>)
 
@@ -150,6 +208,17 @@ export async function GET(request: NextRequest) {
           source: (cached.source as string | null) ?? undefined,
         }
       } else {
+        // Billable refresh: charge the alert budget described at the top of
+        // this file, never the customer's interactive live-search allowance.
+        // Cached alert checks never reach here, so they stay free.
+        const refreshBudget = access.limit ?? ADMIN_ALERT_REFRESH_CAP_PER_RUN
+        const refreshesUsed = refreshedBySubject.get(access.subjectUserId) ?? 0
+        if (refreshesUsed >= refreshBudget) {
+          quotaSkipped++
+          continue
+        }
+        refreshedBySubject.set(access.subjectUserId, refreshesUsed + 1)
+
         result = await searchLeadsCombined(params)
         // Write-through to the cache (service-role client bypasses RLS).
         // Never cache an empty pool — see the empty-MISS rule above.
@@ -192,7 +261,7 @@ export async function GET(request: NextRequest) {
           row.keyword ? `&keyword=${encodeURIComponent(row.keyword as string)}` : '',
         ].join('')
 
-        const subject = `${n} new lead${n === 1 ? '' : 's'} — "${row.name}"`
+        const subject = `${n} new lead${n === 1 ? '' : 's'} for "${row.name}"`
         const businessList = newLeads.map((l) => l.businessName).join('\n')
         const text = [
           `Hey ${firstName},`,
@@ -206,7 +275,7 @@ export async function GET(request: NextRequest) {
           '',
           `Manage your saved searches:\n${siteUrl}/saved-searches`,
           '',
-          '— LeadZipp',
+          '- LeadZipp',
         ].join('\n')
 
         await transporter.sendMail({
@@ -234,5 +303,5 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  return NextResponse.json({ processed, emailed })
+  return NextResponse.json({ processed, emailed, quotaSkipped, entitlementSkipped })
 }

@@ -3,6 +3,17 @@ import { createClient } from '@/lib/supabase/server'
 import type { SavedSearch } from '@/types/saved-search'
 import { savedSearchesLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
+import { getPlanPolicy } from '@/lib/planPolicy'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { resolveProductAccess } from '@/lib/productAccess'
+
+function serviceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 /**
  * Row -> API shape. country_code and radius_km are FEATURE-DETECTED: the
@@ -37,6 +48,13 @@ function isMissingColumnError(error: { code?: string; message?: string }): boole
   if (error.code === 'PGRST204' || error.code === '42703') return true
   const msg = error.message ?? ''
   return /country_code|radius_km/.test(msg) && /does not exist|column/i.test(msg)
+}
+
+/** The saved-search allowance trigger raises 23514 with its own wording. Match
+ *  it explicitly so the OTHER 23514s on this table (the country_code format and
+ *  radius_km range checks) are never reported as a plan limit. */
+function isSavedSearchLimitError(error: { code?: string; message?: string }): boolean {
+  return error.code === '23514' && (error.message ?? '').includes('Saved search limit reached')
 }
 
 /**
@@ -78,6 +96,7 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (error) {
+    console.error('[saved-searches] fetch failed:', error.message)
     return NextResponse.json({ error: 'Failed to fetch saved searches' }, { status: 500 })
   }
 
@@ -87,9 +106,19 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
   // Same round trip serves the deactivated check and the free-plan fence below.
-  const auth = await requireActiveUser(supabase, { columns: ['plan'] })
+  const auth = await requireActiveUser(supabase, {
+    columns: ['plan', 'role', 'workspace_id'],
+  })
   if (!auth.ok) return auth.response
   const { user } = auth
+
+  const access = await resolveProductAccess(serviceClient(), user.id, auth.profile)
+  if (!access) {
+    return NextResponse.json(
+      { error: 'Could not verify your saved-search allowance. Please retry.' },
+      { status: 503 }
+    )
+  }
 
   const limited = await overLimit(user.id)
   if (limited) return limited
@@ -123,14 +152,23 @@ export async function POST(request: NextRequest) {
       ? Math.round(body.radiusKm)
       : null
 
-  if (((auth.profile?.plan as string | undefined) ?? 'free') === 'free') {
+  const policy = getPlanPolicy(access.plan, access.role)
+  if (access.role !== 'admin') {
     const { count } = await supabase
       .from('saved_searches')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
 
-    if ((count ?? 0) >= 8) {
-      return NextResponse.json({ error: 'limit_reached' }, { status: 403 })
+    if ((count ?? 0) >= policy.savedSearches) {
+      return NextResponse.json(
+        {
+          error: `Your plan includes ${policy.savedSearches} saved searches.`,
+          limitReached: true,
+          limit: policy.savedSearches,
+          upgradeRequired: access.plan === 'free',
+        },
+        { status: 409 }
+      )
     }
   }
 
@@ -163,6 +201,36 @@ export async function POST(request: NextRequest) {
   }
 
   if (error) {
+    // Never echo the database message: it carries constraint and trigger
+    // wording that means nothing to a customer. Log the detail, answer short.
+    console.error(
+      '[saved-searches] save failed:',
+      error.code,
+      error.message,
+      error.details ?? ''
+    )
+
+    if (isSavedSearchLimitError(error)) {
+      // The database counts the whole shared workspace, so it can reject a
+      // save that the per-user count above allowed. Same limit, honest wording.
+      return NextResponse.json(
+        {
+          error: `Your plan includes ${policy.savedSearches} saved searches.`,
+          limitReached: true,
+          limit: policy.savedSearches,
+          upgradeRequired: access.plan === 'free',
+        },
+        { status: 409 }
+      )
+    }
+
+    if (error.code === '23514') {
+      return NextResponse.json(
+        { error: 'We could not save that search. Please check the location and radius and try again.' },
+        { status: 422 }
+      )
+    }
+
     return NextResponse.json({ error: 'Failed to save search' }, { status: 500 })
   }
 

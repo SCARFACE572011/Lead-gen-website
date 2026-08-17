@@ -1393,10 +1393,10 @@ const CTA_HEADINGS: string[] = [
 ]
 
 const CTA_BODIES: string[] = [
-  'Free plan gives you 25 searches a month against live data. Pro adds unlimited searches and the email finder on a 7-day free trial. A card is required to start the trial, and cancelling before day 7 means no charge.',
-  'Start on the free plan with 25 searches a month, or take the 7-day free trial for unlimited searches and the email finder. Card required, and nothing is charged if you cancel before day 7.',
-  'Run your first {city} search on the free plan, 25 searches a month, no trial needed. When you want the whole metro and the email finder, the 7-day trial takes a card and charges nothing if you cancel before it ends.',
-  'The free plan covers 25 searches a month, which is enough to see what {city} looks like. The 7-day free trial opens up unlimited searches and the email finder, and cancelling before day 7 costs nothing.',
+  'Free gives you 25 new live searches a month and 5 welcome email credits. Pro adds 100 live searches and 100 email credits a month plus bulk ZIP search, opening with a 7-day trial that carries 25 live searches and 20 email credits. Cached reruns and filter changes are free.',
+  'Start Free with 25 live searches and 5 welcome email credits, or take the 7-day Pro trial, which carries 25 live searches and 20 email credits before the full 100 and 100 a month begin. Card required, and nothing is charged if you cancel before day 7.',
+  'Run your first {city} searches on Free, with 25 new live territories and free cached refinements. When you want broader coverage, business email credits, and bulk ZIP search, the 7-day Pro trial takes a card and charges nothing if you cancel before it ends.',
+  'Free covers 25 new live searches, enough to see what {city} looks like. Pro adds 100 live searches and 100 email credits a month plus bulk ZIP search, starting with a 7-day trial of 25 live searches and 20 email credits. Cached reruns remain free.',
 ]
 
 /**
@@ -1591,7 +1591,7 @@ function buildUsPage(category: CategoryDef, city: UsCityDef): LocationPage {
     {
       question: fill('Do I need to pay to search {cats} in {city}?', t),
       answer: fill(
-        'No. The free plan includes 25 searches a month against the same live data, which is enough to work a neighborhood of {city} and see whether the {cats} here look like your buyer. Pro removes the search limit and adds the email finder, and it starts with a 7-day free trial that requires a card and charges nothing if you cancel before day 7.',
+        'No. Free includes 25 new live searches a month against the same data, enough to work a neighborhood of {city} and see whether the {cats} here look like your buyer. Pro includes 100 live searches and 100 business-email credits per calendar month, and starts with a 7-day trial that carries 25 live searches and 20 email credits. Cached reruns stay free. A card is required, and nothing is charged if you cancel before day 7.',
         t
       ),
     },
@@ -1780,7 +1780,7 @@ function buildIntlPage(city: IntlCityDef): LocationPage {
       {
         question: fill('Do I need a paid plan to search {city}?', t),
         answer: fill(
-          'No. The free plan includes 25 searches a month against the same live listings, which is enough to work a district of {city} and decide whether the market suits your offer. Pro removes the search limit and adds the email finder, and it opens with a 7-day free trial. A card is required to start that trial and nothing is charged if you cancel before day 7.',
+          'No. Free includes 25 new live searches a month against the same listings, enough to work a district of {city} and decide whether the market suits your offer. Pro includes 100 live searches and 100 business-email credits per calendar month, and opens with a 7-day trial that carries 25 live searches and 20 email credits. Cached reruns stay free. A card is required, and nothing is charged if you cancel before day 7.',
           t
         ),
       },
@@ -1910,7 +1910,7 @@ function buildIntlPage(city: IntlCityDef): LocationPage {
       t
     ),
     ctaBody: fill(
-      'The free plan covers 25 searches a month against live data, enough to work a district properly. Pro adds unlimited searches and the email finder on a 7-day free trial. A card is required to start the trial, and cancelling before day 7 means you are not charged.',
+      'Free covers 25 new live searches a month, enough to work a district properly. Pro adds 100 live searches and 100 business-email credits a month plus bulk ZIP search, opening with a 7-day trial of 25 live searches and 20 email credits. Cached reruns and filter refinements stay free.',
       t
     ),
     relatedPosts: ['local-lead-generation-guide', 'find-local-businesses-without-a-website', 'cold-email-templates-local-business-outreach'],

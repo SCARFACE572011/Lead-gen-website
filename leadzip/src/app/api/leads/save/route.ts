@@ -10,6 +10,8 @@ import {
   normalizeLeadPayloadList,
   type LeadPayloadIssue,
 } from '@/lib/leadPayload'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { resolveProductAccess } from '@/lib/productAccess'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -18,6 +20,10 @@ const isSupabaseConfigured =
 const MAX_BODY_BYTES = 2_000_000
 const DB_BATCH_SIZE = 100
 const MAX_RESPONSE_ISSUES = 50
+
+function planName(plan: string): string {
+  return plan === 'pro' ? 'Pro' : plan === 'agency' ? 'Agency' : 'Free'
+}
 
 interface DatabaseError {
   code?: string
@@ -47,16 +53,34 @@ async function requireUser(): Promise<{ user: AuthedUser } | { response: NextRes
   // The plan fence shares the status lookup instead of trusting the browser's
   // copy of users_profile.
   const auth = await requireActiveUser(supabase, {
-    columns: ['plan', 'role'],
+    columns: ['plan', 'role', 'workspace_id'],
     extraBody: { success: false },
   })
   if (!auth.ok) return { response: auth.response }
 
+  const access = await resolveProductAccess(
+    createServiceClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      { auth: { autoRefreshToken: false, persistSession: false } }
+    ),
+    auth.user.id,
+    auth.profile
+  )
+  if (!access) {
+    return {
+      response: NextResponse.json(
+        { success: false, error: 'Could not verify your saved-lead allowance. Please retry.' },
+        { status: 503 }
+      ),
+    }
+  }
+
   return {
     user: {
       id: auth.user.id,
-      plan: auth.profile?.plan,
-      role: auth.profile?.role,
+      plan: access.plan,
+      role: access.role,
       supabase,
     },
   }
@@ -285,7 +309,7 @@ export async function POST(request: NextRequest) {
           index,
           id: lead.id,
           reason: 'saved_limit',
-          message: `${entitlement.plan === 'free' ? 'Free' : 'Pro'} saved-lead limit reached.`,
+          message: `${planName(entitlement.plan)} saved-lead limit reached.`,
         })
       }
     })
@@ -315,7 +339,7 @@ export async function POST(request: NextRequest) {
             index: offset + index,
             id: lead.id,
             reason: 'saved_limit' as const,
-            message: `${entitlement.plan === 'free' ? 'Free' : 'Pro'} saved-lead limit reached.`,
+            message: `${planName(entitlement.plan)} saved-lead limit reached.`,
           }))
         )
         continue

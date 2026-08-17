@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import {
   User,
   CreditCard,
@@ -259,10 +259,9 @@ function ProfileTab() {
 }
 
 type PlanId = 'free' | 'pro' | 'agency'
+type EmailCreditPack = { slug: string; credits: number; amountCents: number }
 
-// Real plan definitions — matches the public pricing page and the search-route
-// caps (Free = 25 searches/mo + 25 saved leads; Pro = $25 unlimited searches +
-// 1,000 saved; Agency = $50 unlimited). null = unlimited.
+// Real plan definitions — matches the public pricing page and server policy.
 const PLAN_META: Record<PlanId, {
   name: string
   price: number
@@ -282,17 +281,17 @@ const PLAN_META: Record<PlanId, {
   pro: {
     name: 'Pro',
     price: 25,
-    searchLimit: null,
+    searchLimit: 100,
     savedLimit: 1000,
-    tagline: 'Unlimited searches · 1,000 saved leads',
+    tagline: '100 live searches · 100 email credits · 1,000 saved leads',
     upgradeLabel: 'Upgrade to Agency',
   },
   agency: {
     name: 'Agency',
     price: 50,
-    searchLimit: null,
-    savedLimit: null,
-    tagline: 'Unlimited searches · Unlimited saved leads',
+    searchLimit: 300,
+    savedLimit: 10000,
+    tagline: '300 pooled live searches · 500 email credits · 5 seats',
   },
 }
 
@@ -300,6 +299,19 @@ function PlanTab() {
   const [plan, setPlan] = useState<PlanId>('free')
   const [searchesUsed, setSearchesUsed] = useState(0)
   const [savedUsed, setSavedUsed] = useState(0)
+  const [searchLimit, setSearchLimit] = useState<number | null>(25)
+  const [savedLimit, setSavedLimit] = useState<number | null>(25)
+  const [workspaceShared, setWorkspaceShared] = useState(false)
+  const [isPlatformAdmin, setIsPlatformAdmin] = useState(false)
+  const [canManageBilling, setCanManageBilling] = useState(false)
+  const [emailCreditsRemaining, setEmailCreditsRemaining] = useState(0)
+  const [emailCreditsAllowance, setEmailCreditsAllowance] = useState(5)
+  const [emailCreditsPurchased, setEmailCreditsPurchased] = useState(0)
+  const [emailCreditsShared, setEmailCreditsShared] = useState(false)
+  const [emailCreditsAvailable, setEmailCreditsAvailable] = useState(false)
+  const [emailCreditPacks, setEmailCreditPacks] = useState<EmailCreditPack[]>([])
+  const [canPurchaseEmailCredits, setCanPurchaseEmailCredits] = useState(false)
+  const [purchasingPack, setPurchasingPack] = useState<string | null>(null)
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
   const [billingLoading, setBillingLoading] = useState(false)
@@ -312,43 +324,37 @@ function PlanTab() {
         return
       }
       try {
-        const supabase = createClient()
-        const {
-          data: { user },
-        } = await supabase.auth.getUser()
-        if (!user) {
-          setLoading(false)
-          return
+        const [response, creditsResponse] = await Promise.all([
+          fetch('/api/usage', { cache: 'no-store' }),
+          fetch('/api/credits/email', { cache: 'no-store' }),
+        ])
+        if (!response.ok) throw new Error('usage unavailable')
+        const data = await response.json()
+        const rawPlan = data.plan
+        setPlan(rawPlan === 'pro' || rawPlan === 'agency' ? rawPlan : 'free')
+        setSearchesUsed(data.searches?.used ?? 0)
+        setSavedUsed(data.savedLeads?.used ?? 0)
+        setSearchLimit(data.searches?.limit ?? null)
+        setSavedLimit(data.savedLeads?.limit ?? null)
+        setWorkspaceShared(data.workspaceShared === true)
+        setIsPlatformAdmin(data.isPlatformAdmin === true)
+        setCanManageBilling(data.canManageBilling === true)
+
+        if (creditsResponse.ok) {
+          const credits = await creditsResponse.json()
+          setEmailCreditsRemaining(credits.includedRemaining ?? 0)
+          setEmailCreditsAllowance(credits.allowanceSize ?? 0)
+          setEmailCreditsPurchased(credits.purchasedRemaining ?? 0)
+          setEmailCreditsShared(credits.shared === true)
+          setEmailCreditsAvailable(true)
+          setEmailCreditPacks(Array.isArray(credits.packs) ? credits.packs : [])
+          setCanPurchaseEmailCredits(credits.canPurchasePacks === true)
         }
 
-        // maybeSingle(): a brand-new user has no usage_limits row yet. The real
-        // plan is the authoritative users_profile.plan (same source the search
-        // route enforces caps against) — never assume paid "Pro".
-        const [profileRes, usageRes, subRes] = await Promise.all([
-          supabase.from('users_profile').select('plan').eq('id', user.id).maybeSingle(),
-          supabase
-            .from('usage_limits')
-            .select('searches_this_month, saved_leads_count')
-            .eq('user_id', user.id)
-            .maybeSingle(),
-          supabase
-            .from('subscriptions')
-            .select('status, current_period_end')
-            .eq('user_id', user.id)
-            .order('updated_at', { ascending: false })
-            .limit(1)
-            .maybeSingle(),
-        ])
-
-        const rawPlan = profileRes.data?.plan
-        setPlan(rawPlan === 'pro' || rawPlan === 'agency' ? rawPlan : 'free')
-        setSearchesUsed(usageRes.data?.searches_this_month ?? 0)
-        setSavedUsed(usageRes.data?.saved_leads_count ?? 0)
-
         // During a trial, current_period_end IS the trial end date.
-        if (subRes.data?.status === 'trialing' && subRes.data.current_period_end) {
+        if (data.subscription?.status === 'trialing' && data.subscription.current_period_end) {
           const msLeft =
-            new Date(subRes.data.current_period_end).getTime() - Date.now()
+            new Date(data.subscription.current_period_end).getTime() - Date.now()
           setTrialDaysLeft(Math.max(0, Math.ceil(msLeft / 86_400_000)))
         }
       } catch {
@@ -364,31 +370,13 @@ function PlanTab() {
     setBillingLoading(true)
     setBillingError('')
     try {
-      const supabase = createClient()
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-        setBillingError('You must be signed in to manage billing.')
-        return
-      }
-
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select('stripe_customer_id')
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (!sub?.stripe_customer_id) {
+      if (!canManageBilling) {
         setBillingError('No active subscription found.')
         return
       }
 
       const res = await fetch('/api/stripe/portal', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ customerId: sub.stripe_customer_id }),
       })
       const json = await res.json()
       if (json.url) {
@@ -400,6 +388,28 @@ function PlanTab() {
       setBillingError('Something went wrong. Please try again.')
     } finally {
       setBillingLoading(false)
+    }
+  }
+
+  const handleBuyEmailCredits = async (pack: string) => {
+    setPurchasingPack(pack)
+    setBillingError('')
+    try {
+      const response = await fetch('/api/credits/email/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pack }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.url) {
+        setBillingError(data.error || 'Could not open email-credit checkout.')
+        return
+      }
+      window.location.assign(data.url)
+    } catch {
+      setBillingError('Could not open email-credit checkout. Please try again.')
+    } finally {
+      setPurchasingPack(null)
     }
   }
 
@@ -419,9 +429,9 @@ function PlanTab() {
   const meta = PLAN_META[plan]
   const isPaid = plan !== 'free'
   const searchesRemaining =
-    meta.searchLimit !== null ? Math.max(0, meta.searchLimit - searchesUsed) : null
+    searchLimit !== null ? Math.max(0, searchLimit - searchesUsed) : null
   const savedRemaining =
-    meta.savedLimit !== null ? Math.max(0, meta.savedLimit - savedUsed) : null
+    savedLimit !== null ? Math.max(0, savedLimit - savedUsed) : null
 
   return (
     <div className="space-y-6">
@@ -463,7 +473,7 @@ function PlanTab() {
                   <ChevronRight className="w-3 h-3" />
                 </a>
               )}
-              {isPaid && (
+              {isPaid && canManageBilling && (
                 <button
                   onClick={handleManageBilling}
                   disabled={billingLoading}
@@ -490,19 +500,66 @@ function PlanTab() {
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <BarChart3 className="w-4 h-4 text-signal" />
-                <span className="text-sm font-medium text-ink">Searches</span>
+                <span className="text-sm font-medium text-ink">New live searches</span>
               </div>
               <div className="text-right">
                 <span className="font-mono text-sm font-bold text-ink">{searchesUsed}</span>
-                <span className="text-xs text-stone"> / {meta.searchLimit ?? 'Unlimited'}</span>
+                <span className="text-xs text-stone"> / {searchLimit ?? 'Unlimited'}</span>
               </div>
             </div>
-            <UsageBar used={searchesUsed} total={meta.searchLimit} />
+            <UsageBar used={searchesUsed} total={searchLimit} />
             <p className="text-xs text-stone mt-1.5">
-              {meta.searchLimit === null
-                ? `Unlimited searches on ${meta.name}`
-                : `${searchesRemaining} of ${meta.searchLimit} remaining this month`}
+              {searchLimit === null
+                ? 'Platform owner access is not metered.'
+                : `${searchesRemaining?.toLocaleString()} of ${searchLimit.toLocaleString()} remaining this month. Cached reruns and filter changes are free.${workspaceShared ? ' Shared across your Agency workspace.' : ''}`}
             </p>
+          </div>
+
+          <div className="border-t border-sand" />
+
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-2">
+                <Mail className="w-4 h-4 text-signal" />
+                <span className="text-sm font-medium text-ink">Email finder credits</span>
+              </div>
+              <div className="text-right">
+                {emailCreditsAvailable ? (
+                  <>
+                    <span className="font-mono text-sm font-bold text-ink">{emailCreditsRemaining}</span>
+                    <span className="text-xs text-stone"> / {emailCreditsAllowance}</span>
+                  </>
+                ) : (
+                  <span className="text-xs text-stone">Unavailable</span>
+                )}
+              </div>
+            </div>
+            <UsageBar
+              used={Math.max(0, emailCreditsAllowance - emailCreditsRemaining)}
+              total={emailCreditsAvailable ? emailCreditsAllowance : null}
+            />
+            <p className="text-xs text-stone mt-1.5">
+              {emailCreditsAvailable
+                ? `${emailCreditsRemaining.toLocaleString()} included remaining${emailCreditsPurchased > 0 ? `, plus ${emailCreditsPurchased.toLocaleString()} purchased` : ''}.${emailCreditsShared ? ' Shared across your Agency workspace.' : ''} Cached and unsuccessful lookups cost 0.`
+                : 'Email-credit metering will appear after the database migration is applied.'}
+            </p>
+            {canPurchaseEmailCredits && emailCreditPacks.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {emailCreditPacks.map((pack) => (
+                  <button
+                    key={pack.slug}
+                    onClick={() => handleBuyEmailCredits(pack.slug)}
+                    disabled={purchasingPack !== null}
+                    className="rounded-full border border-sand bg-paper px-3 py-1.5 text-xs font-semibold text-ink-soft transition-colors hover:border-signal/40 hover:text-signal disabled:opacity-50"
+                  >
+                    {purchasingPack === pack.slug
+                      ? 'Opening…'
+                      : `${pack.credits.toLocaleString()} for $${(pack.amountCents / 100).toFixed(0)}`}
+                  </button>
+                ))}
+                <span className="self-center text-[11px] text-stone">One-time credits do not expire.</span>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-sand" />
@@ -515,20 +572,18 @@ function PlanTab() {
               </div>
               <div className="text-right">
                 <span className="font-mono text-sm font-bold text-ink">{savedUsed}</span>
-                <span className="text-xs text-stone"> / {meta.savedLimit?.toLocaleString() ?? 'Unlimited'}</span>
+                <span className="text-xs text-stone"> / {savedLimit?.toLocaleString() ?? 'Unlimited'}</span>
               </div>
             </div>
-            <UsageBar used={savedUsed} total={meta.savedLimit} />
+            <UsageBar used={savedUsed} total={savedLimit} />
             <p className="text-xs text-stone mt-1.5">
-              {meta.savedLimit === null
-                ? 'Unlimited saved leads'
-                : `${savedRemaining?.toLocaleString()} slots remaining`}
+              {savedLimit === null ? 'Platform owner access is not metered.' : `${savedRemaining?.toLocaleString()} slots remaining`}
             </p>
           </div>
         </div>
 
         {/* Billing / upgrade info */}
-        {isPaid ? (
+        {isPaid && canManageBilling ? (
           <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
             <CreditCard className="w-5 h-5 text-stone shrink-0 mt-0.5" />
             <div className="flex-1">
@@ -544,12 +599,26 @@ function PlanTab() {
               <ExternalLink className="w-3 h-3" />
             </button>
           </div>
+        ) : isPlatformAdmin || workspaceShared ? (
+          <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
+            <Users className="w-5 h-5 text-stone shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm font-medium text-ink-soft">
+                {isPlatformAdmin ? 'Platform owner access' : 'Agency workspace access'}
+              </p>
+              <p className="text-xs text-stone mt-0.5">
+                {isPlatformAdmin
+                  ? 'Customer-plan search and storage limits do not apply. Email Finder keeps a visible safety balance because provider lookups carry a real cost.'
+                  : 'Your workspace owner manages billing and the team shares live-search and email-credit allowances.'}
+              </p>
+            </div>
+          </div>
         ) : (
           <div className="flex items-start gap-3 bg-paper-2 border border-sand rounded-2xl p-4">
             <CreditCard className="w-5 h-5 text-stone shrink-0 mt-0.5" />
             <div className="flex-1">
               <p className="text-sm font-medium text-ink-soft">You&apos;re on the Free plan</p>
-              <p className="text-xs text-stone mt-0.5">Upgrade to Pro for unlimited searches, the email finder, and 1,000 saved leads.</p>
+              <p className="text-xs text-stone mt-0.5">Upgrade to Pro for 100 live searches, bulk ZIP search, 100 monthly email credits, and 1,000 saved leads.</p>
             </div>
             <a
               href="/pricing"
@@ -781,16 +850,19 @@ function ApiTab() {
   const [copied, setCopied] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [revoking, setRevoking] = useState<string | null>(null)
+  const [canUseApi, setCanUseApi] = useState(false)
+  const [apiError, setApiError] = useState('')
 
   useEffect(() => {
     fetch('/api/api-keys')
       .then((r) => r.json())
-      .then((d) => { setKeys(d.keys ?? []); setLoading(false) })
+      .then((d) => { setKeys(d.keys ?? []); setCanUseApi(d.canUseApi === true); setLoading(false) })
       .catch(() => setLoading(false))
   }, [])
 
   async function handleGenerate() {
     setGenerating(true)
+    setApiError('')
     const res = await fetch('/api/api-keys', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -803,7 +875,7 @@ function ApiTab() {
       setNewKeyName('')
       const fresh = await fetch('/api/api-keys').then((r) => r.json())
       setKeys(fresh.keys ?? [])
-    }
+    } else setApiError(data.error ?? 'Could not create an API key.')
     setGenerating(false)
   }
 
@@ -820,8 +892,6 @@ function ApiTab() {
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
-
-  const DAILY_LIMITS: Record<string, string> = { free: '100 req/day', pro: '1,000 req/day', agency: '10,000 req/day' }
 
   return (
     <div className="space-y-6">
@@ -859,7 +929,7 @@ function ApiTab() {
           />
           <button
             onClick={handleGenerate}
-            disabled={generating}
+            disabled={generating || !canUseApi}
             className="flex items-center gap-2 rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white hover:bg-signal-600 disabled:opacity-50 transition-colors"
           >
             {generating ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Code2 className="h-4 w-4" />}
@@ -867,13 +937,21 @@ function ApiTab() {
           </button>
         </div>
 
+        {apiError && <p className="mb-3 text-xs text-red-600">{apiError}</p>}
+        {!loading && !canUseApi && (
+          <div className="mb-5 rounded-xl border border-sand bg-paper-2 px-4 py-3 text-sm text-ink-soft">
+            API access is included with Agency. <a href="/pricing" className="font-semibold text-signal hover:underline">View Agency</a>
+          </div>
+        )}
+
         {/* Rate limits info */}
         <div className="flex flex-wrap gap-3 mt-4 mb-6">
-          {Object.entries(DAILY_LIMITS).map(([plan, limit]) => (
-            <span key={plan} className="rounded-full bg-paper-2 px-3 py-1 text-xs text-ink-soft font-medium capitalize">
-              {plan}: <span className="font-mono">{limit}</span>
-            </span>
-          ))}
+          <span className="rounded-full bg-paper-2 px-3 py-1 text-xs text-ink-soft font-medium">
+            Agency: <span className="font-mono">500 req/day</span>
+          </span>
+          <span className="rounded-full bg-paper-2 px-3 py-1 text-xs text-ink-soft font-medium">
+            Live searches share the <span className="font-mono">300/month</span> workspace pool
+          </span>
         </div>
 
         {/* Key list */}
@@ -942,31 +1020,50 @@ function TeamTab() {
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
   const [userPlan, setUserPlan] = useState<string>('free')
+  const [loadError, setLoadError] = useState(false)
 
   // State is only set in the async continuation (never synchronously), so this is
   // safe to call from an effect without triggering cascading renders.
-  const load = () =>
-    Promise.all([
-      fetch('/api/workspace').then(r => r.json()),
-      fetch('/api/leads/saved').then(() => null).catch(() => null), // just a way to get plan
-    ]).then(([wsRes]) => {
-      setWorkspaceName(wsRes.workspace?.name ?? null)
-      setRole(wsRes.role)
-      setMembers(wsRes.members ?? [])
-      setPendingInvites(wsRes.pendingInvites ?? [])
-      setLoading(false)
-    })
+  // Both calls must succeed: a failed usage read would otherwise leave the plan
+  // at "free" and show an Agency customer the upgrade wall.
+  const load = useCallback(
+    (options?: { silent?: boolean }) =>
+      Promise.all([
+        fetch('/api/workspace').then(r => {
+          if (!r.ok) throw new Error(`workspace responded ${r.status}`)
+          return r.json()
+        }),
+        fetch('/api/usage', { cache: 'no-store' }).then(r => {
+          if (!r.ok) throw new Error(`usage responded ${r.status}`)
+          return r.json()
+        }),
+      ])
+        .then(([wsRes, usageRes]) => {
+          setWorkspaceName(wsRes.workspace?.name ?? null)
+          setRole(wsRes.role)
+          setMembers(wsRes.members ?? [])
+          setPendingInvites(wsRes.pendingInvites ?? [])
+          if (usageRes?.plan) setUserPlan(usageRes.plan)
+          setLoadError(false)
+        })
+        .catch((error) => {
+          console.error('[settings/team] workspace load failed', error)
+          // A background refresh keeps the list it already has rather than
+          // replacing a confirmed action with an error screen.
+          if (!options?.silent) setLoadError(true)
+        })
+        .finally(() => setLoading(false)),
+    []
+  )
 
   useEffect(() => {
     load()
-    // Get plan from supabase
-    import('@/lib/supabase/client').then(({ createClient }) => {
-      const supabase = createClient()
-      supabase.from('users_profile').select('plan').single().then(({ data }) => {
-        if (data?.plan) setUserPlan(data.plan)
-      })
-    })
-  }, [])
+  }, [load])
+
+  const handleRetryLoad = () => {
+    setLoading(true)
+    load()
+  }
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) return
@@ -1000,7 +1097,7 @@ function TeamTab() {
     if (res.ok) {
       setInviteSuccess(`Invite sent to ${inviteEmail.trim()}`)
       setInviteEmail('')
-      load()
+      load({ silent: true })
     } else {
       setInviteError(data.error ?? 'Failed to send invite')
     }
@@ -1024,7 +1121,32 @@ function TeamTab() {
 
   if (loading) return <div className="text-sm text-stone py-6 text-center">Loading…</div>
 
-  if (userPlan !== 'agency' && !workspaceName) {
+  if (loadError) {
+    return (
+      <div className="space-y-4">
+        <div>
+          <h2 className="font-display text-base font-bold text-ink">Team Workspaces</h2>
+          <p className="text-sm text-stone mt-0.5">Invite teammates and share your plan across your agency.</p>
+        </div>
+        <div className="border border-sand rounded-2xl p-6 text-center space-y-3">
+          <AlertCircle className="w-8 h-8 text-stone mx-auto" aria-hidden="true" />
+          <p className="text-sm font-medium text-ink-soft">We could not load your team</p>
+          <p className="text-xs text-stone">
+            Nothing has changed with your workspace or your plan. Please try again in a moment.
+          </p>
+          <button
+            onClick={handleRetryLoad}
+            className="inline-flex items-center gap-2 rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white hover:bg-signal-600"
+          >
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            Try again
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (userPlan !== 'agency') {
     return (
       <div className="space-y-4">
         <div>
@@ -1207,6 +1329,7 @@ function IntegrationsTab() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [disconnecting, setDisconnecting] = useState<CrmType | null>(null)
+  const [connectionLimit, setConnectionLimit] = useState<number | null>(null)
 
   useEffect(() => {
     fetch('/api/integrations')
@@ -1221,6 +1344,7 @@ function IntegrationsTab() {
           return
         }
         setConnected((data.integrations ?? []).map((i: { crm_type: CrmType }) => i.crm_type))
+        setConnectionLimit(typeof data.limit === 'number' ? data.limit : null)
       })
       .finally(() => setLoading(false))
   }, [])
@@ -1273,10 +1397,17 @@ function IntegrationsTab() {
         </div>
       ) : (
         <div className="space-y-3">
+          <p className="text-xs text-stone">
+            {connectionLimit === null
+              ? `${connected.length} connected`
+              : `${connected.length} of ${connectionLimit} CRM connection${connectionLimit === 1 ? '' : 's'} used`}
+          </p>
           {crms.map(crm => {
             const meta = CRM_META[crm]
             const isConnected = connected.includes(crm)
             const isAdding = adding === crm
+            const connectionLimitReached =
+              connectionLimit !== null && connected.length >= connectionLimit && !isConnected
 
             return (
               <div key={crm} className="border border-sand rounded-2xl p-4 bg-card">
@@ -1307,7 +1438,9 @@ function IntegrationsTab() {
                     ) : (
                       <button
                         onClick={() => { setAdding(isAdding ? null : crm); setKeyInput(''); setError(null) }}
-                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-signal border border-signal/30 hover:bg-signal-50 px-3 py-1.5 rounded-full transition-colors"
+                        disabled={connectionLimitReached}
+                        title={connectionLimitReached ? 'Your plan connection limit is reached' : undefined}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-signal border border-signal/30 hover:bg-signal-50 px-3 py-1.5 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40"
                       >
                         <Plug className="w-3.5 h-3.5" />
                         Connect
@@ -1356,7 +1489,42 @@ function WhiteLabelTab() {
   // localStorage here is safe and avoids a setState-in-effect cascade.
   const [settings, setSettings] = useState<WhiteLabelSettings>(() => getWhiteLabel())
   const [saved, setSaved] = useState(false)
+  const [accessLoading, setAccessLoading] = useState(true)
+  const [accessError, setAccessError] = useState(false)
+  const [canUseWhiteLabel, setCanUseWhiteLabel] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+
+  // A failed plan check must not read as "you do not have Pro". Show the
+  // customer an honest error with a retry instead of locking them out.
+  // State is only set in the async continuation (never synchronously), so this
+  // is safe to call from an effect without triggering cascading renders.
+  const loadAccess = useCallback(
+    () =>
+      fetch('/api/usage', { cache: 'no-store' })
+        .then((response) => {
+          if (!response.ok) throw new Error(`usage responded ${response.status}`)
+          return response.json()
+        })
+        .then((data) => {
+          setCanUseWhiteLabel(data?.plan === 'pro' || data?.plan === 'agency')
+          setAccessError(false)
+        })
+        .catch((error) => {
+          console.error('[settings/white-label] plan check failed', error)
+          setAccessError(true)
+        })
+        .finally(() => setAccessLoading(false)),
+    []
+  )
+
+  useEffect(() => {
+    loadAccess()
+  }, [loadAccess])
+
+  const handleRetryAccess = () => {
+    setAccessLoading(true)
+    loadAccess()
+  }
 
   function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -1372,6 +1540,44 @@ function WhiteLabelTab() {
     saveWhiteLabel(settings)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
+  }
+
+  if (accessLoading) {
+    return <div className="py-8 text-center text-sm text-stone">Loading…</div>
+  }
+
+  if (accessError) {
+    return (
+      <div className="rounded-2xl border border-sand bg-paper-2 p-8 text-center">
+        <AlertCircle className="mx-auto h-9 w-9 text-stone" aria-hidden="true" />
+        <h2 className="mt-3 font-display text-base font-bold text-ink">We could not check your plan</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-stone">
+          Your branding settings are untouched. This is a connection problem on our side, not a change to your plan.
+        </p>
+        <button
+          onClick={handleRetryAccess}
+          className="mt-4 inline-flex items-center gap-2 rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white hover:bg-signal-600"
+        >
+          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+          Try again
+        </button>
+      </div>
+    )
+  }
+
+  if (!canUseWhiteLabel) {
+    return (
+      <div className="rounded-2xl border border-sand bg-paper-2 p-8 text-center">
+        <Palette className="mx-auto h-9 w-9 text-stone" aria-hidden="true" />
+        <h2 className="mt-3 font-display text-base font-bold text-ink">White-label exports are included with Pro</h2>
+        <p className="mx-auto mt-1 max-w-md text-sm text-stone">
+          Upgrade to add your agency name, logo, and colors to client-ready PDF reports.
+        </p>
+        <a href="/pricing" className="mt-4 inline-flex rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white hover:bg-signal-600">
+          View plans
+        </a>
+      </div>
+    )
   }
 
   return (

@@ -12,7 +12,16 @@
 -- nobody through the API. Existing admins are seeded first, so this migration
 -- cannot lock the owner out. Removing an admin is now a DELETE, not a deploy.
 --
--- Idempotent and non-destructive: safe to run more than once.
+-- Email matching is case-insensitive end to end. Email local parts are
+-- technically case-sensitive but no real mailbox relies on it, and the app
+-- already normalizes: src/lib/adminPolicy.ts, src/lib/emailCredits.ts,
+-- src/lib/productAccess.ts and src/lib/admin-auth.ts all lowercase before
+-- comparing. Storing anything but lowercase here would therefore be a row that
+-- the TypeScript checks can never match, so the table normalizes on write and
+-- the trigger compares normalized values on both sides.
+--
+-- Idempotent and non-destructive: safe to run more than once, and valid inside
+-- a single wrapping transaction (no CONCURRENTLY, no COMMIT).
 
 create table if not exists public.admin_allowlist (
   email      text primary key,
@@ -21,6 +30,35 @@ create table if not exists public.admin_allowlist (
 );
 
 alter table public.admin_allowlist enable row level security;
+
+-- Store lowercase, always. This runs before ON CONFLICT arbitration, so a
+-- mixed-case insert of an address that is already listed is a no-op rather
+-- than a duplicate row.
+create or replace function public.normalize_admin_allowlist_email()
+returns trigger as $$
+begin
+  new.email := lower(btrim(new.email));
+  return new;
+end;
+$$ language plpgsql
+set search_path = public, pg_temp;
+
+drop trigger if exists normalize_admin_allowlist_email on public.admin_allowlist;
+create trigger normalize_admin_allowlist_email
+  before insert or update on public.admin_allowlist
+  for each row execute function public.normalize_admin_allowlist_email();
+
+-- Repair any row seeded before the trigger existed. Non-destructive: a row is
+-- only rewritten when its normalized form is not already present, so nothing
+-- is deleted and the primary key cannot collide. The two production rows are
+-- already lowercase, so this is a no-op there.
+update public.admin_allowlist a
+   set email = lower(btrim(a.email))
+ where a.email <> lower(btrim(a.email))
+   and not exists (
+     select 1 from public.admin_allowlist b
+      where b.email = lower(btrim(a.email))
+   );
 
 -- No policies are defined on purpose. With RLS on and zero policies, anon and
 -- authenticated callers can do nothing; the service role bypasses RLS. Revoke
@@ -41,9 +79,12 @@ declare
   v_role text := 'user';
   v_plan text := 'free';
 begin
-  if exists (
+  -- Case-insensitive on both sides. Stored emails are normalized by the
+  -- trigger above, but normalizing here too keeps the check correct even if a
+  -- row is ever loaded with the trigger disabled.
+  if new.email is not null and exists (
     select 1 from public.admin_allowlist
-    where email = lower(new.email)
+    where lower(btrim(admin_allowlist.email)) = lower(btrim(new.email))
   ) then
     v_role := 'admin';
     v_plan := 'agency';
@@ -59,10 +100,15 @@ end;
 $$ language plpgsql security definer
 set search_path = public, pg_temp;
 
--- To revoke an admin later:
---   delete from public.admin_allowlist where email = 'someone@example.com';
+-- To add an admin later, any casing is accepted and stored lowercase:
+--   insert into public.admin_allowlist (email, note)
+--   values ('Someone@Example.com', 'why') on conflict (email) do nothing;
+--
+-- To revoke an admin later (match lowercase, that is how rows are stored):
+--   delete from public.admin_allowlist
+--     where email = lower('someone@example.com');
 --   update public.users_profile set role = 'user', plan = 'free'
---     where lower(email) = 'someone@example.com';
+--     where lower(email) = lower('someone@example.com');
 --
 -- To audit who is currently privileged:
 --   select email, role, plan from public.users_profile where role = 'admin';

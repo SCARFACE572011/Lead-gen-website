@@ -208,7 +208,7 @@ export const apiKeyLimiterPro = createLimiter({
 })
 
 export const apiKeyLimiterAgency = createLimiter({
-  limiter: Ratelimit.fixedWindow(10000, '1 d'),
+  limiter: Ratelimit.fixedWindow(500, '1 d'),
   prefix: 'rl:v1:agency',
   onOutage: 'deny',
 })

@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { auditLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
 import { computeHealthScore, probeWebsite, type HealthScoreInput } from '@/lib/healthScore'
+import {
+  featureQuotaExceededResponse,
+  featureUsageUnavailableResponse,
+  reserveFeatureUsage,
+} from '@/lib/featureUsage'
 
 /**
  * POST /api/leads/audit — generate a shareable Digital Presence Audit for a lead.
@@ -201,6 +207,17 @@ export async function POST(request: Request) {
   if (!snapshot) {
     return NextResponse.json({ error: 'lead.businessName is required' }, { status: 400 })
   }
+
+  // One reservation covers the public report and its optional live probe. It
+  // happens after validation, immediately before the expensive work begins.
+  const usageDb = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+  const reservation = await reserveFeatureUsage(usageDb, user.id, 'audit_reports')
+  if (!reservation.ok) return featureUsageUnavailableResponse('audit_reports')
+  if (!reservation.usage.allowed) return featureQuotaExceededResponse(reservation.usage)
 
   // Verify the website server-side when one is listed; a failed probe still
   // produces a valid (lower) score rather than failing the audit.

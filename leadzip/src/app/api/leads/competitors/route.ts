@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { competitorsLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
 import {
@@ -7,6 +8,11 @@ import {
   CompetitorLookupError,
   type CompetitorInput,
 } from '@/lib/competitorAnalysis'
+import {
+  featureQuotaExceededResponse,
+  featureUsageUnavailableResponse,
+  reserveFeatureUsage,
+} from '@/lib/featureUsage'
 
 /**
  * POST /api/leads/competitors — top 5 nearby same-category competitors for a
@@ -60,8 +66,20 @@ export async function POST(request: Request) {
   if (typeof lead.category !== 'string' || !lead.category.trim()) {
     return NextResponse.json({ error: 'lead.category is required' }, { status: 400 })
   }
-  const hasCoords = typeof lead.latitude === 'number' && typeof lead.longitude === 'number'
-  const hasZip = typeof lead.zipCode === 'string' && lead.zipCode.trim().length >= 5
+  const hasCoords =
+    typeof lead.latitude === 'number' &&
+    Number.isFinite(lead.latitude) &&
+    lead.latitude >= -90 &&
+    lead.latitude <= 90 &&
+    typeof lead.longitude === 'number' &&
+    Number.isFinite(lead.longitude) &&
+    lead.longitude >= -180 &&
+    lead.longitude <= 180
+  const postalCode = typeof lead.zipCode === 'string' ? lead.zipCode.trim() : ''
+  const hasZip =
+    postalCode.length >= 3 &&
+    postalCode.length <= 12 &&
+    /^[a-z0-9]+(?:[ -][a-z0-9]+)*$/i.test(postalCode)
   if (!hasCoords && !hasZip) {
     return NextResponse.json(
       { error: 'lead needs latitude/longitude or a zipCode' },
@@ -80,12 +98,30 @@ export async function POST(request: Request) {
     category: lead.category.trim().slice(0, 100),
     latitude: hasCoords ? (lead.latitude as number) : null,
     longitude: hasCoords ? (lead.longitude as number) : null,
-    zipCode: hasZip ? (lead.zipCode as string).trim().slice(0, 10) : undefined,
+    zipCode: hasZip ? postalCode : undefined,
     countryCode,
     website: typeof lead.website === 'string' ? lead.website : null,
     rating: typeof lead.rating === 'number' ? lead.rating : null,
     reviewCount: typeof lead.reviewCount === 'number' ? lead.reviewCount : null,
   }
+
+  // Do not consume allowance for a deployment that cannot make the provider
+  // call. Every configured request below crosses the billable Places boundary.
+  if (!process.env.GOOGLE_PLACES_API_KEY) {
+    return NextResponse.json(
+      { error: 'Competitor analysis is not configured on this server' },
+      { status: 503 }
+    )
+  }
+
+  const usageDb = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+  const reservation = await reserveFeatureUsage(usageDb, user.id, 'competitors')
+  if (!reservation.ok) return featureUsageUnavailableResponse('competitors')
+  if (!reservation.usage.allowed) return featureQuotaExceededResponse(reservation.usage)
 
   try {
     const comparison = await findCompetitors(input)

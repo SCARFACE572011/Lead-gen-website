@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { buildLeadsCsv, LEAD_EXPORT_FIELDS } from '@/lib/export'
+import { buildLeadsCsv } from '@/lib/export'
+import { parseExportPreferences } from '@/lib/exportRequest'
 import { requireActiveUser } from '@/lib/requireActiveUser'
 import {
   getLeadEntitlements,
@@ -7,19 +8,11 @@ import {
 } from '@/lib/leadEntitlements'
 import { normalizeLeadPayloadList } from '@/lib/leadPayload'
 import { exportLimiter, checkRateLimit } from '@/lib/ratelimit'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { resolveProductAccess } from '@/lib/productAccess'
 
 const MAX_BODY_BYTES = 3_000_000
 
-function safeFilename(value: unknown): string {
-  if (typeof value !== 'string') return `leadzipp-export-${Date.now()}`
-  const withoutExtension = value.replace(/\.csv$/i, '')
-  const safe = withoutExtension
-    .normalize('NFKD')
-    .replace(/[^a-zA-Z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 80)
-  return safe || `leadzipp-export-${Date.now()}`
-}
 export async function POST(request: NextRequest) {
   try {
     const contentLength = Number(request.headers.get('content-length') ?? 0)
@@ -29,8 +22,26 @@ export async function POST(request: NextRequest) {
 
     const { createClient } = await import('@/lib/supabase/server')
     const supabase = await createClient()
-    const auth = await requireActiveUser(supabase, { columns: ['plan', 'role'] })
+    const auth = await requireActiveUser(supabase, {
+      columns: ['plan', 'role', 'workspace_id'],
+    })
     if (!auth.ok) return auth.response
+
+    const access = await resolveProductAccess(
+      createServiceClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.SUPABASE_SERVICE_ROLE_KEY!,
+        { auth: { autoRefreshToken: false, persistSession: false } }
+      ),
+      auth.user.id,
+      auth.profile
+    )
+    if (!access) {
+      return NextResponse.json(
+        { error: 'Could not verify your export allowance. Please retry.' },
+        { status: 503 }
+      )
+    }
 
     try {
       const { success, retryAfter } = await checkRateLimit(exportLimiter, auth.user.id)
@@ -74,22 +85,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const entitlement = getLeadEntitlements(auth.profile?.plan, auth.profile?.role)
+    const entitlement = getLeadEntitlements(access.plan, access.role)
     const planLimit = entitlement.maxExportRows
     const planCapped = planLimit !== null && normalized.leads.length > planLimit
     const exportLeads = planCapped
       ? normalized.leads.slice(0, planLimit)
       : normalized.leads
 
-    const validFieldKeys = new Set(LEAD_EXPORT_FIELDS.map((field) => field.key))
-    const fields = Array.isArray(body.fields)
-      ? body.fields.filter(
-          (field): field is string => typeof field === 'string' && validFieldKeys.has(field)
-        )
-      : undefined
-    const filename = safeFilename(body.filename)
-    const csv = buildLeadsCsv(exportLeads, fields)
-    const output = body.bom === true ? `\uFEFF${csv}` : csv
+    const preferences = parseExportPreferences(body)
+    const csv = buildLeadsCsv(exportLeads, preferences.fields)
+    const output = preferences.bom ? `\uFEFF${csv}` : csv
     const requestCapped = normalized.requestLimitedCount > 0
     const partial =
       planCapped ||
@@ -102,7 +107,7 @@ export async function POST(request: NextRequest) {
 
     const headers: Record<string, string> = {
       'Content-Type': 'text/csv; charset=utf-8',
-      'Content-Disposition': `attachment; filename="${filename}.csv"`,
+      'Content-Disposition': `attachment; filename="${preferences.filename}.csv"`,
       'Cache-Control': 'private, no-store',
       'X-Content-Type-Options': 'nosniff',
       'X-Lead-Plan': entitlement.plan,

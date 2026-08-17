@@ -8,6 +8,11 @@ import type { Lead, SearchParams } from '@/types/lead'
 import { buildCacheKey as buildLeadsCacheKey, CACHE_TTL_MS } from '@/lib/leadsCache'
 import { marketGapsLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
+import {
+  featureQuotaExceededResponse,
+  featureUsageUnavailableResponse,
+  reserveFeatureUsage,
+} from '@/lib/featureUsage'
 
 const isSupabaseConfigured =
   process.env.NEXT_PUBLIC_SUPABASE_URL &&
@@ -98,45 +103,42 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Auth + per-user rate limit (this route can trigger up to 6 paid provider
-    //    calls, so it is signed-in only, blocks deactivated accounts, and fails
-    //    CLOSED on limiter errors) ───────────────────────────────────────────────
-    let supabase: Awaited<
-      ReturnType<(typeof import('@/lib/supabase/server'))['createClient']>
-    > | null = null
+    //    calls, so a missing auth backend must deny rather than open a paid path).
+    if (!isSupabaseConfigured) {
+      console.error('market-gaps: Supabase is not configured, refusing to serve')
+      return NextResponse.json({ error: 'Service unavailable' }, { status: 503 })
+    }
 
-    if (isSupabaseConfigured) {
-      const { createClient } = await import('@/lib/supabase/server')
-      supabase = await createClient()
+    const { createClient } = await import('@/lib/supabase/server')
+    const supabase = await createClient()
+    const auth = await requireActiveUser(supabase)
+    if (!auth.ok) {
+      // Keep the signed-out copy this route already showed; a deactivated
+      // account gets the shared 403 instead.
+      return auth.reason === 'unauthenticated'
+        ? NextResponse.json({ error: 'Sign in to analyze market gaps' }, { status: 401 })
+        : auth.response
+    }
+    const { user } = auth
 
-      const auth = await requireActiveUser(supabase)
-      if (!auth.ok) {
-        // Keep the signed-out copy this route already showed; a deactivated
-        // account gets the shared 403 instead.
-        return auth.reason === 'unauthenticated'
-          ? NextResponse.json({ error: 'Sign in to analyze market gaps' }, { status: 401 })
-          : auth.response
-      }
-      const { user } = auth
-
-      try {
-        const { success, retryAfter } = await checkRateLimit(marketGapsLimiter, user.id)
-        if (!success) {
-          return NextResponse.json(
-            {
-              error:
-                'Market gap analysis is limited to a few runs per hour. Try again shortly, or search categories individually.',
-              retryAfter,
-            },
-            { status: 429, headers: { 'Retry-After': String(retryAfter) } }
-          )
-        }
-      } catch (err) {
-        console.warn('[market-gaps] rate limiter error, failing closed', err)
+    try {
+      const { success, retryAfter } = await checkRateLimit(marketGapsLimiter, user.id)
+      if (!success) {
         return NextResponse.json(
-          { error: 'Analysis is temporarily unavailable. Please try again in a moment.' },
-          { status: 429, headers: { 'Retry-After': '60' } }
+          {
+            error:
+              'Market gap analysis is limited to a few runs per hour. Try again shortly, or search categories individually.',
+            retryAfter,
+          },
+          { status: 429, headers: { 'Retry-After': String(retryAfter) } }
         )
       }
+    } catch (err) {
+      console.warn('[market-gaps] rate limiter error, failing closed', err)
+      return NextResponse.json(
+        { error: 'Analysis is temporarily unavailable. Please try again in a moment.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      )
     }
 
     // Service-role client for cache WRITES (leads_cache is service-role-write under RLS)
@@ -151,6 +153,7 @@ export async function POST(request: NextRequest) {
 
     // ── Sequential per-category analysis (never parallel: caps provider burst) ──
     const results: CategoryGap[] = []
+    let usageReserved = false
     for (const category of GAP_CATEGORIES) {
       try {
         let pool: Lead[] | null = null
@@ -177,6 +180,18 @@ export async function POST(request: NextRequest) {
 
         // 2) Live provider fetch on miss (the billable path)
         if (!pool) {
+          // One monthly unit covers the whole six-category analysis. Reserve on
+          // the first cache miss only, so an all-cache rerun is free.
+          if (!usageReserved) {
+            if (!admin) return featureUsageUnavailableResponse('market_gaps')
+            const reservation = await reserveFeatureUsage(admin, user.id, 'market_gaps')
+            if (!reservation.ok) return featureUsageUnavailableResponse('market_gaps')
+            if (!reservation.usage.allowed) {
+              return featureQuotaExceededResponse(reservation.usage)
+            }
+            usageReserved = true
+          }
+
           const params: SearchParams = {
             zipCode,
             radiusMiles: RADIUS_MILES,

@@ -79,11 +79,18 @@ export default function AuthLayout({
           <p className="mb-5 font-mono text-xs font-semibold uppercase tracking-[0.2em] text-lime">
             Local lead intelligence
           </p>
-          <h2 className="mb-5 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-white xl:text-[2.75rem]">
+          {/*
+            This marketing panel is supplementary chrome, not the page's
+            content — the real, single h1 for signup/login/etc lives in
+            `children` on the right. Using a heading here would put an h2
+            ahead of that h1 in reading order, which breaks the document
+            outline for anyone navigating by heading (axe: heading-order).
+          */}
+          <p className="mb-5 font-display text-4xl font-extrabold leading-[1.05] tracking-tight text-white xl:text-[2.75rem]">
             Drop a pin.
             <br />
             Fill your <span className="text-lime">pipeline.</span>
-          </h2>
+          </p>
           <p className="mb-8 max-w-sm text-base leading-relaxed text-white/70">
             LeadZipp turns any ZIP code into a scored list of real local
             businesses, built from live Google and Yelp data. Spend your time

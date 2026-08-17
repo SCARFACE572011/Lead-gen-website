@@ -29,14 +29,46 @@ export async function DELETE(
   if (!workspace) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   if (userId === user.id) return NextResponse.json({ error: 'Cannot remove yourself' }, { status: 400 })
 
-  await db.from('workspace_members').delete().eq('workspace_id', workspace.id).eq('user_id', userId)
+  const { error: membershipError } = await db
+    .from('workspace_members')
+    .delete()
+    .eq('workspace_id', workspace.id)
+    .eq('user_id', userId)
+  if (membershipError) {
+    return NextResponse.json({ error: 'Could not remove this workspace member.' }, { status: 500 })
+  }
   // Scope to this workspace so an owner can only detach a member of their OWN
   // workspace — never null another tenant's user.
-  await db
+  const { data: ownSubscription } = await db
+    .from('subscriptions')
+    .select('plan')
+    .eq('user_id', userId)
+    .in('status', ['active', 'trialing'])
+    .in('plan', ['pro', 'agency'])
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  const { error: profileError } = await db
     .from('users_profile')
-    .update({ workspace_id: null })
+    .update({
+      workspace_id: null,
+      // Invited members receive a copied Agency plan in the legacy model. On
+      // removal restore only a subscription they personally pay for; otherwise
+      // they return to Free instead of retaining Agency forever.
+      plan: ownSubscription?.plan ?? 'free',
+    })
     .eq('id', userId)
     .eq('workspace_id', workspace.id)
+
+  if (profileError) {
+    // The membership row is already gone, so dynamic entitlement resolution
+    // fails safe even if this denormalized profile cleanup needs a retry.
+    return NextResponse.json(
+      { error: 'The member was removed, but profile cleanup needs to be retried.' },
+      { status: 500 }
+    )
+  }
 
   return new NextResponse(null, { status: 204 })
 }

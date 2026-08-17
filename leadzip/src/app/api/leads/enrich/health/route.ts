@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
 import type { DigitalHealthDetails } from '@/types/lead'
 import { enrichHealthLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
 import { safeProbe } from '@/lib/safeFetch'
+import {
+  featureQuotaExceededResponse,
+  featureUsageUnavailableResponse,
+  reserveFeatureUsage,
+} from '@/lib/featureUsage'
 
 const SIGNAL_POINTS: Record<keyof DigitalHealthDetails, number> = {
   hasWebsite: 10,
@@ -74,14 +80,50 @@ export async function POST(request: Request) {
 
   const url = /^https?:\/\//i.test(website) ? website : `https://${website}`
 
+  // Reject malformed/non-web URLs before reserving monthly allowance. The
+  // deeper DNS/private-network checks still live exclusively in safeProbe.
+  try {
+    const parsed = new URL(url)
+    if ((parsed.protocol !== 'http:' && parsed.protocol !== 'https:') || !parsed.hostname) {
+      return NextResponse.json({ error: 'unreachable' })
+    }
+  } catch {
+    return NextResponse.json({ error: 'unreachable' })
+  }
+
+  const usageDb = createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
   let html = ''
   let fetchMs = 0
+  const usageGate: { reserved: boolean; response: Response | null } = {
+    reserved: false,
+    response: null,
+  }
   try {
     const res = await safeProbe(url, {
       timeoutMs: 5000,
       maxBytes: MAX_BYTES,
       maxRedirects: MAX_REDIRECTS,
       userAgent: 'Mozilla/5.0 (compatible; LeadZipp/1.0)',
+      // safeProbe invokes this only after syntax, DNS and private-network
+      // validation, with the connection pinned, immediately before the first
+      // outbound request. Redirect hops do not double-charge the same check.
+      beforeRequest: async () => {
+        if (usageGate.reserved) return
+        const reservation = await reserveFeatureUsage(usageDb, user.id, 'website_health')
+        if (!reservation.ok) {
+          usageGate.response = featureUsageUnavailableResponse('website_health')
+          throw new Error('website health usage unavailable')
+        }
+        if (!reservation.usage.allowed) {
+          usageGate.response = featureQuotaExceededResponse(reservation.usage)
+          throw new Error('website health quota exceeded')
+        }
+        usageGate.reserved = true
+      },
     })
     if (!res.ok) {
       return NextResponse.json({ error: 'unreachable' })
@@ -89,6 +131,7 @@ export async function POST(request: Request) {
     html = res.body
     fetchMs = res.elapsedMs
   } catch {
+    if (usageGate.response) return usageGate.response
     // Refused by the SSRF guard, DNS failure, timeout or transport error. The
     // caller gets the same opaque answer either way so this cannot be used to
     // probe what does or does not exist on the internal network.

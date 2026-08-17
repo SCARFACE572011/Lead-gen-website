@@ -122,7 +122,7 @@ const APOLLO: ComparisonPage = {
     },
     {
       dimension: 'How it is bought',
-      leadzipp: 'Self serve. Free plan with 25 searches a month, then Pro or Agency with a 7-day free trial.',
+      leadzipp: 'Self serve. Free includes 25 live searches, Pro includes 100, and Agency includes 300 pooled searches, with a 7-day paid-plan trial.',
       competitor: 'Self serve, with plans and prices published on their pricing page and a free plan available.',
     },
   ],
@@ -160,7 +160,7 @@ const APOLLO: ComparisonPage = {
     {
       question: 'Which one is cheaper?',
       answer:
-        'Both publish their pricing openly, so the honest answer is to check both pricing pages for current numbers rather than trust a figure written into a comparison page. LeadZipp has a free plan with 25 searches a month and paid plans that start with a 7-day free trial. Apollo also publishes a free plan alongside its paid tiers.',
+        'Both publish their pricing openly, so the honest answer is to check both pricing pages for current numbers rather than trust a figure written into a comparison page. LeadZipp has a free plan with 25 live searches a month and paid plans that start with a 7-day free trial. Apollo also publishes a free plan alongside its paid tiers.',
     },
     {
       question: 'Can I use both?',
@@ -206,7 +206,7 @@ const HUNTER: ComparisonPage = {
       'Search by ZIP code, or by city and country anywhere worldwide, with a radius.',
       'Live listings with name, address, phone, website, rating and review count.',
       'Opportunity scoring so the businesses with obvious gaps rise to the top.',
-      'Built in email finder with a confidence badge, for any business that has its own domain.',
+      'Built in email finder with a confidence badge, for any business that has its own domain, metered in credits that every plan includes.',
       'A shareable digital presence audit, plus CSV, branded PDF and CRM export.',
     ],
   },
@@ -238,7 +238,7 @@ const HUNTER: ComparisonPage = {
     },
     {
       dimension: 'How it is bought',
-      leadzipp: 'Free plan with 25 searches a month, then a 7-day free trial on paid plans.',
+      leadzipp: 'Free includes 25 live searches a month, then paid plans add higher allowances and a 7-day trial.',
       competitor: 'Published plans with a free tier that includes a monthly credit allowance.',
     },
   ],
@@ -323,7 +323,7 @@ const ZOOMINFO: ComparisonPage = {
       'Scoring on local need signals: no website, few reviews, a weak rating.',
       'Email finder, shareable digital presence audit, map view and territory alerts on claimed ZIP codes.',
       'CSV, branded PDF and direct push into HubSpot, Pipedrive or GoHighLevel.',
-      'Self serve with a free plan at 25 searches a month and a 7-day free trial on paid plans.',
+      'Self serve with 25 live searches on Free, 100 on Pro, 300 pooled on Agency, and a 7-day paid-plan trial.',
     ],
   },
   rows: [
@@ -392,7 +392,7 @@ const ZOOMINFO: ComparisonPage = {
     {
       question: 'What does ZoomInfo cost?',
       answer:
-        'They do not publish a self serve price list, so pricing comes from a conversation with their sales team and depends on licences and usage. Any specific figure quoted on a competitor comparison page is secondhand at best, which is why there is not one here. LeadZipp publishes its pricing openly, including a free plan at 25 searches a month.',
+        'They do not publish a self serve price list, so pricing comes from a conversation with their sales team and depends on licences and usage. Any specific figure quoted on a competitor comparison page is secondhand at best, which is why there is not one here. LeadZipp publishes its pricing openly, including a free plan at 25 live searches a month.',
     },
     {
       question: 'Can a small agency use ZoomInfo?',
@@ -439,9 +439,9 @@ const B2BLEADFINDER: ComparisonPage = {
       'Opportunity scoring on no website, thin reviews and weak rating, with filters for each.',
       'Search by US ZIP code, or by city and country worldwide with a radius.',
       'Shareable digital presence audit reports you can send a prospect as a link.',
-      'Email finder with a confidence badge, CSV and branded PDF export, and direct push into HubSpot, Pipedrive or GoHighLevel, plus an API.',
+      'Email finder with a confidence badge, CSV and branded PDF export, and direct push into HubSpot, Pipedrive or GoHighLevel, plus a public API on Agency.',
       'Claim a ZIP code and get emailed when new businesses appear in it.',
-      'A free plan at 25 searches a month, alongside a 7-day free trial on Pro and Agency.',
+      'A free plan at 25 live searches a month, alongside a 7-day free trial on Pro and Agency.',
     ],
   },
   rows: [
@@ -457,12 +457,12 @@ const B2BLEADFINDER: ComparisonPage = {
     },
     {
       dimension: 'Working the list',
-      leadzipp: 'Export led. CSV, branded PDF, or push into HubSpot, Pipedrive or GoHighLevel, plus an API.',
+      leadzipp: 'Export led. CSV, branded PDF, or push into HubSpot, Pipedrive or GoHighLevel, plus a public API on Agency.',
       competitor: 'Pipeline led. They advertise a Kanban CRM inside the product, with call log and script tooling.',
     },
     {
       dimension: 'Free access',
-      leadzipp: 'A permanent free plan with 25 searches a month, plus a 7-day trial on paid plans.',
+      leadzipp: 'A permanent free plan with 25 live searches a month, plus a 7-day trial on paid plans.',
       competitor: 'A 7-day free trial advertised across plans.',
     },
     {
@@ -492,7 +492,7 @@ const B2BLEADFINDER: ComparisonPage = {
       'You want Yelp data alongside Google Places, since the two do not list identical businesses.',
       'You prospect in bursts and want a free tier that stays free between campaigns.',
       'You want territory alerts when new businesses open in a ZIP code you have claimed.',
-      'You want an API, because your process is partly automated already.',
+      'You want an API, because your process is partly automated already, and the Agency plan fits.',
     ],
   },
   overlap:
@@ -501,7 +501,7 @@ const B2BLEADFINDER: ComparisonPage = {
     {
       question: 'What is the real difference between LeadZipp and B2B Lead Finder?',
       answer:
-        'The concept is the same, so the difference is in the execution. LeadZipp blends Google Places and Yelp listings, keeps a permanent free tier at 25 searches a month, and is built around getting the list out into your CRM through integrations and an API. They advertise a Google Maps scanner with a Kanban pipeline built into the product, which suits agencies that would rather work leads in one place.',
+        'The concept is the same, so the difference is in the execution. LeadZipp blends Google Places and Yelp listings, keeps a permanent free tier at 25 live searches a month, and is built around getting the list out into your CRM through integrations and, on Agency, a public API. They advertise a Google Maps scanner with a Kanban pipeline built into the product, which suits agencies that would rather work leads in one place.',
     },
     {
       question: 'Which one has better data?',
@@ -516,7 +516,7 @@ const B2BLEADFINDER: ComparisonPage = {
     {
       question: 'Can I try LeadZipp before paying?',
       answer:
-        'Yes. The free plan includes 25 searches a month against live data with no time limit and no card. If you want unlimited searches and the email finder, Pro starts with a 7-day free trial, which does require a card and charges nothing if you cancel before day 7.',
+        'Yes. Free includes 25 new live searches a month and 5 welcome email credits with no card. Pro includes 100 live searches and 100 email credits per calendar month, and starts with a 7-day trial that carries 25 live searches and 20 email credits, requires a card, and charges nothing if you cancel before day 7.',
     },
   ],
   ctaHeading: 'Run the same search in both and compare',

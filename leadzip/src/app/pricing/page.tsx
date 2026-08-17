@@ -41,11 +41,13 @@ interface Plan {
 }
 
 /* ─── Plan data ───
-   Feature lists are derived from the shipped code, not from aspiration:
-   the only limits marked "not included" are the ones a route actually
-   enforces (free monthly search cap in /api/leads/search, the 25-row export
-   cap in /api/leads/export, and the alert-email block in
-   /api/saved-searches/[id]). Everything listed as included is live today. */
+   Every number below is copied from PLAN_POLICY in src/lib/planPolicy.ts and
+   EMAIL_CREDIT_TRIAL_ALLOWANCES in src/lib/emailCreditPolicy.ts, which are the
+   same values the routes and the SQL enforce. Feature lists are derived from
+   the shipped code, not from aspiration: the only limits marked "not included"
+   are the ones a route actually enforces. Everything listed as included is
+   live today. If a policy value changes, change it there first and mirror it
+   here, in src/app/pricing/layout.tsx, and in src/app/api/chat/knowledge.ts. */
 const PLANS: Plan[] = [
   {
     name: "Free",
@@ -57,12 +59,15 @@ const PLANS: Plan[] = [
     popular: false,
     accentColor: "#79705F",
     features: [
-      { label: "25 searches per month", included: true },
+      { label: "25 new live territory searches per month", included: true },
       { label: "25 saved leads", included: true },
+      { label: "3 saved searches", included: true },
+      { label: "5 welcome email credits", included: true },
       { label: "Lead scoring and Digital Health Scores", included: true },
       { label: "Every search filter and quick preset", included: true },
       { label: "CSV export", included: true, note: "First 25 rows" },
-      { label: "Unlimited searches", included: false },
+      { label: "Cached reruns and filter refinements stay free", included: true },
+      { label: "Bulk ZIP search", included: false },
       { label: "New-business alert emails", included: false },
     ],
   },
@@ -77,11 +82,11 @@ const PLANS: Plan[] = [
     accentColor: "#FF4D23",
     features: [
       {
-        label: "Unlimited searches in any US ZIP or city worldwide",
+        label: "100 new live territory searches per month; cached reruns stay free",
         included: true,
       },
       {
-        label: "Decision-maker email finder with confidence scoring",
+        label: "100 business email credits per calendar month",
         included: true,
       },
       {
@@ -103,7 +108,11 @@ const PLANS: Plan[] = [
         included: true,
       },
       {
-        label: "1,000 saved leads, new-business alerts, priority email support",
+        label: "Bulk search up to 10 ZIP codes at once",
+        included: true,
+      },
+      {
+        label: "1,000 saved leads, 25 saved searches, and 10 active alerts",
         included: true,
       },
     ],
@@ -119,13 +128,16 @@ const PLANS: Plan[] = [
     accentColor: "#0C2B24",
     features: [
       { label: "Everything in Pro", included: true },
-      { label: "Unlimited saved leads", included: true },
+      { label: "300 pooled live searches and 500 pooled email credits per month", included: true },
+      { label: "10,000 saved leads per member", included: true },
+      { label: "100 shared saved searches and 50 active alerts", included: true },
       {
-        label: "Team workspaces with email invites and shared access",
+        label: "Team workspace with 5 total seats and shared usage",
         included: true,
       },
       { label: "Bulk search up to 25 ZIP codes at once", included: true },
-      { label: "Public API access at the highest daily quota", included: true },
+      { label: "Public API access with 500 requests per day", included: true },
+      { label: "Up to 3 CRM connections", included: true },
       { label: "Priority support and onboarding", included: true },
     ],
   },
@@ -142,7 +154,7 @@ const PRICING_FAQS = [
   },
   {
     q: "How does the 7-day free trial work?",
-    a: "Both Pro and Agency start with a 7-day free trial. A card is required at signup and checkout is handled securely by Stripe, but nothing is charged during the trial. Cancel anytime before day 7 and you pay nothing.",
+    a: "Both Pro and Agency start with a 7-day free trial. Pro trials include 25 live searches and 20 email credits; Agency trials include 75 pooled live searches and 50 pooled email credits. Cached reruns stay free. A card is required and checkout is handled securely by Stripe, but nothing is charged during the trial. Cancel before day 7 and you pay nothing. Full plan limits apply once paid access begins.",
   },
   {
     q: "What if I only decide it is not for me after I have been charged?",
@@ -521,9 +533,11 @@ export default function PricingPage() {
               </p>
               <p className="text-sm font-semibold text-ink">7-day free trial</p>
               <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
-                Pro and Agency open with 7 days of full access. We take your
-                card at signup and charge nothing until day 7. Cancel before
-                then and you pay nothing at all.
+                Pro and Agency open with 7 days on every feature, with a
+                starter allowance: 25 live searches and 20 email credits on
+                Pro, 75 pooled searches and 50 pooled credits on Agency. We
+                take your card at signup and charge nothing until day 7.
+                Cancel before then and you pay nothing at all.
               </p>
             </div>
             <div className="rounded-2xl border border-sand bg-white p-5 shadow-card">

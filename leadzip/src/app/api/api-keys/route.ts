@@ -3,6 +3,8 @@ import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createClient } from '@supabase/supabase-js'
 import { generateApiKey } from '@/lib/api-key'
 import { requireActiveUser } from '@/lib/requireActiveUser'
+import { getPlanPolicy } from '@/lib/planPolicy'
+import { resolveProductAccess } from '@/lib/productAccess'
 
 function serviceClient() {
   return createClient(
@@ -15,7 +17,7 @@ function serviceClient() {
 // active; the service client above then acts on their own rows only.
 async function getAuthedUser() {
   const supabase = await createServerClient()
-  return requireActiveUser(supabase)
+  return requireActiveUser(supabase, { columns: ['plan', 'role', 'workspace_id'] })
 }
 
 export async function GET() {
@@ -30,7 +32,17 @@ export async function GET() {
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: 'Failed to fetch keys' }, { status: 500 })
-  return NextResponse.json({ keys: data ?? [] })
+  const access = await resolveProductAccess(serviceClient(), user.id, auth.profile)
+  const plan = access?.plan ?? 'free'
+  const role = access?.role ?? 'user'
+  const policy = getPlanPolicy(plan, role)
+  const canUseApi = role === 'admin' || plan === 'agency'
+  return NextResponse.json({
+    keys: data ?? [],
+    canUseApi,
+    plan,
+    dailyLimit: canUseApi ? policy.apiRequestsPerDay : 0,
+  })
 }
 
 export async function POST(request: NextRequest) {
@@ -39,6 +51,17 @@ export async function POST(request: NextRequest) {
   const auth = await getAuthedUser()
   if (!auth.ok) return auth.response
   const { user } = auth
+
+  const access = await resolveProductAccess(serviceClient(), user.id, auth.profile)
+  if (!access || (access.role !== 'admin' && access.plan !== 'agency')) {
+    return NextResponse.json(
+      {
+        error: 'API access is included with Agency.',
+        upgradeRequired: true,
+      },
+      { status: 403 }
+    )
+  }
 
   const body = await request.json().catch(() => ({}))
   const name = (body.name as string)?.trim() || 'Default'

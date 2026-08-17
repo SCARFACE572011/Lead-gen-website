@@ -7,6 +7,7 @@ import { exportToPipedrive } from '@/lib/crm/pipedrive'
 import type { CrmLead } from '@/lib/crm/types'
 import { requireActiveUser } from '@/lib/requireActiveUser'
 import { getLeadEntitlements } from '@/lib/leadEntitlements'
+import { resolveProductAccess } from '@/lib/productAccess'
 
 const VALID_CRMS = new Set(['hubspot', 'gohighlevel', 'pipedrive'])
 
@@ -29,11 +30,13 @@ export async function POST(
   const supabase = await createServerClient()
   // Pushes rows into a third-party CRM over the network, so a deactivated
   // session must not reach it.
-  const auth = await requireActiveUser(supabase, { columns: ['plan', 'role'] })
+  const auth = await requireActiveUser(supabase, { columns: ['plan', 'role', 'workspace_id'] })
   if (!auth.ok) return auth.response
   const { user } = auth
 
-  if (!getLeadEntitlements(auth.profile?.plan, auth.profile?.role).canExportAll) {
+  const db = serviceClient()
+  const access = await resolveProductAccess(db, user.id, auth.profile)
+  if (!access || !getLeadEntitlements(access.plan, access.role).canExportAll) {
     return NextResponse.json(
       { error: 'CRM export is available on Pro and Agency.', upgradeRequired: true },
       { status: 403 }
@@ -51,7 +54,7 @@ export async function POST(
   }
 
   // Fetch the stored API key
-  const { data: integration, error: intErr } = await serviceClient()
+  const { data: integration, error: intErr } = await db
     .from('crm_integrations')
     .select('api_key')
     .eq('user_id', user.id)

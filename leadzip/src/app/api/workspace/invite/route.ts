@@ -4,6 +4,8 @@ import { createClient } from '@supabase/supabase-js'
 import nodemailer from 'nodemailer'
 import { SITE_URL } from '@/lib/siteUrl'
 import { requireActiveUser } from '@/lib/requireActiveUser'
+import { getPlanPolicy } from '@/lib/planPolicy'
+import { resolveProductAccess } from '@/lib/productAccess'
 
 const siteUrl = SITE_URL
 
@@ -31,17 +33,30 @@ export async function POST(request: NextRequest) {
   const supabase = await createServerClient()
   // Sends mail from our domain to an address the caller chooses, so a
   // deactivated session must not reach it.
-  const auth = await requireActiveUser(supabase)
+  const auth = await requireActiveUser(supabase, {
+    columns: ['plan', 'role', 'workspace_id'],
+  })
   if (!auth.ok) return auth.response
   const { user } = auth
+
+  const db = serviceClient()
+  const access = await resolveProductAccess(db, user.id, auth.profile)
+  if (
+    !access ||
+    (access.role !== 'admin' &&
+      (access.plan !== 'agency' || access.quotaSubjectUserId !== user.id))
+  ) {
+    return NextResponse.json(
+      { error: 'An active Agency plan is required to invite teammates.', upgradeRequired: true },
+      { status: 403 }
+    )
+  }
 
   const body = await request.json().catch(() => ({}))
   const email = (body.email as string)?.trim().toLowerCase()
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'Valid email is required' }, { status: 422 })
   }
-
-  const db = serviceClient()
 
   // Verify requester owns a workspace
   const { data: workspace } = await db
@@ -51,6 +66,45 @@ export async function POST(request: NextRequest) {
     .single()
 
   if (!workspace) return NextResponse.json({ error: 'Create a workspace first' }, { status: 403 })
+
+  const policy = getPlanPolicy(access.plan, access.role)
+  const [{ count: memberCount }, { data: pendingInvites }, { data: inviteeProfile }] =
+    await Promise.all([
+      db
+        .from('workspace_members')
+        .select('id', { count: 'exact', head: true })
+        .eq('workspace_id', workspace.id),
+      db
+        .from('workspace_invitations')
+        .select('email')
+        .eq('workspace_id', workspace.id)
+        .is('accepted_at', null)
+        .gt('expires_at', new Date().toISOString()),
+      db
+        .from('users_profile')
+        .select('id, workspace_id')
+        .eq('email', email)
+        .maybeSingle(),
+    ])
+
+  if (inviteeProfile?.workspace_id === workspace.id) {
+    return NextResponse.json({ error: 'That person is already on this workspace.' }, { status: 409 })
+  }
+
+  const alreadyPending = (pendingInvites ?? []).some(
+    (invite) => invite.email.trim().toLowerCase() === email
+  )
+  const reservedSeats = (memberCount ?? 0) + (pendingInvites?.length ?? 0)
+  if (!alreadyPending && reservedSeats >= policy.teamSeats) {
+    return NextResponse.json(
+      {
+        error: `Agency includes ${policy.teamSeats} total seats. Cancel a pending invitation or remove a member before inviting someone else.`,
+        seatLimitReached: true,
+        limit: policy.teamSeats,
+      },
+      { status: 409 }
+    )
+  }
 
   // Upsert invitation (re-send if already pending)
   const { data: invitation, error } = await db

@@ -3,7 +3,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { Bell, Trash2, Search, AlertCircle, RefreshCw } from 'lucide-react'
-import { createClient } from '@/lib/supabase/client'
 import type { SavedSearch } from '@/types/saved-search'
 
 function formatRelativeTime(dateStr: string): string {
@@ -23,26 +22,23 @@ export default function SavedSearchesPage() {
   const [isPaidUser, setIsPaidUser] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [actionError, setActionError] = useState('')
 
   const load = useCallback(async () => {
     setIsLoading(true)
     setLoadError(false)
     try {
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: profile } = await supabase
-          .from('users_profile')
-          .select('plan')
-          .eq('id', user.id)
-          .maybeSingle()
-        setIsPaidUser((profile?.plan ?? 'free') !== 'free')
-      }
-
-      const res = await fetch('/api/saved-searches')
+      const [res, usageRes] = await Promise.all([
+        fetch('/api/saved-searches'),
+        fetch('/api/usage', { cache: 'no-store' }),
+      ])
       if (!res.ok) throw new Error('Failed to load saved searches')
       const data = await res.json() as { searches: SavedSearch[] }
       setSearches(data.searches)
+      if (usageRes.ok) {
+        const usage = await usageRes.json() as { plan?: string; isPlatformAdmin?: boolean }
+        setIsPaidUser(usage.isPlatformAdmin === true || usage.plan === 'pro' || usage.plan === 'agency')
+      }
     } catch {
       // Surface a distinct error state so a failed fetch is not mistaken for
       // an empty list
@@ -63,6 +59,7 @@ export default function SavedSearchesPage() {
   async function handleToggleAlert(search: SavedSearch) {
     if (!isPaidUser && !search.alertEnabled) return
     setTogglingId(search.id)
+    setActionError('')
     try {
       const res = await fetch(`/api/saved-searches/${search.id}`, {
         method: 'PATCH',
@@ -72,8 +69,12 @@ export default function SavedSearchesPage() {
       const data = await res.json() as { search?: SavedSearch; error?: string }
       if (res.ok && data.search) {
         setSearches((prev) => prev.map((s) => s.id === search.id ? data.search! : s))
+      } else {
+        setActionError(data.error || 'Could not update that alert.')
       }
-    } catch { /* non-fatal */ } finally {
+    } catch {
+      setActionError('Could not update that alert. Please try again.')
+    } finally {
       setTogglingId(null)
     }
   }
@@ -157,6 +158,12 @@ export default function SavedSearchesPage() {
           Get daily email alerts when new businesses match your search
         </p>
       </div>
+
+      {actionError && (
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700" role="alert">
+          {actionError}
+        </p>
+      )}
 
       {searches.length === 0 ? (
         <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-dashed border-sand bg-card py-20 text-center">
@@ -255,9 +262,9 @@ export default function SavedSearchesPage() {
           {!isPaidUser && (
             <div className="border-t border-sand bg-paper-2 px-4 py-3">
               <p className="text-xs text-stone">
-                <span className="font-mono">{searches.length}</span> of <span className="font-mono">8</span> searches used on free plan ·{' '}
+                <span className="font-mono">{searches.length}</span> of <span className="font-mono">3</span> saved searches used on Free ·{' '}
                 <a href="/settings" className="font-semibold text-signal hover:text-signal-600">
-                  Upgrade for unlimited saves + alerts
+                  Upgrade for more saved searches + alerts
                 </a>
               </p>
             </div>

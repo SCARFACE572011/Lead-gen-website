@@ -30,9 +30,9 @@ import { SearchFilters } from '@/components/leads/SearchFilters'
 import { LeadCard } from '@/components/leads/LeadCard'
 import { LeadTable } from '@/components/leads/LeadTable'
 import { LeadsMapWrapper } from '@/components/leads/LeadsMapWrapper'
-import { createClient } from '@/lib/supabase/client'
 import { SaveSearchModal } from '@/components/SaveSearchModal'
 import type { SavedSearch } from '@/types/saved-search'
+import { PLAN_POLICY } from '@/lib/planPolicy'
 
 type ViewMode = 'card' | 'table' | 'map'
 type SortOption = 'score_desc' | 'score_asc' | 'rating_desc' | 'name_asc'
@@ -47,8 +47,6 @@ const SORT_LABELS: Record<SortOption, string> = {
 const SAVED_IDS_KEY = 'leadzip_saved'
 const SAVED_LEADS_KEY = 'leadzip_saved_leads'
 const HISTORY_KEY = 'leadzip_search_history'
-
-const MAX_BULK_ZIPS: Record<string, number> = { free: 3, pro: 10, agency: 25 }
 
 // Radius options offered in international (km) mode. Reruns from history store
 // miles (integer column), so we snap the converted value back onto an option.
@@ -250,18 +248,12 @@ function SearchPageInner() {
   }, [])
 
   useEffect(() => {
-    const supabase = createClient()
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      supabase
-        .from('users_profile')
-        .select('plan')
-        .eq('id', user.id)
-        .single()
-        .then(({ data }) => {
-          if (data?.plan) setUserPlan(data.plan as 'free' | 'pro' | 'agency')
-        })
-    })
+    fetch('/api/usage', { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (data?.plan === 'pro' || data?.plan === 'agency') setUserPlan(data.plan)
+      })
+      .catch(() => {})
   }, [])
 
   useEffect(() => {
@@ -707,7 +699,7 @@ function SearchPageInner() {
   })
 
   const selectedCount = selectedIds.size
-  const maxBulkZips = MAX_BULK_ZIPS[userPlan] ?? 3
+  const maxBulkZips = PLAN_POLICY[userPlan].bulkZipLimit
   const leadEntitlements = getLeadEntitlements(userPlan)
   const allVisibleSelected = leads.length > 0 && leads.every((lead) => selectedIds.has(lead.id))
   const unsavedVisibleCount = leads.filter((lead) => !savedLeadIds.has(lead.id)).length
@@ -746,6 +738,7 @@ function SearchPageInner() {
         searchMode={searchMode}
         onSearchModeChange={setSearchMode}
         maxBulkZips={maxBulkZips}
+        bulkEnabled={userPlan !== 'free'}
       />
 
       <section className="min-w-0 space-y-4" aria-label="Lead search results">

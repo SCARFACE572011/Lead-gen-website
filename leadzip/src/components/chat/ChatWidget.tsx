@@ -227,10 +227,6 @@ export function ChatWidget() {
 
   const showChips = messages.length <= 1 && !loading
 
-  const panelFrom = reduceMotion
-    ? { opacity: 0, y: 0, scale: 1 }
-    : { opacity: 0, y: 24, scale: 0.97 }
-
   if (hidden) return null
 
   return (
@@ -295,9 +291,14 @@ export function ChatWidget() {
             key="chat-panel"
             ref={panelRef}
             role="dialog"
+            aria-modal="true"
             aria-label="LeadZipp assistant chat"
             onKeyDown={handlePanelKeyDown}
-            initial={panelFrom}
+            // `initial={false}` skips the entrance animation outright — the
+            // panel mounts straight into its `animate` state — rather than
+            // just shrinking the motion, so this matches how HeroMap and
+            // PromoPopup degrade to no motion under prefers-reduced-motion.
+            initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.98 }}
             transition={

@@ -61,8 +61,8 @@ const STATS = [
 // listed here is live today, not planned.
 const PLANS = [
   { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'Lead scoring + health scores', 'Every search filter'], cta: 'Start free', href: '/signup', highlight: false },
-  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['Unlimited searches, any ZIP or city worldwide', 'Decision-maker email finder', 'CSV, white-label PDF & CRM push', 'Shareable audit reports + health scores', 'Outreach in 5 formats', 'Map view, pipeline board & Market Gap Finder'], cta: 'Start 7-day free trial', href: '/signup?plan=pro', highlight: true },
-  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', 'Unlimited saved leads', 'Team workspaces with email invites', 'Bulk search 25 ZIPs at once', 'Priority support & onboarding'], cta: 'Start 7-day free trial', href: '/signup?plan=agency', highlight: false },
+  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['100 new live searches each month', '100 business email credits', 'Bulk search up to 10 ZIPs', 'CSV, white-label PDF & CRM push', 'Shareable audits + outreach tools', '1,000 saved leads'], cta: 'Start 7-day free trial', href: '/signup?plan=pro', highlight: true },
+  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', '300 pooled live searches', '500 pooled email credits', '10,000 saved leads per member', '5-seat team workspace', 'Bulk search 25 ZIPs + API access'], cta: 'Start 7-day free trial', href: '/signup?plan=agency', highlight: false },
 ]
 
 const FAQS = [
@@ -70,7 +70,7 @@ const FAQS = [
   { q: 'What makes a lead “high-scoring”?', a: 'We rank each business by how likely it is to need your services. Signals like having no website, few reviews, or a low rating push a business up your list, because those are the owners most open to help.' },
   { q: 'Can I find email addresses?', a: 'Yes. For any business with a website, one tap runs the email finder and returns the best contact address with a confidence badge (verified, likely, or pattern-based).' },
   { q: 'How do exports work?', a: 'Export any result set to CSV or a branded PDF, or push leads directly into HubSpot, Pipedrive, or GoHighLevel. Email, phone, score, and every field come along.' },
-  { q: 'Do I need a credit card to start?', a: 'No. The Starter plan is free forever and includes 25 searches a month against real data. Upgrade to Pro when you want unlimited searches, full exports, and email alerts when new businesses open in your patch. Pro and Agency start with a 7-day free trial, which does need a card and charges nothing if you cancel before day 7.' },
+  { q: 'Do I need a credit card to start?', a: 'No. Free includes 25 new live territory searches and 5 welcome email credits. Upgrade to Pro for more live data, bulk ZIP search, full exports, and email alerts when new businesses open in your patch. Pro and Agency start with a 7-day free trial, which does need a card and charges nothing if you cancel before day 7.' },
 ]
 
 export default function Home() {
@@ -399,7 +399,7 @@ export default function Home() {
             </Link>
           </div>
           <p className="mt-6 text-sm text-white/75">
-            Ready for unlimited? Pro and Agency include a 7-day free trial. Cancel before day 7 and pay nothing.
+            Ready for more territory coverage? Pro and Agency include a 7-day free trial. Cancel before day 7 and pay nothing.
           </p>
         </div>
       </section>

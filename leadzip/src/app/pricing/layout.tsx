@@ -5,7 +5,7 @@ import { SITE_URL } from "@/components/seo/site";
 
 const TITLE = "Pricing: Local Lead Generation Plans from $0";
 const DESCRIPTION =
-  "Simple plans that scale with you. Start free with 25 searches a month, then upgrade to Pro ($25/mo) or Agency ($50/mo) for unlimited worldwide searches, the decision-maker email finder, CRM push, and shareable audit reports. 7-day free trial on paid plans.";
+  "Start free with 25 live territory searches a month and 5 email credits. Pro ($25/mo) includes 100 live searches and 100 business-email credits; Agency ($50/mo) pools 300 searches and 500 credits across five seats. Cached reruns stay free. 7-day trial on paid plans.";
 const OG_IMAGE =
   "/og?title=Simple+plans+that+scale+with+you&subtitle=Start+free.+Upgrade+when+the+deals+roll+in.";
 
@@ -42,7 +42,7 @@ const PRICING_FAQ = [
   {
     question: "How does the 7-day free trial work?",
     answer:
-      "Both Pro and Agency start with a 7-day free trial. A card is required at signup and checkout is handled securely by Stripe, but nothing is charged during the trial. Cancel anytime before day 7 and you pay nothing.",
+      "Both Pro and Agency start with a 7-day free trial. Pro trials include 25 live searches and 20 email credits; Agency trials include 75 pooled live searches and 50 pooled email credits. Cached reruns stay free. A card is required and checkout is handled securely by Stripe, but nothing is charged during the trial. Cancel before day 7 and you pay nothing. Full plan limits apply once paid access begins.",
   },
   {
     question: "What if I only decide it is not for me after I have been charged?",

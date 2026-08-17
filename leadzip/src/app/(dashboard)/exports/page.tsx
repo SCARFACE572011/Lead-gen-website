@@ -19,7 +19,6 @@ import { Lead } from '@/types/lead'
 import { exportToBrandedPDF, LEAD_EXPORT_FIELDS } from '@/lib/export'
 import { exportReturnedLeadsCsv } from '@/lib/leadBulkActions'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
 
 const STORAGE_KEY = 'leadzip_saved_leads'
 const EXPORT_HISTORY_KEY = 'leadzip_export_history'
@@ -91,17 +90,12 @@ export default function ExportsPage() {
       try { setExportHistory(JSON.parse(histRaw)) } catch { /* noop */ }
     }
 
-    createClient().auth.getUser().then(({ data: { user } }) => {
-      if (!user) return
-      createClient()
-        .from('users_profile')
-        .select('plan')
-        .eq('id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data?.plan === 'pro' || data?.plan === 'agency') setUserPlan(data.plan)
-        })
-    }).catch(() => {})
+    fetch('/api/usage', { cache: 'no-store' })
+      .then((response) => response.ok ? response.json() : null)
+      .then((data) => {
+        if (data?.plan === 'pro' || data?.plan === 'agency') setUserPlan(data.plan)
+      })
+      .catch(() => {})
   }, [])
 
   const toggleLeadSelect = (id: string) => {

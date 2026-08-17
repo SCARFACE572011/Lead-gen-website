@@ -44,7 +44,7 @@ npm install
 Copy the example env file and fill in your values:
 
 ```bash
-cp .env.example .env.local
+cp .env.local.example .env.local
 ```
 
 See the **Environment Variables** table below for all required keys.
@@ -71,15 +71,21 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Yes | Your Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Yes | Supabase public anon key |
-| `SUPABASE_SERVICE_ROLE_KEY` | No | Supabase service role key (server-only operations) |
+| `SUPABASE_SERVICE_ROLE_KEY` | Yes | Supabase service role key (server-only operations) |
 | `GOOGLE_PLACES_API_KEY` | No | Google Places API key for real lead data |
 | `YELP_API_KEY` | No | Yelp Fusion API key for real lead data |
 | `STRIPE_SECRET_KEY` | No | Stripe secret key for billing |
 | `STRIPE_WEBHOOK_SECRET` | No | Stripe webhook signing secret |
+| `STRIPE_PRICE_PRO_MONTHLY` | For billing | Authoritative Stripe Price for monthly Pro |
+| `STRIPE_PRICE_PRO_ANNUAL` | For billing | Authoritative Stripe Price for annual Pro |
+| `STRIPE_PRICE_AGENCY_MONTHLY` | For billing | Authoritative Stripe Price for monthly Agency |
+| `STRIPE_PRICE_AGENCY_ANNUAL` | For billing | Authoritative Stripe Price for annual Agency |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | No | Stripe publishable key |
 | `NEXT_PUBLIC_APP_URL` | No | Your production URL (e.g. https://leadzip.com) |
+| `HUNTER_API_KEY` | For Email Finder | Hunter API key; successful provider results consume Email Finder credits |
+| `EMAIL_CREDIT_PACKS_ENABLED` | No | Keep `false` until provider permission and pack Prices are configured |
 
-Create a `.env.example` file at the project root with these keys (no values) to help future contributors.
+Keep real values only in `.env.local` and your deployment provider's encrypted environment settings.
 
 ## Project Structure
 

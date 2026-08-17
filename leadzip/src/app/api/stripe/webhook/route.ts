@@ -8,8 +8,16 @@ import {
   resolveUserId,
   syncSubscriptionRow,
   syncProfilePlan,
+  paidPlanFromSubscription,
 } from '@/lib/stripe/subscriptionSync'
 import { SITE_URL } from '@/lib/siteUrl'
+import {
+  adjustEmailCreditPack,
+  fulfillEmailCreditPackCheckout,
+  syncEmailCreditsForFreePlan,
+  syncEmailCreditsForSubscription,
+  isMissingEmailCreditSchema,
+} from '@/lib/emailCredits'
 
 export const runtime = 'nodejs'
 
@@ -99,6 +107,63 @@ function logOfflineConversion(fields: {
   )
 }
 
+async function refundPaymentIntentId(
+  stripe: Stripe,
+  refund: Stripe.Refund
+): Promise<string | null> {
+  const direct =
+    typeof refund.payment_intent === 'string'
+      ? refund.payment_intent
+      : refund.payment_intent?.id
+  if (direct) return direct
+
+  // Some refund payloads omit payment_intent but retain the originating
+  // charge. Resolve it so pack credits are still clawed back correctly.
+  const chargeId = typeof refund.charge === 'string' ? refund.charge : refund.charge?.id
+  if (!chargeId) return null
+
+  const charge = await stripe.charges.retrieve(chargeId)
+  return typeof charge.payment_intent === 'string'
+    ? charge.payment_intent
+    : charge.payment_intent?.id ?? null
+}
+
+/**
+ * True only for the dispute states where Stripe has actually taken the money
+ * back. The 'warning_*' states are inquiries and early fraud warnings where no
+ * funds have moved, 'won' returns them, and 'prevented' means the chargeback
+ * never happened, so none of those may revoke purchased credits. Reading the
+ * status (rather than the event name alone) is what stops a mere inquiry from
+ * permanently clawing back credits a customer paid for.
+ */
+function disputeWithdrawsFunds(status: Stripe.Dispute.Status): boolean {
+  return status === 'needs_response' || status === 'under_review' || status === 'lost'
+}
+
+async function applyEmailPackAdjustment(
+  stripe: Stripe,
+  supabase: SupabaseClient,
+  input: {
+    paymentIntentId: string
+    eventKey: string
+    sourceType: 'refund' | 'dispute'
+    sourceId: string
+    amountCents: number
+    active: boolean
+  }
+): Promise<void> {
+  const result = await adjustEmailCreditPack(supabase, input)
+  if (result !== 'not_pack') return
+
+  // Stripe does not guarantee webhook ordering. If this really is a pack but
+  // its Checkout grant has not committed yet, fail so Stripe retries the
+  // adjustment instead of acknowledging and permanently losing the clawback.
+  const paymentIntent = await stripe.paymentIntents.retrieve(input.paymentIntentId)
+  if (paymentIntent.metadata?.kind === 'email_credit_pack') {
+    throw new Error('Email-credit pack adjustment arrived before its grant.')
+  }
+}
+
 // Reminder sent on customer.subscription.trial_will_end (fires ~3 days before
 // the trial ends). Same nodemailer + Gmail SMTP pattern as send-reset-email.
 // Failures are logged, never thrown: a bounced email must not 500 the webhook
@@ -130,7 +195,13 @@ async function sendTrialEndingEmail(
   }
 
   const firstName = (profile?.full_name || '').trim().split(/\s+/)[0] || 'there'
-  const planKey = subscription.metadata?.plan || 'pro'
+  const planKey = paidPlanFromSubscription(subscription)
+  if (!planKey) {
+    console.error(
+      `stripe/webhook: cannot send trial reminder for subscription ${subscription.id}; Price is unrecognized`
+    )
+    return
+  }
   const planName = planKey.charAt(0).toUpperCase() + planKey.slice(1)
 
   const item = subscription.items.data[0]
@@ -268,9 +339,25 @@ export async function POST(request: NextRequest) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session
-      if (session.mode === 'subscription') {
+      if (session.mode === 'payment' && session.metadata?.kind === 'email_credit_pack') {
+        const fulfillment = await fulfillEmailCreditPackCheckout(stripe, supabase, session.id)
+        if (!fulfillment.ok) {
+          console.error(
+            `stripe/webhook: email credit pack fulfillment failed for ${session.id}: ${fulfillment.error}`
+          )
+          return NextResponse.json({ error: 'Failed to fulfill purchase' }, { status: 500 })
+        }
+      } else if (session.mode === 'subscription') {
         const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
-        const plan = session.metadata?.plan || 'pro'
+        const paidPlan = paidPlanFromSubscription(subscription)
+        if (!paidPlan) {
+          console.error(
+            `stripe/webhook: subscription ${subscription.id} contains an unrecognized Stripe Price`
+          )
+          return NextResponse.json({ error: 'Unrecognized subscription price' }, { status: 500 })
+        }
+        const isActive = subscription.status === 'active' || subscription.status === 'trialing'
+        const plan = isActive ? paidPlan : 'free'
         const customerId = session.customer as string
         const { periodStart, periodEnd } = subscriptionPeriods(subscription)
 
@@ -280,7 +367,8 @@ export async function POST(request: NextRequest) {
           customerId
         )
         if (dbError) {
-          return NextResponse.json({ error: `Failed to resolve user: ${dbError}` }, { status: 500 })
+          console.error('stripe/webhook: failed to resolve user for checkout session', dbError)
+          return NextResponse.json({ error: 'Failed to resolve user' }, { status: 500 })
         }
         if (!userId) {
           // Nothing to link the payment to — retrying will not help, so acknowledge
@@ -288,7 +376,7 @@ export async function POST(request: NextRequest) {
           break
         }
 
-        const syncError = await syncSubscriptionRow(supabase, {
+        const syncResult = await syncSubscriptionRow(supabase, {
           userId,
           customerId,
           subscriptionId: subscription.id,
@@ -296,14 +384,60 @@ export async function POST(request: NextRequest) {
           status: subscription.status,
           periodStart,
           periodEnd,
+          stateVersion: event.created,
+          subscriptionCreated: subscription.created,
         })
-        if (syncError) {
-          return NextResponse.json({ error: `Failed to sync subscription: ${syncError}` }, { status: 500 })
+        if (syncResult.error) {
+          console.error('stripe/webhook: failed to sync subscription', syncResult.error)
+          return NextResponse.json({ error: 'Failed to sync subscription' }, { status: 500 })
         }
+
+        if (!syncResult.applied) break
 
         const profileError = await syncProfilePlan(supabase, userId, plan)
         if (profileError) {
-          return NextResponse.json({ error: `Failed to sync profile plan: ${profileError}` }, { status: 500 })
+          console.error('stripe/webhook: failed to sync profile plan', profileError)
+          return NextResponse.json({ error: 'Failed to sync profile plan' }, { status: 500 })
+        }
+
+        try {
+          if (isActive) {
+            await syncEmailCreditsForSubscription(
+              supabase,
+              userId,
+              paidPlan,
+              subscription,
+              event.created
+            )
+          } else {
+            await syncEmailCreditsForFreePlan(supabase, userId, event.created)
+          }
+        } catch (error) {
+          if (isMissingEmailCreditSchema(error)) {
+          // The credit schema ships in 20260818, which may not be applied yet.
+          // A missing ledger must not fail the whole webhook: the subscription
+          // itself synced fine above, and answering non-2xx would make Stripe
+          // retry forever and eventually disable the endpoint. Credits are
+          // reconciled from the subscription on the next event once migrated.
+            console.error('stripe/webhook: email credit schema not migrated yet, skipping', error)
+            break
+          }
+          console.error('stripe/webhook: failed to sync email credits', error)
+          return NextResponse.json({ error: 'Failed to sync email credits' }, { status: 500 })
+        }
+      }
+      break
+    }
+
+    case 'checkout.session.async_payment_succeeded': {
+      const session = event.data.object as Stripe.Checkout.Session
+      if (session.mode === 'payment' && session.metadata?.kind === 'email_credit_pack') {
+        const fulfillment = await fulfillEmailCreditPackCheckout(stripe, supabase, session.id)
+        if (!fulfillment.ok) {
+          console.error(
+            `stripe/webhook: async email credit fulfillment failed for ${session.id}: ${fulfillment.error}`
+          )
+          return NextResponse.json({ error: 'Failed to fulfill purchase' }, { status: 500 })
         }
       }
       break
@@ -314,14 +448,24 @@ export async function POST(request: NextRequest) {
     // 'active' from the moment it exists, not only on its first update.
     case 'customer.subscription.created':
     case 'customer.subscription.updated': {
-      const subscription = event.data.object as Stripe.Subscription
+      const eventSubscription = event.data.object as Stripe.Subscription
+      // Stripe can deliver subscription events out of order. Re-read current
+      // state before granting access so an old active event can never undo a
+      // later cancellation or payment failure.
+      const subscription = await stripe.subscriptions.retrieve(eventSubscription.id)
       // Only 'active'/'trialing' grant paid access. Any other status
       // (past_due, unpaid, canceled, incomplete, incomplete_expired, paused)
       // must drop the user to 'free' so a lapsed sub can't keep full access.
-      const paidPlan = subscription.metadata?.plan || 'pro'
       const isActive =
         subscription.status === 'active' || subscription.status === 'trialing'
-      const plan = isActive ? paidPlan : 'free'
+      const paidPlan = paidPlanFromSubscription(subscription)
+      if (isActive && !paidPlan) {
+        console.error(
+          `stripe/webhook: subscription ${subscription.id} contains an unrecognized Stripe Price`
+        )
+        return NextResponse.json({ error: 'Unrecognized subscription price' }, { status: 500 })
+      }
+      const plan = isActive ? paidPlan! : 'free'
       const customerId = subscription.customer as string
       const { periodStart, periodEnd } = subscriptionPeriods(subscription)
 
@@ -331,14 +475,15 @@ export async function POST(request: NextRequest) {
         customerId
       )
       if (dbError) {
-        return NextResponse.json({ error: `Failed to resolve user: ${dbError}` }, { status: 500 })
+        console.error('stripe/webhook: failed to resolve user', dbError)
+        return NextResponse.json({ error: 'Failed to resolve user' }, { status: 500 })
       }
       if (!userId) {
         console.error(`stripe/webhook: no user_id resolvable for subscription ${subscription.id}`)
         break
       }
 
-      const syncError = await syncSubscriptionRow(supabase, {
+      const syncResult = await syncSubscriptionRow(supabase, {
         userId,
         customerId,
         subscriptionId: subscription.id,
@@ -346,14 +491,47 @@ export async function POST(request: NextRequest) {
         status: subscription.status,
         periodStart,
         periodEnd,
+        stateVersion: event.created,
+        subscriptionCreated: subscription.created,
       })
-      if (syncError) {
-        return NextResponse.json({ error: `Failed to sync subscription: ${syncError}` }, { status: 500 })
+      if (syncResult.error) {
+        console.error('stripe/webhook: failed to sync subscription', syncResult.error)
+        return NextResponse.json({ error: 'Failed to sync subscription' }, { status: 500 })
       }
+
+
+      if (!syncResult.applied) break
 
       const profileError = await syncProfilePlan(supabase, userId, plan)
       if (profileError) {
-        return NextResponse.json({ error: `Failed to sync profile plan: ${profileError}` }, { status: 500 })
+        console.error('stripe/webhook: failed to sync profile plan', profileError)
+        return NextResponse.json({ error: 'Failed to sync profile plan' }, { status: 500 })
+      }
+
+      try {
+        if (isActive) {
+          await syncEmailCreditsForSubscription(
+            supabase,
+            userId,
+            paidPlan!,
+            subscription,
+            event.created
+          )
+        } else {
+          await syncEmailCreditsForFreePlan(supabase, userId, event.created)
+        }
+      } catch (error) {
+        if (isMissingEmailCreditSchema(error)) {
+        // The credit schema ships in 20260818, which may not be applied yet.
+        // A missing ledger must not fail the whole webhook: the subscription
+        // itself synced fine above, and answering non-2xx would make Stripe
+        // retry forever and eventually disable the endpoint. Credits are
+        // reconciled from the subscription on the next event once migrated.
+          console.error('stripe/webhook: email credit schema not migrated yet, skipping', error)
+          break
+        }
+        console.error('stripe/webhook: failed to sync email credits', error)
+        return NextResponse.json({ error: 'Failed to sync email credits' }, { status: 500 })
       }
 
       // Subscription becoming active: either a trial converting to paid, or a
@@ -405,7 +583,8 @@ export async function POST(request: NextRequest) {
         customerId
       )
       if (dbError) {
-        return NextResponse.json({ error: `Failed to resolve user: ${dbError}` }, { status: 500 })
+        console.error('stripe/webhook: failed to resolve user', dbError)
+        return NextResponse.json({ error: 'Failed to resolve user' }, { status: 500 })
       }
       if (!userId) {
         console.error(`stripe/webhook: no user_id resolvable for invoice ${invoice.id}`)
@@ -421,6 +600,119 @@ export async function POST(request: NextRequest) {
         currency: invoice.currency,
         reason: invoice.billing_reason,
       })
+
+      // Monthly allowances are intentionally independent from annual billing,
+      // but an invoice event is still a useful eager sync. Lazy API sync handles
+      // every calendar-month rollover when no invoice occurs that month.
+      const subscriptionId =
+        typeof details.subscription === 'string'
+          ? details.subscription
+          : details.subscription.id
+      const subscription = await stripe.subscriptions.retrieve(subscriptionId)
+      const plan = paidPlanFromSubscription(subscription)
+      if (!plan) {
+        console.error(
+          `stripe/webhook: invoice ${invoice.id} references an unrecognized subscription Price`
+        )
+        return NextResponse.json({ error: 'Unrecognized subscription price' }, { status: 500 })
+      }
+      if (subscription.status !== 'active' && subscription.status !== 'trialing') {
+        break
+      }
+      try {
+        await syncEmailCreditsForSubscription(supabase, userId, plan, subscription, event.created)
+      } catch (error) {
+        if (isMissingEmailCreditSchema(error)) {
+        // The credit schema ships in 20260818, which may not be applied yet.
+        // A missing ledger must not fail the whole webhook: the subscription
+        // itself synced fine above, and answering non-2xx would make Stripe
+        // retry forever and eventually disable the endpoint. Credits are
+        // reconciled from the subscription on the next event once migrated.
+          console.error('stripe/webhook: email credit schema not migrated yet, skipping', error)
+          break
+        }
+        console.error('stripe/webhook: failed to sync invoice email credits', error)
+        return NextResponse.json({ error: 'Failed to sync email credits' }, { status: 500 })
+      }
+      break
+    }
+
+    case 'refund.created': {
+      const refund = event.data.object as Stripe.Refund
+      if (refund.status === 'failed' || refund.status === 'canceled') break
+      const paymentIntentId = await refundPaymentIntentId(stripe, refund)
+      if (paymentIntentId) {
+        try {
+          await applyEmailPackAdjustment(stripe, supabase, {
+            paymentIntentId,
+            eventKey: `stripe-event:${event.id}`,
+            sourceType: 'refund',
+            sourceId: refund.id,
+            amountCents: refund.amount,
+            active: true,
+          })
+        } catch (error) {
+          console.error('stripe/webhook: failed to adjust refunded email credits', error)
+          return NextResponse.json({ error: 'Failed to adjust email credits' }, { status: 500 })
+        }
+      }
+      break
+    }
+
+    case 'refund.updated': {
+      const refund = event.data.object as Stripe.Refund
+      const paymentIntentId = await refundPaymentIntentId(stripe, refund)
+      if (paymentIntentId) {
+        try {
+          await applyEmailPackAdjustment(stripe, supabase, {
+            paymentIntentId,
+            eventKey: `stripe-event:${event.id}`,
+            sourceType: 'refund',
+            sourceId: refund.id,
+            amountCents: refund.amount,
+            active: refund.status !== 'failed' && refund.status !== 'canceled',
+          })
+        } catch (error) {
+          console.error('stripe/webhook: failed to update refunded email credits', error)
+          return NextResponse.json({ error: 'Failed to adjust email credits' }, { status: 500 })
+        }
+      }
+      break
+    }
+
+    // Every stage of the dispute lifecycle lands here so the credit clawback
+    // tracks whether Stripe is currently holding the funds. An inquiry that
+    // escalates starts revoking, and a dispute that is won or closed without a
+    // chargeback gives the credits back.
+    case 'charge.dispute.created':
+    case 'charge.dispute.updated':
+    case 'charge.dispute.closed':
+    case 'charge.dispute.funds_withdrawn':
+    case 'charge.dispute.funds_reinstated': {
+      const eventDispute = event.data.object as Stripe.Dispute
+      // Stripe does not guarantee webhook ordering. Re-read the dispute so a
+      // late 'created' delivery cannot revoke credits for a dispute that has
+      // already been won, mirroring how subscription events are handled above.
+      const dispute = await stripe.disputes.retrieve(eventDispute.id)
+      const paymentIntentId =
+        typeof dispute.payment_intent === 'string'
+          ? dispute.payment_intent
+          : dispute.payment_intent?.id
+      if (paymentIntentId) {
+        try {
+          await applyEmailPackAdjustment(stripe, supabase, {
+            paymentIntentId,
+            eventKey: `stripe-event:${event.id}`,
+            sourceType: 'dispute',
+            sourceId: dispute.id,
+            amountCents: dispute.amount,
+            active: disputeWithdrawsFunds(dispute.status),
+          })
+        } catch (error) {
+          console.error('stripe/webhook: failed to adjust disputed email credits', error)
+          return NextResponse.json({ error: 'Failed to adjust email credits' }, { status: 500 })
+        }
+      }
       break
     }
 
@@ -436,7 +728,8 @@ export async function POST(request: NextRequest) {
         customerId
       )
       if (dbError) {
-        return NextResponse.json({ error: `Failed to resolve user: ${dbError}` }, { status: 500 })
+        console.error('stripe/webhook: failed to resolve user', dbError)
+        return NextResponse.json({ error: 'Failed to resolve user' }, { status: 500 })
       }
       if (!userId) {
         console.error(`stripe/webhook: no user_id resolvable for trial_will_end on ${subscription.id}`)
@@ -453,16 +746,8 @@ export async function POST(request: NextRequest) {
 
     case 'customer.subscription.deleted': {
       const subscription = event.data.object as Stripe.Subscription
-      const now = new Date().toISOString()
       const customerId = subscription.customer as string
-
-      const { error: cancelError } = await supabase
-        .from('subscriptions')
-        .update({ status: 'cancelled', plan: 'free', updated_at: now })
-        .eq('stripe_subscription_id', subscription.id)
-      if (cancelError) {
-        return NextResponse.json({ error: `Failed to cancel subscription: ${cancelError.message}` }, { status: 500 })
-      }
+      const { periodStart, periodEnd } = subscriptionPeriods(subscription)
 
       const { userId, dbError } = await resolveUserId(
         supabase,
@@ -470,12 +755,52 @@ export async function POST(request: NextRequest) {
         customerId
       )
       if (dbError) {
-        return NextResponse.json({ error: `Failed to resolve user: ${dbError}` }, { status: 500 })
+        console.error('stripe/webhook: failed to resolve user', dbError)
+        return NextResponse.json({ error: 'Failed to resolve user' }, { status: 500 })
       }
       if (userId) {
+        // Upsert a versioned cancellation tombstone even when deletion beats
+        // checkout/session creation to our database. An in-flight older active
+        // sync for this same subscription can no longer recreate paid access.
+        // Stripe's 'canceled' is normalized to the app's stored 'cancelled'
+        // inside syncSubscriptionRow, which is what the admin churn metric and
+        // the status badges read.
+        const syncResult = await syncSubscriptionRow(supabase, {
+          userId,
+          customerId,
+          subscriptionId: subscription.id,
+          plan: 'free',
+          status: subscription.status,
+          periodStart,
+          periodEnd,
+          stateVersion: event.created,
+          subscriptionCreated: subscription.created,
+        })
+        if (syncResult.error) {
+          console.error('stripe/webhook: failed to record subscription cancellation', syncResult.error)
+          return NextResponse.json({ error: 'Failed to cancel subscription' }, { status: 500 })
+        }
+        if (!syncResult.applied) break
+
         const profileError = await syncProfilePlan(supabase, userId, 'free')
         if (profileError) {
-          return NextResponse.json({ error: `Failed to sync profile plan: ${profileError}` }, { status: 500 })
+          console.error('stripe/webhook: failed to sync profile plan', profileError)
+          return NextResponse.json({ error: 'Failed to sync profile plan' }, { status: 500 })
+        }
+        try {
+          await syncEmailCreditsForFreePlan(supabase, userId, event.created)
+        } catch (error) {
+          if (isMissingEmailCreditSchema(error)) {
+          // The credit schema ships in 20260818, which may not be applied yet.
+          // A missing ledger must not fail the whole webhook: the subscription
+          // itself synced fine above, and answering non-2xx would make Stripe
+          // retry forever and eventually disable the endpoint. Credits are
+          // reconciled from the subscription on the next event once migrated.
+            console.error('stripe/webhook: email credit schema not migrated yet, skipping', error)
+            break
+          }
+          console.error('stripe/webhook: failed to downgrade email credits', error)
+          return NextResponse.json({ error: 'Failed to sync email credits' }, { status: 500 })
         }
         // NOTE: previously called supabase.auth.admin.signOut(userId, 'global') here —
         // invalid, admin.signOut takes a session JWT, not a user id. supabase-js has no

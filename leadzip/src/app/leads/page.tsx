@@ -46,7 +46,7 @@ const FAQS = [
   {
     question: 'How much does it cost to run these searches?',
     answer:
-      'The free plan includes 25 searches a month against live business data. Pro removes the search limit and adds the email finder, and it starts with a 7-day free trial. A card is required to start the trial and nothing is charged if you cancel before day 7.',
+      'The free plan includes 25 new live territory searches. Pro includes 100 live searches and 100 business-email credits per billing period, and it starts with a 7-day free trial. Cached reruns and filter refinements are free. A card is required for the trial, and nothing is charged if you cancel before day 7.',
   },
 ]
 
@@ -235,9 +235,9 @@ export default function LeadsIndex() {
             Pick a city. Pull the list. Start calling.
           </h2>
           <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/85">
-            The free plan covers 25 searches a month against live data. Pro adds unlimited searches and the
-            email finder on a 7-day free trial. A card is required to start the trial, and cancelling before
-            day 7 means no charge.
+            Free covers 25 new live territory searches. Pro includes 100 live searches, 100 business-email
+            credits, bulk ZIP search, and full exports on a 7-day trial. Cached reruns stay free. A card is
+            required for the trial, and cancelling before day 7 means no charge.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link

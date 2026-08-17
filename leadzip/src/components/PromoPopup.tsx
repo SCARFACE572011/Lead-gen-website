@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { MapPin, X } from 'lucide-react'
@@ -56,6 +57,8 @@ export function PromoPopup() {
 
   const audioRef = useRef<AudioContext | null>(null)
   const pingedRef = useRef(false)
+  const panelRef = useRef<HTMLDivElement>(null)
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null)
 
   // Lazily build (and keep) an AudioContext, unlocked by a real user gesture so
   // the browser's autoplay policy lets the chime through when the popup lands.
@@ -148,6 +151,21 @@ export function PromoPopup() {
     }
   }, [shouldShow, playPing])
 
+  // This popup appears unprompted on a timer, so nothing has told a keyboard
+  // or screen-reader user it is there. Moving focus into it on reveal is what
+  // makes the dialog role actually get announced, and stashing whatever was
+  // focused before lets a dismissal put focus back exactly where it was.
+  useEffect(() => {
+    if (!shouldShow) return
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null
+    const timer = window.setTimeout(() => panelRef.current?.focus(), 90)
+    return () => window.clearTimeout(timer)
+  }, [shouldShow])
+
+  const restoreFocus = () => {
+    window.setTimeout(() => previouslyFocusedRef.current?.focus?.(), 90)
+  }
+
   const persist = (key: string) => {
     try {
       localStorage.setItem(key, '1')
@@ -159,6 +177,7 @@ export function PromoPopup() {
   const dismiss = () => {
     persist(DISMISS_KEY)
     setDismissed(true)
+    restoreFocus()
   }
 
   const claim = () => {
@@ -166,6 +185,36 @@ export function PromoPopup() {
     persist(DISMISS_KEY)
     setDismissed(true)
     router.push('/signup')
+  }
+
+  // Escape dismisses; Tab is trapped inside the panel while it is showing, the
+  // same pattern the chat widget uses.
+  const handlePanelKeyDown = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation()
+      dismiss()
+      return
+    }
+    if (e.key !== 'Tab' || !panelRef.current) return
+    const focusables = Array.from(
+      panelRef.current.querySelectorAll<HTMLElement>(
+        "a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex='-1'])"
+      )
+    ).filter((el) => el.offsetParent !== null)
+    if (focusables.length === 0) return
+    const first = focusables[0]
+    const last = focusables[focusables.length - 1]
+    // Initial focus lands on the panel itself (see the effect above), which is
+    // not one of `focusables`, so it needs its own wrap case: Tab from there
+    // should land on `first`, Shift+Tab should wrap to `last`.
+    const onContainer = document.activeElement === panelRef.current
+    if (e.shiftKey && (document.activeElement === first || onContainer)) {
+      e.preventDefault()
+      last.focus()
+    } else if (!e.shiftKey && (document.activeElement === last || onContainer)) {
+      e.preventDefault()
+      first.focus()
+    }
   }
 
   const enter = { opacity: 1, y: 0, scale: 1 }
@@ -178,8 +227,12 @@ export function PromoPopup() {
       {shouldShow && (
         <motion.div
           key="promo"
+          ref={panelRef}
           role="dialog"
+          aria-modal="true"
           aria-label="New signup offer"
+          tabIndex={-1}
+          onKeyDown={handlePanelKeyDown}
           initial={from}
           animate={enter}
           exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.97 }}
@@ -191,7 +244,7 @@ export function PromoPopup() {
           // On phones this card spans the full width, so it is lifted clear of
           // the chat launcher (a 56px circle at bottom-4 left-4) instead of
           // covering it. From sm up the two sit in opposite corners.
-          className="fixed bottom-24 right-4 left-4 z-[70] sm:bottom-4 sm:left-auto sm:w-[340px]"
+          className="fixed bottom-24 right-4 left-4 z-[70] outline-none sm:bottom-4 sm:left-auto sm:w-[340px]"
         >
           <div className="relative overflow-hidden rounded-2xl border border-sand bg-white shadow-[0_12px_40px_-12px_rgba(23,19,14,0.35)]">
             {/* thin signal rule at the very top */}
@@ -246,7 +299,7 @@ export function PromoPopup() {
 
               <button
                 onClick={dismiss}
-                className="mt-2 w-full text-center text-xs font-medium text-stone transition-colors hover:text-ink"
+                className="mt-2 w-full rounded-md text-center text-xs font-medium text-stone transition-colors hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sand"
               >
                 Maybe later
               </button>

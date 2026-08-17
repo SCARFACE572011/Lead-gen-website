@@ -91,7 +91,7 @@ export function SaveSearchModal({
 
   if (!isOpen) return null
 
-  const atLimit = !isPaidUser && savedCount >= 8
+  const atLimit = !isPaidUser && savedCount >= 3
 
   async function handleSave() {
     if (atLimit || !name.trim()) return
@@ -114,12 +114,12 @@ export function SaveSearchModal({
           ...(radiusKm != null ? { radiusKm } : {}),
         }),
       })
-      const data = await res.json() as { search?: SavedSearch; error?: string }
+      const data = await res.json() as { search?: SavedSearch; error?: string; limitReached?: boolean; limit?: number }
       if (!res.ok) {
-        if (data.error === 'limit_reached') {
-          setError("You've reached the 8 search limit on the free plan.")
+        if (data.limitReached) {
+          setError(`You've reached your ${data.limit ?? 3} saved-search limit.`)
         } else {
-          setError('Failed to save search. Please try again.')
+          setError(data.error || 'Failed to save search. Please try again.')
         }
         return
       }
@@ -177,7 +177,7 @@ export function SaveSearchModal({
 
           {!isPaidUser && (
             <p className="text-xs text-stone">
-              <span className="font-mono">{savedCount}</span> of <span className="font-mono">8</span> searches used on free plan
+              <span className="font-mono">{savedCount}</span> of <span className="font-mono">3</span> saved searches used on Free
             </p>
           )}
 

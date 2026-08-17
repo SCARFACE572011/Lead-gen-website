@@ -3,6 +3,17 @@ import { createClient } from '@/lib/supabase/server'
 import type { SavedSearch } from '@/types/saved-search'
 import { savedSearchesLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
+import { getPlanPolicy } from '@/lib/planPolicy'
+import { createClient as createServiceClient } from '@supabase/supabase-js'
+import { resolveProductAccess } from '@/lib/productAccess'
+
+function serviceClient() {
+  return createServiceClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { autoRefreshToken: false, persistSession: false } }
+  )
+}
 
 // country_code / radius_km are feature-detected: they are simply absent from the
 // row until 20260812_saved_search_country.sql is applied by hand, and every
@@ -56,17 +67,52 @@ export async function PATCH(
   const { id } = await params
   const supabase = await createClient()
   // Same round trip serves the deactivated check and the alerts plan fence below.
-  const auth = await requireActiveUser(supabase, { columns: ['plan'] })
+  const auth = await requireActiveUser(supabase, {
+    columns: ['plan', 'role', 'workspace_id'],
+  })
   if (!auth.ok) return auth.response
   const { user } = auth
+
+
+  const access = await resolveProductAccess(serviceClient(), user.id, auth.profile)
+  if (!access) {
+    return NextResponse.json(
+      { error: 'Could not verify your alert allowance. Please retry.' },
+      { status: 503 }
+    )
+  }
 
   const limited = await overLimit(user.id)
   if (limited) return limited
 
   const body = await request.json() as { alertEnabled: boolean }
 
-  if (body.alertEnabled && ((auth.profile?.plan as string | undefined) ?? 'free') === 'free') {
-    return NextResponse.json({ error: 'upgrade_required' }, { status: 403 })
+  const policy = getPlanPolicy(access.plan, access.role)
+  if (body.alertEnabled && access.role !== 'admin') {
+    if (policy.activeAlerts === 0) {
+      return NextResponse.json(
+        { error: 'New-business alerts are included with Pro and Agency.', upgradeRequired: true },
+        { status: 403 }
+      )
+    }
+
+    const { count } = await supabase
+      .from('saved_searches')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+      .eq('alert_enabled', true)
+      .neq('id', id)
+
+    if ((count ?? 0) >= policy.activeAlerts) {
+      return NextResponse.json(
+        {
+          error: `Your plan includes ${policy.activeAlerts} active alerts.`,
+          limitReached: true,
+          limit: policy.activeAlerts,
+        },
+        { status: 409 }
+      )
+    }
   }
 
   const { data, error } = await supabase
@@ -78,6 +124,36 @@ export async function PATCH(
     .single()
 
   if (error) {
+    // Never echo the database message: it carries trigger and constraint
+    // wording that means nothing to a customer. Log the detail, answer short.
+    console.error(
+      '[saved-searches] alert update failed:',
+      error.code,
+      error.message,
+      error.details ?? ''
+    )
+
+    if (error.code === '23514') {
+      // The database counts alerts across the whole shared workspace, so it can
+      // reject a change the per-user count above allowed. Same limit, honest
+      // wording, no constraint text.
+      return NextResponse.json(
+        policy.activeAlerts === 0
+          ? {
+              error: 'New-business alerts are included with Pro and Agency.',
+              limitReached: true,
+              limit: 0,
+              upgradeRequired: true,
+            }
+          : {
+              error: `Your plan includes ${policy.activeAlerts} active alerts.`,
+              limitReached: true,
+              limit: policy.activeAlerts,
+            },
+        { status: 409 }
+      )
+    }
+
     return NextResponse.json({ error: 'Failed to update saved search' }, { status: 500 })
   }
 
@@ -104,6 +180,7 @@ export async function DELETE(
     .eq('user_id', user.id)
 
   if (error) {
+    console.error('[saved-searches] delete failed:', error.message)
     return NextResponse.json({ error: 'Failed to delete saved search' }, { status: 500 })
   }
 

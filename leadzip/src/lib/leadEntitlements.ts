@@ -1,4 +1,11 @@
-export type LeadPlan = 'free' | 'pro' | 'agency'
+import {
+  PLAN_POLICY,
+  effectiveProductPlan,
+  normalizeProductPlan,
+  type ProductPlan,
+} from '@/lib/planPolicy'
+
+export type LeadPlan = ProductPlan
 export type AccountRole = 'user' | 'admin'
 
 /**
@@ -7,7 +14,7 @@ export type AccountRole = 'user' | 'admin'
  * Keep this aligned with the public pricing page:
  * - Free: 25 saved leads and the first 25 CSV rows
  * - Pro: 1,000 saved leads, bulk save, and full export
- * - Agency: unlimited saved leads, bulk save, and full export
+ * - Agency: 10,000 saved leads, bulk save, and full export
  *
  * `null` means no product-plan ceiling. Request-size/rate limits still apply.
  */
@@ -18,9 +25,10 @@ export interface LeadEntitlements {
   maxSavedLeads: number | null
   maxExportRows: number | null
 }
-export const FREE_SAVED_LEADS_LIMIT = 25
-export const PRO_SAVED_LEADS_LIMIT = 1_000
-export const FREE_EXPORT_ROWS_LIMIT = 25
+export const FREE_SAVED_LEADS_LIMIT = PLAN_POLICY.free.savedLeads
+export const PRO_SAVED_LEADS_LIMIT = PLAN_POLICY.pro.savedLeads
+export const AGENCY_SAVED_LEADS_LIMIT = PLAN_POLICY.agency.savedLeads
+export const FREE_EXPORT_ROWS_LIMIT = PLAN_POLICY.free.exportRows!
 
 /** One API request. The client deliberately sends smaller sequential chunks. */
 export const MAX_BULK_SAVE_REQUEST = 250
@@ -30,7 +38,7 @@ export const BULK_SAVE_CLIENT_BATCH_SIZE = 200
 export const MAX_EXPORT_REQUEST = 2_000
 
 export function normalizeLeadPlan(value: unknown): LeadPlan {
-  return value === 'pro' || value === 'agency' ? value : 'free'
+  return normalizeProductPlan(value)
 }
 
 export function getLeadEntitlements(
@@ -39,14 +47,24 @@ export function getLeadEntitlements(
 ): LeadEntitlements {
   // The owner/admin account retains full product access independently of its
   // billing row. Role assignment itself is protected server-side elsewhere.
-  const plan = rawRole === 'admin' ? 'agency' : normalizeLeadPlan(rawPlan)
+  const plan = effectiveProductPlan(rawPlan, rawRole)
+
+  if (rawRole === 'admin') {
+    return {
+      plan,
+      canBulkSave: true,
+      canExportAll: true,
+      maxSavedLeads: null,
+      maxExportRows: null,
+    }
+  }
 
   if (plan === 'agency') {
     return {
       plan,
       canBulkSave: true,
       canExportAll: true,
-      maxSavedLeads: null,
+      maxSavedLeads: AGENCY_SAVED_LEADS_LIMIT,
       maxExportRows: null,
     }
   }

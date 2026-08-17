@@ -87,33 +87,90 @@ export function LeadTable({
 
   const showZipColumn = leads.some((l) => Boolean(l.sourceZip))
 
-  // 'upgrade' is distinct from 'not_found' on purpose: the email finder is a Pro
-  // feature, and showing a free user the "no email" dash would read as "this
-  // business has none" rather than "this plan does not include the lookup".
-  type EmailState = 'idle' | 'loading' | 'found' | 'not_found' | 'upgrade'
+  // "Not found" is a claim about the prospect, so it is reserved for a lookup
+  // that actually ran. Credit exhaustion, outages and rate limits each get
+  // their own state so we never tell an agency a real business has no email.
+  type EmailState =
+    | 'idle'
+    | 'loading'
+    | 'found'
+    | 'not_found'
+    | 'upgrade'
+    | 'rate_limited'
+    | 'unavailable'
   const [emailStates, setEmailStates] = useState<Record<string, EmailState>>({})
   const [emailData, setEmailData] = useState<Record<string, { email: string; confidence: 'verified' | 'likely' | 'guessed' }>>({})
+  const [emailNotes, setEmailNotes] = useState<Record<string, string>>({})
 
   async function handleFindEmail(lead: Lead) {
     if (!lead.website) return
     setEmailStates((prev) => ({ ...prev, [lead.id]: 'loading' }))
+    setEmailNotes((prev) => ({ ...prev, [lead.id]: '' }))
+
+    const settle = (state: EmailState, note = '') => {
+      setEmailStates((prev) => ({ ...prev, [lead.id]: state }))
+      setEmailNotes((prev) => ({ ...prev, [lead.id]: note }))
+    }
+
     try {
       const res = await fetch('/api/leads/enrich/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: lead.website }),
       })
-      const data = await res.json()
-      if (res.ok && data.email) {
-        setEmailData((prev) => ({ ...prev, [lead.id]: { email: data.email, confidence: data.confidence } }))
-        setEmailStates((prev) => ({ ...prev, [lead.id]: 'found' }))
-      } else if (res.status === 403 && data.upgradeRequired) {
-        setEmailStates((prev) => ({ ...prev, [lead.id]: 'upgrade' }))
-      } else {
-        setEmailStates((prev) => ({ ...prev, [lead.id]: 'not_found' }))
+      let data: {
+        email?: string
+        confidence?: 'verified' | 'likely' | 'guessed'
+        error?: string
+        creditsRequired?: boolean
+        upgradeRequired?: boolean
+      } = {}
+      try {
+        data = await res.json()
+      } catch {
+        // A non-JSON body means the lookup broke, not that the address is missing.
       }
-    } catch {
-      setEmailStates((prev) => ({ ...prev, [lead.id]: 'not_found' }))
+
+      if (res.ok && data.email) {
+        setEmailData((prev) => ({
+          ...prev,
+          [lead.id]: { email: data.email as string, confidence: data.confidence ?? 'guessed' },
+        }))
+        settle('found')
+        return
+      }
+      if (res.ok) {
+        // The lookup ran and came back empty. This is the only honest "not found".
+        settle('not_found')
+        return
+      }
+      if (res.status === 402 || (res.status === 403 && (data.creditsRequired || data.upgradeRequired))) {
+        settle('upgrade', data.error || 'You have used your email finder credits.')
+        return
+      }
+      if (res.status === 401 || res.status === 403) {
+        settle(
+          'unavailable',
+          res.status === 401
+            ? 'Sign in to find emails.'
+            : data.error || 'Email finder is not available on this account.'
+        )
+        return
+      }
+      if (res.status === 429 || res.status === 409) {
+        settle('rate_limited', data.error || 'Too many lookups right now. Try again in a moment.')
+        return
+      }
+      if (res.status === 400 || res.status === 422) {
+        // No lookup ran, so this says nothing about whether an address exists.
+        settle('unavailable', 'We could not read this business website, so no lookup ran.')
+        return
+      }
+      console.error(`[LeadTable] email lookup responded ${res.status}`)
+      settle('unavailable', 'Email finder is temporarily unavailable. Try again shortly.')
+    } catch (error) {
+      console.error('[LeadTable] email lookup request failed', error)
+      settle('unavailable', 'Could not reach the email finder. Check your connection and try again.')
     }
   }
 
@@ -323,12 +380,22 @@ export function LeadTable({
                   ) : emailStates[lead.id] === 'upgrade' ? (
                     <a
                       href="/pricing"
+                      title={emailNotes[lead.id] || undefined}
                       className="text-xs font-medium text-signal hover:text-signal-600 transition-colors"
                     >
-                      Pro feature
+                      Credits used
                     </a>
+                  ) : emailStates[lead.id] === 'rate_limited' || emailStates[lead.id] === 'unavailable' ? (
+                    <button
+                      onClick={() => handleFindEmail(lead)}
+                      title={emailNotes[lead.id] || undefined}
+                      aria-label={`${emailNotes[lead.id] || 'The email lookup did not finish.'} Retry the email lookup for ${lead.businessName}.`}
+                      className="text-xs font-medium text-signal hover:text-signal-600 transition-colors"
+                    >
+                      {emailStates[lead.id] === 'rate_limited' ? 'Rate limited, retry' : 'Unavailable, retry'}
+                    </button>
                   ) : emailStates[lead.id] === 'not_found' ? (
-                    <span className="text-stone text-xs">—</span>
+                    <span className="text-stone text-xs">No email found</span>
                   ) : (
                     <button
                       onClick={() => handleFindEmail(lead)}

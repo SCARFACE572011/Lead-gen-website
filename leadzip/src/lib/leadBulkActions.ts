@@ -5,6 +5,7 @@ import { BULK_SAVE_CLIENT_BATCH_SIZE } from '@/lib/leadEntitlements'
 
 const SAVED_IDS_KEY = 'leadzip_saved'
 const SAVED_LEADS_KEY = 'leadzip_saved_leads'
+const MAX_LOCAL_SAVED_LEAD_DETAILS = 200
 
 export interface BulkSaveIssue {
   index: number
@@ -107,6 +108,20 @@ async function responseJson(response: Response): Promise<SaveApiResponse> {
   }
 }
 
+async function downloadCsvResponse(response: Response, fallbackFilename: string): Promise<void> {
+  const blob = await response.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  const disposition = response.headers.get('content-disposition') ?? ''
+  const match = disposition.match(/filename="([^"]+)"/i)
+  link.href = url
+  link.download = match?.[1] ?? fallbackFilename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), 0)
+}
+
 /** Keep the existing offline/local dashboard cache in sync with confirmed DB saves. */
 export function cacheConfirmedSavedLeads(leads: Lead[], savedIds: Iterable<string>): void {
   if (typeof window === 'undefined') return
@@ -147,7 +162,12 @@ export function cacheConfirmedSavedLeads(leads: Lead[], savedIds: Iterable<strin
     }
 
     localStorage.setItem(SAVED_IDS_KEY, JSON.stringify([...idSet]))
-    localStorage.setItem(SAVED_LEADS_KEY, JSON.stringify([...leadMap.values()]))
+    // The database is authoritative. Keep only a compact offline preview so a
+    // high-volume Agency save cannot exhaust the browser's localStorage quota.
+    localStorage.setItem(
+      SAVED_LEADS_KEY,
+      JSON.stringify([...leadMap.values()].slice(-MAX_LOCAL_SAVED_LEAD_DETAILS))
+    )
   } catch {
     // Local cache is a convenience; the server save is authoritative.
   }
@@ -289,17 +309,7 @@ export async function exportReturnedLeadsCsv(
     throw new LeadBulkActionError(response.status, payload)
   }
 
-  const blob = await response.blob()
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  const disposition = response.headers.get('content-disposition') ?? ''
-  const match = disposition.match(/filename="([^"]+)"/i)
-  link.href = url
-  link.download = match?.[1] ?? `${options.filename || 'leadzipp-export'}.csv`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), 0)
+  await downloadCsvResponse(response, `${options.filename || 'leadzipp-export'}.csv`)
 
   const rawLimit = response.headers.get('x-export-limit')
   return {
@@ -313,6 +323,49 @@ export async function exportReturnedLeadsCsv(
     duplicateCount: numberHeader(response, 'x-export-duplicates'),
     invalidCount: numberHeader(response, 'x-export-invalid'),
     requestLimitedCount: numberHeader(response, 'x-export-request-limited'),
+    exportLimit: rawLimit === null ? null : Number(rawLimit),
+    upgradeNotice: response.headers.get('x-upgrade-notice'),
+  }
+}
+
+/**
+ * Download every saved lead allowed by the caller's plan. Rows are read and
+ * streamed server-side, so high-volume Agency lists are not limited to what
+ * the browser has paginated into view or the generic 2,000-row payload cap.
+ */
+export async function exportAllSavedLeadsCsv(
+  options: ExportReturnedLeadsOptions = {}
+): Promise<ExportReturnedLeadsResult> {
+  const response = await fetch('/api/leads/export/saved', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      fields: options.fields,
+      filename: options.filename,
+      bom: options.bom,
+    }),
+  })
+
+  if (!response.ok) {
+    const payload = await responseJson(response)
+    throw new LeadBulkActionError(response.status, payload)
+  }
+
+  await downloadCsvResponse(response, `${options.filename || 'leadzipp-saved-export'}.csv`)
+
+  const exportedCount = numberHeader(response, 'x-export-count')
+  const rawLimit = response.headers.get('x-export-limit')
+  return {
+    plan: response.headers.get('x-lead-plan') ?? 'free',
+    receivedCount: exportedCount,
+    normalizedCount: exportedCount,
+    exportedCount,
+    partial: booleanHeader(response, 'x-export-plan-capped'),
+    planCapped: booleanHeader(response, 'x-export-plan-capped'),
+    requestCapped: false,
+    duplicateCount: 0,
+    invalidCount: 0,
+    requestLimitedCount: 0,
     exportLimit: rawLimit === null ? null : Number(rawLimit),
     upgradeNotice: response.headers.get('x-upgrade-notice'),
   }

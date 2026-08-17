@@ -87,37 +87,84 @@ export function LeadCard({
   const [noteDraft, setNoteDraft] = useState(lead.notes ?? '')
   const hasWebsite = Boolean(lead.website && lead.website.trim() !== '')
 
-  // 'upgrade' is distinct from 'not_found' on purpose: the email finder is a Pro
-  // feature, and showing a free user "Not found" would read as "this business
-  // has no email" rather than "this plan does not include the lookup".
-  type EmailState = 'idle' | 'loading' | 'found' | 'not_found' | 'upgrade'
+  // "Not found" is a claim about the prospect, so it is reserved for a lookup
+  // that actually ran. Credit exhaustion, outages and rate limits each get
+  // their own state so we never tell an agency a real business has no email.
+  type EmailState =
+    | 'idle'
+    | 'loading'
+    | 'found'
+    | 'not_found'
+    | 'upgrade'
+    | 'rate_limited'
+    | 'unavailable'
   const [emailState, setEmailState] = useState<EmailState>('idle')
   const [foundEmail, setFoundEmail] = useState<string>('')
-  const [emailUpgradeNote, setEmailUpgradeNote] = useState<string>('')
+  const [emailNote, setEmailNote] = useState<string>('')
   const [emailConfidence, setEmailConfidence] = useState<'verified' | 'likely' | 'guessed'>('guessed')
 
   async function handleFindEmail() {
     if (!lead.website) return
     setEmailState('loading')
+    setEmailNote('')
     try {
       const res = await fetch('/api/leads/enrich/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ domain: lead.website }),
       })
-      const data = await res.json()
+      let data: {
+        email?: string
+        confidence?: 'verified' | 'likely' | 'guessed'
+        error?: string
+        creditsRequired?: boolean
+        upgradeRequired?: boolean
+      } = {}
+      try {
+        data = await res.json()
+      } catch {
+        // A non-JSON body means the lookup broke, not that the address is missing.
+      }
+
       if (res.ok && data.email) {
         setFoundEmail(data.email)
-        setEmailConfidence(data.confidence)
+        setEmailConfidence(data.confidence ?? 'guessed')
         setEmailState('found')
-      } else if (res.status === 403 && data.upgradeRequired) {
-        setEmailUpgradeNote(data.error || 'The email finder is part of Pro.')
-        setEmailState('upgrade')
-      } else {
-        setEmailState('not_found')
+        return
       }
-    } catch {
-      setEmailState('not_found')
+      if (res.ok) {
+        // The lookup ran and came back empty. This is the only honest "not found".
+        setEmailState('not_found')
+        return
+      }
+      if (res.status === 402 || (res.status === 403 && (data.creditsRequired || data.upgradeRequired))) {
+        setEmailNote(data.error || 'You have used your email finder credits.')
+        setEmailState('upgrade')
+        return
+      }
+      if (res.status === 401 || res.status === 403) {
+        setEmailNote(res.status === 401 ? 'Sign in to find emails.' : data.error || 'Email finder is not available on this account.')
+        setEmailState('unavailable')
+        return
+      }
+      if (res.status === 429 || res.status === 409) {
+        setEmailNote(data.error || 'Too many lookups right now. Try again in a moment.')
+        setEmailState('rate_limited')
+        return
+      }
+      if (res.status === 400 || res.status === 422) {
+        // No lookup ran, so this says nothing about whether an address exists.
+        setEmailNote('We could not read this business website, so no lookup ran.')
+        setEmailState('unavailable')
+        return
+      }
+      console.error(`[LeadCard] email lookup responded ${res.status}`)
+      setEmailNote('Email finder is temporarily unavailable. Try again shortly.')
+      setEmailState('unavailable')
+    } catch (error) {
+      console.error('[LeadCard] email lookup request failed', error)
+      setEmailNote('Could not reach the email finder. Check your connection and try again.')
+      setEmailState('unavailable')
     }
   }
 
@@ -354,14 +401,16 @@ export function LeadCard({
               <button
                 onClick={handleFindEmail}
                 disabled={emailState === 'loading'}
-                title={emailState === 'upgrade' ? emailUpgradeNote : undefined}
+                title={emailNote || undefined}
                 className="flex items-center justify-center rounded-full bg-paper-2 p-2.5 text-ink-soft hover:bg-sand transition-colors min-h-[44px] min-w-[44px] disabled:opacity-60"
                 aria-label={
-                  emailState === 'upgrade'
-                    ? emailUpgradeNote
-                    : emailState === 'not_found'
-                      ? 'Email not found'
-                      : 'Find email'
+                  emailState === 'rate_limited' || emailState === 'unavailable'
+                    ? `${emailNote || 'The email lookup did not finish.'} Tap to try again.`
+                    : emailState === 'upgrade'
+                      ? emailNote
+                      : emailState === 'not_found'
+                        ? 'No email found for this business'
+                        : 'Find email'
                 }
               >
                 {emailState === 'loading'
@@ -597,7 +646,19 @@ export function LeadCard({
             )}
 
             {emailState === 'not_found' && (
-              <span className="text-xs text-stone">Not found</span>
+              <span className="text-xs text-stone">No email found</span>
+            )}
+
+            {(emailState === 'rate_limited' || emailState === 'unavailable') && (
+              <span className="flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-stone">{emailNote}</span>
+                <button
+                  onClick={handleFindEmail}
+                  className="text-xs font-medium text-signal hover:text-signal-600 transition-colors"
+                >
+                  Try again
+                </button>
+              </span>
             )}
 
             {emailState === 'upgrade' && (
@@ -605,7 +666,7 @@ export function LeadCard({
                 href="/pricing"
                 className="text-xs font-medium text-signal hover:text-signal-600 transition-colors"
               >
-                {emailUpgradeNote}
+                {emailNote}
               </a>
             )}
           </>

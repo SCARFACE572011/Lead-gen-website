@@ -18,6 +18,8 @@ import {
 
 import { getClientIp } from '@/lib/clientIp'
 import { requireActiveUser, type RequireActiveUserResult } from '@/lib/requireActiveUser'
+import { reserveLiveSearch, reserveLiveSearchLegacy } from '@/lib/searchUsage'
+import { resolveProductAccess } from '@/lib/productAccess'
 
 // Cache key + TTL now live in src/lib/leadsCache.ts so every reader and writer of
 // leads_cache (this route, /api/v1/search, market-gaps, and both crons) agrees on
@@ -123,6 +125,16 @@ export async function POST(request: NextRequest) {
     const isSupabaseConfigured =
       process.env.NEXT_PUBLIC_SUPABASE_URL &&
       process.env.NEXT_PUBLIC_SUPABASE_URL !== 'https://placeholder.supabase.co'
+    let meteredSearch: {
+      supabase: import('@supabase/supabase-js').SupabaseClient
+      admin: import('@supabase/supabase-js').SupabaseClient
+      userId: string
+      /** Account whose shared allowance is charged (Agency owner for a seat). */
+      subjectUserId: string
+      plan: string
+      role: string
+    } | null = null
+    let anonymousAllowanceConsumed = false
 
     // ── Cache check ───────────────────────────────────────────────────────────
     // Guarded by its own anonymous throttle. A cache HIT costs nothing at the
@@ -154,6 +166,14 @@ export async function POST(request: NextRequest) {
                 { status: 429, headers: { 'Retry-After': String(burst.retryAfter) } }
               )
             }
+            const daily = await checkRateLimit(anonSearchLimiter, ip)
+            if (!daily.success) {
+              return NextResponse.json(
+                { error: 'Create a free account to keep searching', signupRequired: true },
+                { status: 401 }
+              )
+            }
+            anonymousAllowanceConsumed = true
           } catch (err) {
             // Fail closed: an unmetered cache path is a scraping hole.
             console.warn('[search] anon cache-read limiter error, failing closed', err)
@@ -243,7 +263,9 @@ export async function POST(request: NextRequest) {
         supabase = await createClient()
         // One round trip covers the deactivated check AND the plan/role this
         // route already needed for its caps.
-        auth = await requireActiveUser(supabase, { columns: ['plan', 'role'] })
+        auth = await requireActiveUser(supabase, {
+          columns: ['plan', 'role', 'workspace_id'],
+        })
       } catch {
         // Couldn't establish a session — treat as anonymous (strictest gate).
         supabase = null
@@ -265,21 +287,25 @@ export async function POST(request: NextRequest) {
         // that hole is exactly what this fix prevents.
         const ip = getClientIp(request)
         try {
-          // Burst guard first — blocks rapid-fire scraping within the daily allowance.
-          const burst = await checkRateLimit(anonSearchBurstLimiter, ip)
-          if (!burst.success) {
-            return NextResponse.json(
-              { error: 'Too many requests', retryAfter: burst.retryAfter },
-              { status: 429, headers: { 'Retry-After': String(burst.retryAfter) } }
-            )
-          }
-          // Daily allowance — once spent, prompt account creation (conversion win).
-          const daily = await checkRateLimit(anonSearchLimiter, ip)
-          if (!daily.success) {
-            return NextResponse.json(
-              { error: 'Create a free account to keep searching', signupRequired: true },
-              { status: 401 }
-            )
+          if (!anonymousAllowanceConsumed) {
+            // The pre-cache gate may already have charged this anonymous
+            // request. A cache miss must not consume the allowance twice.
+            // Burst guard first — blocks rapid-fire scraping within the daily allowance.
+            const burst = await checkRateLimit(anonSearchBurstLimiter, ip)
+            if (!burst.success) {
+              return NextResponse.json(
+                { error: 'Too many requests', retryAfter: burst.retryAfter },
+                { status: 429, headers: { 'Retry-After': String(burst.retryAfter) } }
+              )
+            }
+            // Daily allowance — once spent, prompt account creation (conversion win).
+            const daily = await checkRateLimit(anonSearchLimiter, ip)
+            if (!daily.success) {
+              return NextResponse.json(
+                { error: 'Create a free account to keep searching', signupRequired: true },
+                { status: 401 }
+              )
+            }
           }
         } catch (err) {
           console.warn('[search] anon rate limiter error — failing closed', err)
@@ -291,30 +317,35 @@ export async function POST(request: NextRequest) {
       } else {
         // ── Logged-in caller: per-plan caps ───────────────────────────────────
         const { user } = auth
-        // Defaults are the STRICTEST tier (free) so a profile-read outage can't
-        // silently unlock paid-tier behavior. Caps below still apply.
-        const plan = (auth.profile?.plan as string | undefined) ?? 'free'
-        const role = (auth.profile?.role as string | undefined) ?? 'user'
-        let searchCount = 0
-        try {
-          const { data: usage } = await supabase
-            .from('usage_limits')
-            .select('searches_this_month')
-            .eq('user_id', user.id)
-            .maybeSingle()
-          searchCount = usage?.searches_this_month ?? 0
-        } catch {
-          // Usage read failed — treat as 0 used; the rate limiter above and the
-          // daily fair-use cap below still bound the damage.
+        const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        if (!serviceRoleKey || !process.env.NEXT_PUBLIC_SUPABASE_URL) {
+          return NextResponse.json(
+            { error: 'Search metering is temporarily unavailable. Please retry in a moment.' },
+            { status: 503, headers: { 'Retry-After': '30' } }
+          )
         }
-
-        const FREE_LIMIT = 25
-        // Generous per-DAY soft cap for PAID plans. Paid/unlimited plans have no
-        // monthly ceiling, so a scraper or runaway script could rack up unbounded
-        // negative-margin Google API cost. 150/day never touches normal daily
-        // prospecting but stops runaway abuse. Admins (owner) are exempt.
-        const PAID_DAILY_FAIR_USE = 150
+        const { createClient: createAdminClient } = await import('@supabase/supabase-js')
+        const admin = createAdminClient(process.env.NEXT_PUBLIC_SUPABASE_URL, serviceRoleKey, {
+          auth: { autoRefreshToken: false, persistSession: false },
+        })
+        const access = await resolveProductAccess(admin, user.id, auth.profile)
+        if (!access) {
+          return NextResponse.json(
+            { error: 'Search metering is temporarily unavailable. Please retry in a moment.' },
+            { status: 503, headers: { 'Retry-After': '30' } }
+          )
+        }
+        const plan = access.plan
+        const role = access.role
         const isPaidOrAdmin = role === 'admin' || plan !== 'free'
+        meteredSearch = {
+          supabase,
+          admin,
+          userId: user.id,
+          subjectUserId: access.quotaSubjectUserId,
+          plan,
+          role,
+        }
 
         // Rate limit: 15 req/min (free) or 60 req/min (paid/admin). On a limiter
         // OUTAGE fail CLOSED for free users (protect margin) but fail OPEN for
@@ -332,75 +363,13 @@ export async function POST(request: NextRequest) {
           if (!isPaidOrAdmin) {
             console.warn('[search] rate limiter error — failing closed for free user', err)
             return NextResponse.json(
-              { error: 'Search is temporarily unavailable — please try again in a moment.', retryAfter: 30 },
+              { error: 'Search is temporarily unavailable. Please try again in a moment.', retryAfter: 30 },
               { status: 429, headers: { 'Retry-After': '30' } }
             )
           }
           console.warn('[search] rate limiter error — failing open for paid/admin', err)
         }
 
-        // Free plan: monthly cap. Admins and paid plans skip this.
-        if (role !== 'admin' && plan === 'free' && searchCount >= FREE_LIMIT) {
-          return NextResponse.json(
-            { error: 'Monthly search limit reached. Upgrade to Pro for unlimited searches.', limitReached: true },
-            { status: 429 }
-          )
-        }
-
-        // Paid plan: daily fair-use soft cap — protects gross margin from runaway
-        // API cost. Cache hits return before this point and never bill, so they
-        // don't count. Admins exempt.
-        //
-        // The count comes from usage_limits.searches_today, NOT from
-        // search_history. Those were the same table, and DELETE /api/history
-        // lets a user clear their own history with the service role, so the cap
-        // could be reset at will by clearing history between batches. The
-        // counter is service-role/RPC written and user-readable only.
-        // Falls back to the old history count until the daily-counter migration
-        // has been applied.
-        if (role !== 'admin' && plan !== 'free') {
-          try {
-            const startOfDay = new Date()
-            startOfDay.setUTCHours(0, 0, 0, 0)
-            const today = startOfDay.toISOString().slice(0, 10)
-
-            let todayCount: number | null = null
-            const { data: usageRow } = await supabase
-              .from('usage_limits')
-              .select('searches_today, searches_today_date')
-              .eq('user_id', user.id)
-              .maybeSingle()
-
-            if (usageRow && 'searches_today' in usageRow) {
-              // A stale date means the counter belongs to a previous day.
-              todayCount =
-                usageRow.searches_today_date === today
-                  ? (usageRow.searches_today as number) ?? 0
-                  : 0
-            } else {
-              const { count } = await supabase
-                .from('search_history')
-                .select('id', { count: 'exact', head: true })
-                .eq('user_id', user.id)
-                .gte('created_at', startOfDay.toISOString())
-              todayCount = count ?? 0
-            }
-
-            if ((todayCount ?? 0) >= PAID_DAILY_FAIR_USE) {
-              return NextResponse.json(
-                {
-                  error: `You've hit today's fair-use limit (${PAID_DAILY_FAIR_USE} searches). It resets tomorrow — reply to support if you need a higher limit.`,
-                  fairUse: true,
-                },
-                { status: 429 }
-              )
-            }
-          } catch (err) {
-            // Soft-cap read failed for a PAID user — fail open (don't block a paying
-            // customer on a transient DB error), but warn so it stays visible.
-            console.warn('[search] fair-use count read failed — allowing', err)
-          }
-        }
       }
     }
 
@@ -423,6 +392,75 @@ export async function POST(request: NextRequest) {
       }
       console.warn('[search] geocode resolution failed — providers will retry', err)
       body.resolved = undefined
+    }
+
+    // Atomically reserve allowance only after the location has validated and
+    // immediately before the provider path. Cache hits returned much earlier,
+    // so opening/refining cached data never consumes a search.
+    if (meteredSearch) {
+      // One shape for both the new RPC and the legacy fallback, so the client
+      // sees an identical payload whichever meter answered.
+      const allowanceReached = (
+        daily: boolean,
+        limit: number | null | undefined,
+        plan: string
+      ) =>
+        NextResponse.json(
+          {
+            error: daily
+              ? `You've hit today's ${limit ?? ''}-search fair-use limit. It resets tomorrow; cached results and filter changes still work.`
+              : `Your ${limit?.toLocaleString() ?? ''} live searches for this month are used. Cached results and filter changes stay free.`,
+            fairUse: daily,
+            limitReached: !daily,
+            limit,
+            plan,
+          },
+          { status: 429 }
+        )
+
+      const reservation = await reserveLiveSearch(
+        meteredSearch.supabase,
+        meteredSearch.userId
+      )
+      if (reservation.status === 'reserved') {
+        if (!reservation.reservation.allowed) {
+          const daily = reservation.reservation.reason === 'daily'
+          const limit = daily
+            ? reservation.reservation.dailyLimit
+            : reservation.reservation.monthlyLimit
+          return allowanceReached(
+            daily,
+            limit,
+            reservation.reservation.plan ?? meteredSearch.plan
+          )
+        }
+      } else if (reservation.status === 'error') {
+        // Metering EXISTS but failed. Proceeding would risk unmetered spend on
+        // the paid provider, so this stays a hard stop.
+        console.error('[search] live-search reservation failed, refusing provider call', reservation.message)
+        return NextResponse.json(
+          { error: 'Search metering is temporarily unavailable. Please retry in a moment.' },
+          { status: 503, headers: { 'Retry-After': '30' } }
+        )
+      } else {
+        // The metering RPC ships in a migration that is applied by hand, so a
+        // deploy can reach production before the database has it. Refusing here
+        // would break every signed-in cache-miss search while anonymous search
+        // kept working, i.e. the product would look broken only to customers.
+        // Fall back to the counting path this route used before the RPC
+        // existed. It is still BOUNDED: Free keeps 25 live searches a month,
+        // paid plans keep the 150-a-day fair-use ceiling.
+        console.warn('[search] reserve_live_search is unavailable, using the legacy bounded allowance')
+        const legacy = await reserveLiveSearchLegacy(
+          meteredSearch.admin,
+          meteredSearch.subjectUserId,
+          meteredSearch.plan,
+          meteredSearch.role
+        )
+        if (!legacy.allowed) {
+          return allowanceReached(legacy.reason === 'daily', legacy.limit, meteredSearch.plan)
+        }
+      }
     }
 
     // ── Live fetch (the billable provider call) ───────────────────────────────
@@ -527,34 +565,9 @@ export async function POST(request: NextRequest) {
             result_count: results.total,
           })
 
-          // increment_daily_searches bumps BOTH the monthly total and the
-          // tamper-proof daily counter the fair-use cap reads, rolling the day
-          // over itself. It is SECURITY DEFINER, so the session client is fine.
-          // Older databases only have increment_searches, so fall back to it
-          // until the daily-counter migration has been applied; the cap falls
-          // back to counting history in exactly that case.
-          let { error: rpcError } = await supabase.rpc('increment_daily_searches', {
-            uid: user.id,
-          })
-          if (rpcError) {
-            ;({ error: rpcError } = await supabase.rpc('increment_searches', { uid: user.id }))
-          }
-          if (rpcError) {
-            const { data } = await admin
-              .from('usage_limits')
-              .select('searches_this_month')
-              .eq('user_id', user.id)
-              .single()
-            if (data) {
-              await admin
-                .from('usage_limits')
-                .update({
-                  searches_this_month: (data.searches_this_month ?? 0) + 1,
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('user_id', user.id)
-            }
-          }
+          // The allowance was already incremented atomically immediately
+          // before the provider call. Search history is display-only and can be
+          // cleared without changing billing usage.
         }
       } catch {
         // Non-fatal — search result still returned

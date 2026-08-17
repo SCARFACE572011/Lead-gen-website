@@ -163,12 +163,12 @@ export default function TermsPage() {
                   <tr>
                     <td className="px-4 py-3 font-medium text-ink">Pro</td>
                     <td className="px-4 py-3 font-mono text-ink-soft">$25 / month</td>
-                    <td className="px-4 py-3 text-ink-soft">Unlimited searches, CSV export, notes</td>
+                    <td className="px-4 py-3 text-ink-soft">100 live searches, 100 email credits, full CSV export</td>
                   </tr>
                   <tr>
                     <td className="px-4 py-3 font-medium text-ink">Agency</td>
                     <td className="px-4 py-3 font-mono text-ink-soft">$50 / month</td>
-                    <td className="px-4 py-3 text-ink-soft">Unlimited everything, advanced filters</td>
+                    <td className="px-4 py-3 text-ink-soft">300 pooled live searches, 500 pooled email credits, 5 seats</td>
                   </tr>
                 </tbody>
               </table>

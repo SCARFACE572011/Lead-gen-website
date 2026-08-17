@@ -87,7 +87,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
       {/* ================= HERO ================= */}
       <section className="topo relative overflow-hidden text-white">
         <div className="mx-auto max-w-4xl px-5 py-14 text-center sm:py-20">
-          <nav aria-label="Breadcrumb" className="readout flex items-center justify-center gap-2 text-white/50">
+          <nav aria-label="Breadcrumb" className="readout flex items-center justify-center gap-2 text-white/60">
             <Link href="/compare" className="inline-flex items-center gap-1.5 transition-colors hover:text-lime">
               <ArrowLeft className="h-3 w-3" /> All comparisons
             </Link>
@@ -355,7 +355,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
           <h2 className="font-display text-3xl font-extrabold leading-[1.05] sm:text-[2.9rem]">
             {page.ctaHeading}
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/85">
+          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/90">
             Free gives you 25 new live territory searches. Pro adds 100 live searches, 100 business-email
             credits, bulk ZIP search, and full exports on a 7-day free trial. Cached reruns stay free. A card
             is required to start the trial, and cancelling before day 7 means no charge.

@@ -96,7 +96,7 @@ export default function CompareIndex() {
               See pricing
             </Link>
           </div>
-          <p className="readout mt-4 text-white/45">
+          <p className="readout mt-4 text-white/60">
             Free plan: 25 searches / month · Trial needs a card · Cancel before day 7, no charge
           </p>
         </div>
@@ -197,7 +197,7 @@ export default function CompareIndex() {
           <h2 className="font-display text-3xl font-extrabold leading-[1.05] sm:text-[2.9rem]">
             The fastest comparison is a search.
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/85">
+          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/90">
             Pick a category and an area you already know, run it, and see whether the list is one you would
             work. The free plan covers 25 searches a month, and the 7-day trial on Pro requires a card but
             charges nothing if you cancel before day 7.

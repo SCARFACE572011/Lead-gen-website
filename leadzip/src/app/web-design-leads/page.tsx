@@ -181,7 +181,7 @@ export default function WebDesignLeadsPage() {
                   Build my first territory
                 </Link>
               </div>
-              <p className="readout mt-4 text-white/45">Free plan available · Public business data · No fake “ready to buy” claims</p>
+              <p className="readout mt-4 text-white/60">Free plan available · Public business data · No fake “ready to buy” claims</p>
             </div>
 
             <div className="rounded-3xl border border-white/15 bg-white/[0.07] p-4 shadow-2xl backdrop-blur-sm sm:p-6">
@@ -317,7 +317,7 @@ export default function WebDesignLeadsPage() {
             >
               Build my first territory <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
-            <p className="readout mt-4 text-white/40">No purchase required · One focused request</p>
+            <p className="readout mt-4 text-white/60">No purchase required · One focused request</p>
           </div>
         </section>
 

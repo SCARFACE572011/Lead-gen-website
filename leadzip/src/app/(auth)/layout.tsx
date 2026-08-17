@@ -115,7 +115,7 @@ export default function AuthLayout({
                 <p className="font-mono text-xl font-bold tracking-tight text-white">
                   {r.value}
                 </p>
-                <p className="mt-1 text-xs leading-snug text-white/45">
+                <p className="mt-1 text-xs leading-snug text-white/60">
                   {r.label}
                 </p>
               </div>
@@ -124,13 +124,15 @@ export default function AuthLayout({
         </div>
 
         {/* Footer */}
-        <p className="relative z-10 text-xs text-white/40">
+        {/* /60 is the floor for readable text on the dark panel: the two links
+            below inherit this colour, so at /40 they measured 3.4:1. */}
+        <p className="relative z-10 text-xs text-white/60">
           &copy; {new Date().getFullYear()} LeadZipp &nbsp;·&nbsp;{" "}
-          <Link href="/privacy" className="transition-colors hover:text-white/70">
+          <Link href="/privacy" className="transition-colors hover:text-white">
             Privacy
           </Link>
           &nbsp;·&nbsp;
-          <Link href="/terms" className="transition-colors hover:text-white/70">
+          <Link href="/terms" className="transition-colors hover:text-white">
             Terms
           </Link>
         </p>

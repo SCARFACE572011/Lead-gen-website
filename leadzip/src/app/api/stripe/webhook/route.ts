@@ -652,6 +652,13 @@ export async function POST(request: NextRequest) {
             active: true,
           })
         } catch (error) {
+          if (isMissingEmailCreditSchema(error)) {
+            // Credit schema (20260818) not applied yet: there is no ledger to
+            // adjust, and answering non-2xx would put Stripe into a retry
+            // cycle. Purchases are reconciled from the ledger once migrated.
+            console.error('stripe/webhook: email credit schema not migrated yet, skipping adjustment', error)
+            break
+          }
           console.error('stripe/webhook: failed to adjust refunded email credits', error)
           return NextResponse.json({ error: 'Failed to adjust email credits' }, { status: 500 })
         }
@@ -673,6 +680,13 @@ export async function POST(request: NextRequest) {
             active: refund.status !== 'failed' && refund.status !== 'canceled',
           })
         } catch (error) {
+          if (isMissingEmailCreditSchema(error)) {
+            // Credit schema (20260818) not applied yet: there is no ledger to
+            // adjust, and answering non-2xx would put Stripe into a retry
+            // cycle. Purchases are reconciled from the ledger once migrated.
+            console.error('stripe/webhook: email credit schema not migrated yet, skipping adjustment', error)
+            break
+          }
           console.error('stripe/webhook: failed to update refunded email credits', error)
           return NextResponse.json({ error: 'Failed to adjust email credits' }, { status: 500 })
         }
@@ -709,6 +723,13 @@ export async function POST(request: NextRequest) {
             active: disputeWithdrawsFunds(dispute.status),
           })
         } catch (error) {
+          if (isMissingEmailCreditSchema(error)) {
+            // Credit schema (20260818) not applied yet: there is no ledger to
+            // adjust, and answering non-2xx would put Stripe into a retry
+            // cycle. Purchases are reconciled from the ledger once migrated.
+            console.error('stripe/webhook: email credit schema not migrated yet, skipping adjustment', error)
+            break
+          }
           console.error('stripe/webhook: failed to adjust disputed email credits', error)
           return NextResponse.json({ error: 'Failed to adjust email credits' }, { status: 500 })
         }

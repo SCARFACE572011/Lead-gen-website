@@ -94,7 +94,7 @@ export default function LeadsIndex() {
               See pricing
             </Link>
           </div>
-          <p className="readout mt-4 text-white/45">
+          <p className="readout mt-4 text-white/60">
             Free plan: 25 searches / month · Trial needs a card · Cancel before day 7, no charge
           </p>
         </div>
@@ -234,7 +234,7 @@ export default function LeadsIndex() {
           <h2 className="font-display text-3xl font-extrabold leading-[1.05] sm:text-[2.9rem]">
             Pick a city. Pull the list. Start calling.
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/85">
+          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/90">
             Free covers 25 new live territory searches. Pro includes 100 live searches, 100 business-email
             credits, bulk ZIP search, and full exports on a 7-day trial. Cached reruns stay free. A card is
             required for the trial, and cancelling before day 7 means no charge.

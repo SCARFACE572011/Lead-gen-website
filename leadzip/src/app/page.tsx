@@ -170,6 +170,9 @@ export default function Home() {
               <Sparkles className="h-4 w-4 shrink-0 text-lime" aria-hidden />
               <span className="font-semibold text-lime">7 days of Pro, free.</span>
               <span>Cancel before day 7 and pay nothing.</span>
+              {/* Purely a visual separator between the two clauses: aria-hidden,
+                  carries no information, and is dropped entirely below sm. Left
+                  at /40 deliberately so it reads as punctuation, not as text. */}
               <span className="hidden text-white/40 sm:inline" aria-hidden>·</span>
               <span>Or stay on the free plan, 25 searches a month, no card.</span>
             </p>
@@ -386,7 +389,11 @@ export default function Home() {
           <h2 className="font-display text-4xl font-extrabold leading-[1.02] sm:text-5xl">
             Your next 50 clients are<br className="hidden sm:block" /> already on the map.
           </h2>
-          <p className="mx-auto mt-5 max-w-lg text-lg text-white/85">
+          {/* The accessible orange (#C22F0A) is only 5.67:1 against solid white,
+              so this band has almost no headroom for dimming: /85 measured
+              4.46:1. Body copy here sits at /90 (4.83:1) and takes its secondary
+              rank from type size rather than from opacity. */}
+          <p className="mx-auto mt-5 max-w-lg text-lg text-white/90">
             Run your first search free. No card, no demo data. Just type a ZIP or a city and
             watch your territory light up.
           </p>
@@ -398,7 +405,7 @@ export default function Home() {
               See pricing
             </Link>
           </div>
-          <p className="mt-6 text-sm text-white/75">
+          <p className="mt-6 text-sm text-white/90">
             Ready for more territory coverage? Pro and Agency include a 7-day free trial. Cancel before day 7 and pay nothing.
           </p>
         </div>
@@ -464,7 +471,7 @@ export default function Home() {
           </div>
           <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm sm:flex-row">
             <p>© {new Date().getFullYear()} LeadZipp. Built for people who sell to Main Street.</p>
-            <p className="readout text-white/40">Real data · Google &amp; Yelp</p>
+            <p className="readout text-white/60">Real data · Google &amp; Yelp</p>
           </div>
         </div>
       </footer>

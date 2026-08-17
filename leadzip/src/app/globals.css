@@ -115,7 +115,18 @@
   --color-paper-2: #F4F1E9;    /* raised warm surface */
   --color-ink: #17130E;        /* warm near-black text */
   --color-ink-soft: #423B32;   /* secondary text */
-  --color-stone: #79705F;      /* muted warm gray */
+  /* Muted warm gray — AA text-contrast fix (2026-08-17).
+     #79705F measured 4.33:1 on paper-2 and 4.24:1 on the signal-50 wash,
+     short of the 4.5:1 WCAG AA text minimum (it only just cleared plain
+     paper, at 4.68:1). The value below is the same hue scaled down 8% in
+     luminance, so it stays a warm gray rather than drifting to neutral or to
+     near-black, and it clears AA on every light surface it is used on:
+       #FFFFFF 5.59  ·  paper #FBFAF6 5.36  ·  paper-2 #F4F1E9 4.96
+       signal-50 #FFEDE6 4.93
+     It is still unmistakably the third step of the text ramp, not a second
+     ink-soft: on paper, ink #17130E reads 17.7:1 and ink-soft #423B32 reads
+     10.6:1, about double this. */
+  --color-stone: #6F6757;      /* muted warm gray */
   --color-sand: #E7E1D4;       /* warm borders / hairlines */
 
   /* Signal orange — AA text-contrast fix (2026-08-17).
@@ -157,7 +168,7 @@
   --secondary: #F4F1E9;
   --secondary-foreground: #17130E;
   --muted: #F4F1E9;
-  --muted-foreground: #79705F;
+  --muted-foreground: #6F6757;  /* kept in step with --color-stone */
   --accent: #FFEDE6;
   --accent-foreground: #B5300F;
   --destructive: #D6402B;

@@ -93,7 +93,7 @@ export default async function LeadsLocationPage({
       <section className="topo relative overflow-hidden text-white">
         <div className="mx-auto grid max-w-6xl items-start gap-12 px-5 py-14 sm:py-20 lg:grid-cols-[1.15fr_0.85fr]">
           <div>
-            <nav aria-label="Breadcrumb" className="readout flex flex-wrap items-center gap-2 text-white/50">
+            <nav aria-label="Breadcrumb" className="readout flex flex-wrap items-center gap-2 text-white/60">
               <Link href="/leads" className="inline-flex items-center gap-1.5 transition-colors hover:text-lime">
                 <ArrowLeft className="h-3 w-3" /> All locations
               </Link>
@@ -120,7 +120,7 @@ export default async function LeadsLocationPage({
                 See pricing
               </Link>
             </div>
-            <p className="readout mt-4 text-white/45">
+            <p className="readout mt-4 text-white/60">
               Free plan: 25 searches / month · Trial needs a card · Cancel before day 7, no charge
             </p>
           </div>
@@ -140,7 +140,7 @@ export default async function LeadsLocationPage({
             <dl className="mt-5 divide-y divide-white/10">
               {page.recipe.map((row) => (
                 <div key={row.label} className="flex items-baseline justify-between gap-4 py-2.5">
-                  <dt className="readout text-white/45">{row.label}</dt>
+                  <dt className="readout text-white/60">{row.label}</dt>
                   <dd className="text-right font-display text-[15px] font-bold text-white">{row.value}</dd>
                 </div>
               ))}
@@ -387,7 +387,7 @@ export default async function LeadsLocationPage({
           <h2 className="font-display text-3xl font-extrabold leading-[1.05] sm:text-[2.9rem]">
             {page.ctaHeading}
           </h2>
-          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/85">{page.ctaBody}</p>
+          <p className="mx-auto mt-5 max-w-xl text-[17px] leading-relaxed text-white/90">{page.ctaBody}</p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
               href="/signup?plan=pro"

@@ -343,8 +343,10 @@ function PlanCard({
             ) : (
               <X
                 className={cn(
+                  // this glyph is the only thing that says "not included",
+                  // so it needs the 3:1 non-text minimum; /30 gave 2.64:1
                   "mt-0.5 h-4 w-4 shrink-0",
-                  onDark ? "text-white/30" : "text-sand"
+                  onDark ? "text-white/60" : "text-sand"
                 )}
               />
             )}
@@ -356,7 +358,9 @@ function PlanCard({
                     ? "text-white/90"
                     : "text-ink-soft"
                   : onDark
-                    ? "text-white/40"
+                    ? // the label of a feature you do NOT get is still content,
+                      // and /40 on the dark plan card measures 3.62:1
+                      "text-white/60"
                     : "text-stone"
               )}
             >

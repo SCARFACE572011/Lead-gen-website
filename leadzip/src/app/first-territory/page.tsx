@@ -91,7 +91,7 @@ export default function FirstTerritoryPage() {
                   Preview the sample
                 </Link>
               </div>
-              <p className="readout mt-4 text-white/45">No purchase required · Human-reviewed · One focused market</p>
+              <p className="readout mt-4 text-white/60">No purchase required · Human-reviewed · One focused market</p>
             </div>
 
             <div className="rounded-3xl border border-white/15 bg-white/[0.07] p-6 backdrop-blur-sm sm:p-8">

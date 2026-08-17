@@ -134,7 +134,7 @@ export default function LeadScoringMethodologyPage() {
               Every lead gets an explainable 0–100 opportunity score. There is no hidden model: the exact
               signals and weights are published below.
             </p>
-            <p className="readout mt-5 text-white/45">Methodology updated August 13, 2026</p>
+            <p className="readout mt-5 text-white/60">Methodology updated August 13, 2026</p>
           </div>
         </section>
 

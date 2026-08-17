@@ -124,7 +124,7 @@ export function SiteFooter() {
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm sm:flex-row">
           <p>© {new Date().getFullYear()} LeadZipp. Built for people who sell to Main Street.</p>
-          <p className="readout text-white/40">Real data · Google &amp; Yelp</p>
+          <p className="readout text-white/60">Real data · Google &amp; Yelp</p>
         </div>
       </div>
     </footer>

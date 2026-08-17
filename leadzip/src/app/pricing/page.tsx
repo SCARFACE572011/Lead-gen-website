@@ -248,7 +248,7 @@ function PlanCard({
       className={cn(
         "relative flex flex-col rounded-3xl border p-7 transition-all",
         onDark
-          ? "border-signal bg-forest text-white signal-glow"
+          ? "border-signal-bright bg-forest text-white signal-glow"
           : "border-sand bg-white shadow-card card-lift"
       )}
     >

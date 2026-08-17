@@ -149,7 +149,7 @@ export default function Home() {
             </span>
             <h1 className="mt-6 font-display text-[2.7rem] font-extrabold leading-[0.98] tracking-tight sm:text-6xl">
               Find local business leads.<br />
-              Fill your <span className="relative whitespace-nowrap text-signal">pipeline.
+              Fill your <span className="relative whitespace-nowrap text-signal-bright">pipeline.
                 <svg className="absolute -bottom-2 left-0 w-full" height="10" viewBox="0 0 200 10" fill="none" aria-hidden>
                   <path d="M2 7C40 3 160 3 198 7" stroke="#CBF23F" strokeWidth="3" strokeLinecap="round" />
                 </svg>
@@ -322,7 +322,7 @@ export default function Home() {
         <div className="mt-14 grid items-stretch gap-6 md:grid-cols-3">
           {PLANS.map((p, i) => (
             <Reveal key={p.name} delay={i * 0.08}>
-              <div className={`relative flex h-full flex-col rounded-3xl border p-7 ${p.highlight ? 'border-signal bg-forest text-white signal-glow' : 'border-sand bg-white'}`}>
+              <div className={`relative flex h-full flex-col rounded-3xl border p-7 ${p.highlight ? 'border-signal-bright bg-forest text-white signal-glow' : 'border-sand bg-white'}`}>
                 {p.highlight && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-signal px-3 py-1 text-xs font-bold text-white">
                     Most popular

@@ -234,7 +234,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
               ))}
             </ul>
           </div>
-          <div className="rounded-3xl border border-signal bg-forest p-7 text-white sm:p-8 signal-glow">
+          <div className="rounded-3xl border border-signal-bright bg-forest p-7 text-white sm:p-8 signal-glow">
             <h2 className="font-display text-2xl font-extrabold text-lime">{page.chooseLeadzipp.heading}</h2>
             <ul className="mt-6 space-y-3">
               {page.chooseLeadzipp.items.map((item) => (

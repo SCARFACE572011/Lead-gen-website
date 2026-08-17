@@ -8,9 +8,60 @@
    LeadZip — "Signal" design system
    Turn a ZIP code into a live map of local opportunity.
    Palette: warm paper + ink · signal-orange beacon · deep map-green
-   · rare electric lime. Typography uses resilient local system stacks so a
-   third-party font outage can never block a production deployment.
+   · rare electric lime.
+
+   Typography is SELF-HOSTED. It was briefly a system stack after
+   next/font/google was removed to fix a build that failed on a network
+   fetch, which silently changed the brand. Shipping the woff2 files from
+   /public restores the identity and keeps the build hermetic: nothing is
+   fetched from a third party at build time or at runtime.
    ============================================================ */
+
+/* Bricolage Grotesque (display) — variable: optical size 12-96, weight 400-800 */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/fonts/bricolage-grotesque-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400 800;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url("/fonts/bricolage-grotesque-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* Hanken Grotesk (body) — variable: weight 300-800 */
+@font-face {
+  font-family: "Hanken Grotesk";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("/fonts/hanken-grotesk-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Hanken Grotesk";
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url("/fonts/hanken-grotesk-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
 
 @theme inline {
   --color-background: var(--background);
@@ -67,9 +118,19 @@
   --color-stone: #79705F;      /* muted warm gray */
   --color-sand: #E7E1D4;       /* warm borders / hairlines */
 
-  --color-signal: #FF4D23;     /* THE brand color — a live beacon/pin */
-  --color-signal-600: #E23A12; /* hover / pressed */
-  --color-signal-50: #FFEDE6;  /* tint wash */
+  /* Signal orange — AA text-contrast fix (2026-08-17).
+     #FF4D23 measures ~3.2-3.3:1 on paper/white/signal-50, short of the
+     4.5:1 WCAG AA text minimum. --color-signal is now the accessible
+     value so the ~900 existing text-signal/bg-signal/border-signal/
+     ring-signal usages become compliant automatically. The original
+     beacon orange survives as --color-signal-bright for the handful of
+     spots where orange sits directly on the dark forest surface (hero,
+     .topo bands, dark plan-card borders) — there the roles invert:
+     #FF4D23 clears AA (~4.6:1) but a darker orange drops below it. */
+  --color-signal: #C22F0A;        /* accessible default — 4.9-5.7:1 on paper/white/signal-50 */
+  --color-signal-600: #912E12;    /* hover / pressed — darker still, 7.1-8.1:1 */
+  --color-signal-50: #FFEDE6;     /* tint wash */
+  --color-signal-bright: #FF4D23; /* original beacon orange — dark surfaces only */
 
   --color-forest: #0C2B24;     /* deep map-green — dark sections */
   --color-forest-700: #123a30;
@@ -80,8 +141,10 @@
 
 /* ---- Light (default): warm paper world ---- */
 :root {
-  --font-body-stack: "Avenir Next", Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
-  --font-display-stack: "Avenir Next", Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
+  /* Self-hosted first, then the previous system stack as the fallback so a
+     font that fails to load degrades to what shipped before, not to Times. */
+  --font-body-stack: "Hanken Grotesk", "Avenir Next", Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-display-stack: "Bricolage Grotesque", "Avenir Next", Avenir, "Segoe UI", Helvetica, Arial, sans-serif;
   --font-mono-stack: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --background: #FBFAF6;
   --foreground: #17130E;

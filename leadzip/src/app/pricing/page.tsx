@@ -64,6 +64,7 @@ const PLANS: Plan[] = [
       { label: "3 saved searches", included: true },
       { label: "5 welcome email credits", included: true },
       { label: "Lead scoring and Digital Health Scores", included: true },
+      { label: "3 shareable audit reports per month", included: true },
       { label: "Every search filter and quick preset", included: true },
       { label: "CSV export", included: true, note: "First 25 rows" },
       { label: "Cached reruns and filter refinements stay free", included: true },

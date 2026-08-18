@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import Navbar from "@/components/layout/Navbar";
+import { SiteHeader, SiteFooter } from "@/components/marketing/MarketingChrome";
 import { cn } from "@/lib/utils";
 import { track } from "@/lib/analytics";
 
@@ -459,11 +459,11 @@ export default function PricingPage() {
 
   return (
     <div className="grain relative flex min-h-screen flex-col bg-paper text-ink">
-      <Navbar />
+      <SiteHeader />
 
       <main id="main-content">
       {/* ── Header ── */}
-      <section className="map-grid relative border-b border-sand bg-paper-2 pb-16 pt-28 lg:pb-20">
+      <section className="map-grid relative border-b border-sand bg-paper-2 py-16 lg:pb-20">
         <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
           <span className="readout mb-5 inline-flex items-center gap-2 rounded-full border border-sand bg-white px-3 py-1.5 text-signal">
             <Zap className="h-3 w-3" />
@@ -647,20 +647,7 @@ export default function PricingPage() {
       </section>
       </main>
 
-      {/* Footer mini */}
-      <footer className="border-t border-white/10 bg-forest-900 py-6">
-        <p className="text-center text-xs text-white/50">
-          &copy; {new Date().getFullYear()} LeadZipp. All rights reserved.
-          &nbsp;·&nbsp;
-          <Link href="/privacy" className="transition-colors hover:text-white">
-            Privacy
-          </Link>
-          &nbsp;·&nbsp;
-          <Link href="/terms" className="transition-colors hover:text-white">
-            Terms
-          </Link>
-        </p>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

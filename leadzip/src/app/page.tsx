@@ -1,18 +1,15 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import {
   MapPin, ArrowRight, Search, Target, Send, Database, Gauge, Mail,
-  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Menu, X, Sparkles,
+  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Sparkles,
 } from 'lucide-react'
 import { HeroSearchWidget } from '@/components/landing/HeroSearchWidget'
 import { HeroMap } from '@/components/landing/HeroMap'
 import { Reveal } from '@/components/landing/Reveal'
 import FaqSchema from '@/components/seo/FaqSchema'
 import SoftwareApplicationSchema from '@/components/seo/SoftwareApplicationSchema'
-import { COOKIE_PREFERENCES_EVENT } from '@/components/CookieConsent'
+import { SiteHeader, SiteFooter } from '@/components/marketing/MarketingChrome'
 
 const TRADES = [
   'Plumbers', 'Dentists', 'Roofers', 'Salons', 'HVAC', 'Law Firms', 'Restaurants',
@@ -74,7 +71,6 @@ const FAQS = [
 ]
 
 export default function Home() {
-  const [mobileOpen, setMobileOpen] = useState(false)
   return (
     <div className="grain relative min-h-screen bg-paper text-ink">
       {/* SEO: JSON-LD scoped to the landing page. FAQ items come from the
@@ -84,61 +80,7 @@ export default function Home() {
       <FaqSchema items={FAQS.map((f) => ({ question: f.q, answer: f.a }))} />
 
       {/* ================= NAV ================= */}
-      <header className="sticky top-0 z-50 border-b border-sand/70 bg-paper/80 backdrop-blur-md">
-        <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
-              <MapPin className="h-4 w-4 text-white" />
-              <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-lime ring-2 ring-paper" />
-            </span>
-            <span className="font-display text-xl font-extrabold tracking-tight">LeadZipp</span>
-          </Link>
-          <div className="hidden items-center gap-8 md:flex">
-            <a href="#how" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">How it works</a>
-            <a href="#features" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Features</a>
-            <Link href="/free-audit" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Free audit</Link>
-            <Link href="/pricing" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Pricing</Link>
-            <Link href="/blog" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Blog</Link>
-          </div>
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="hidden text-sm font-semibold text-ink transition-colors hover:text-signal sm:block">Log in</Link>
-            <Link href="/signup" className="rounded-full bg-ink px-4 py-2 text-sm font-semibold text-paper transition-transform hover:scale-[1.03] active:scale-95">
-              Start free
-            </Link>
-            <button
-              onClick={() => setMobileOpen((v) => !v)}
-              className="flex h-11 w-11 items-center justify-center rounded-lg text-ink-soft transition-colors hover:bg-paper-2 md:hidden"
-              aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
-              aria-expanded={mobileOpen}
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </button>
-          </div>
-        </nav>
-
-        {/* Mobile menu */}
-        {mobileOpen && (
-          <>
-            <div
-              className="fixed inset-x-0 bottom-0 top-16 z-40 bg-ink/20 backdrop-blur-sm md:hidden"
-              onClick={() => setMobileOpen(false)}
-              aria-hidden="true"
-            />
-            <div className="absolute inset-x-0 top-16 z-50 border-b border-sand bg-paper px-5 py-4 shadow-lg md:hidden">
-              <nav className="flex flex-col gap-1">
-                <a href="#how" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">How it works</a>
-                <a href="#features" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Features</a>
-                <Link href="/free-audit" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Free audit</Link>
-                <Link href="/pricing" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Pricing</Link>
-                <Link href="/blog" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Blog</Link>
-                <hr className="my-2 border-sand" />
-                <Link href="/login" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2">Log in</Link>
-                <Link href="/signup" onClick={() => setMobileOpen(false)} className="mt-1 rounded-full bg-ink px-3 py-2.5 text-center text-sm font-semibold text-paper transition-transform hover:scale-[1.02] active:scale-95">Start free</Link>
-              </nav>
-            </div>
-          </>
-        )}
-      </header>
+      <SiteHeader />
 
       {/* ================= MAIN ================= */}
       <main id="main-content">
@@ -415,81 +357,7 @@ export default function Home() {
       </main>
 
       {/* ================= FOOTER ================= */}
-      <footer className="bg-forest-900 py-14 text-white/70">
-        <div className="mx-auto max-w-6xl px-5">
-          <div className="flex flex-col justify-between gap-8 md:flex-row">
-            <div className="max-w-xs">
-              <div className="flex items-center gap-2">
-                <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
-                  <MapPin className="h-4 w-4 text-white" />
-                </span>
-                <span className="font-display text-xl font-extrabold text-white">LeadZipp</span>
-              </div>
-              <p className="mt-4 text-sm leading-relaxed">
-                Find and score local business leads by ZIP code, city, category, and radius.
-              </p>
-            </div>
-            <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-              <div>
-                <p className="readout text-lime">Top markets</p>
-                <ul className="mt-4 space-y-2.5 text-sm">
-                  <li><Link href="/leads/hvac-contractors-in-dallas" className="hover:text-white">HVAC in Dallas</Link></li>
-                  <li><Link href="/leads/plumbers-in-atlanta" className="hover:text-white">Plumbers in Atlanta</Link></li>
-                  <li><Link href="/leads/hvac-contractors-in-phoenix" className="hover:text-white">HVAC in Phoenix</Link></li>
-                  <li><Link href="/leads/dentists-in-seattle" className="hover:text-white">Dentists in Seattle</Link></li>
-                  <li><Link href="/leads/plumbers-in-houston" className="hover:text-white">Plumbers in Houston</Link></li>
-                  <li><Link href="/leads/dentists-in-tampa" className="hover:text-white">Dentists in Tampa</Link></li>
-                  <li><Link href="/leads" className="hover:text-white">All 20 featured markets</Link></li>
-                </ul>
-              </div>
-              <div>
-                <p className="readout text-lime">Product</p>
-                <ul className="mt-4 space-y-2.5 text-sm">
-                  <li><a href="#features" className="hover:text-white">Features</a></li>
-                  <li><Link href="/pricing" className="hover:text-white">Pricing</Link></li>
-                  <li><Link href="/web-design-leads" className="hover:text-white">Web design leads</Link></li>
-                  <li><Link href="/leads" className="hover:text-white">Lead lists by city</Link></li>
-                  <li><Link href="/compare" className="hover:text-white">Compare tools</Link></li>
-                  <li><Link href="/free-audit" className="hover:text-white">Free website audit</Link></li>
-                  <li><Link href="/resources/web-design-outreach-kit" className="hover:text-white">Free outreach kit</Link></li>
-                  <li><Link href="/api-docs" className="hover:text-white">API</Link></li>
-                  <li><Link href="/search" className="hover:text-white">Search</Link></li>
-                </ul>
-              </div>
-              <div>
-                <p className="readout text-lime">Company</p>
-                <ul className="mt-4 space-y-2.5 text-sm">
-                  <li><Link href="/about" className="hover:text-white">About LeadZipp</Link></li>
-                  <li><Link href="/lead-scoring-methodology" className="hover:text-white">Scoring methodology</Link></li>
-                  <li><Link href="/sample-territory" className="hover:text-white">Sample territory</Link></li>
-                  <li><a href="#how" className="hover:text-white">How it works</a></li>
-                  <li><a href="#faq" className="hover:text-white">FAQ</a></li>
-                  <li><Link href="/login" className="hover:text-white">Log in</Link></li>
-                </ul>
-              </div>
-              <div>
-                <p className="readout text-lime">Legal</p>
-                <ul className="mt-4 space-y-2.5 text-sm">
-                  <li><Link href="/privacy" className="hover:text-white">Privacy</Link></li>
-                  <li><Link href="/terms" className="hover:text-white">Terms</Link></li>
-                  <li>
-                    <button
-                      onClick={() => window.dispatchEvent(new Event(COOKIE_PREFERENCES_EVENT))}
-                      className="hover:text-white"
-                    >
-                      Cookie preferences
-                    </button>
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </div>
-          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-6 text-sm sm:flex-row">
-            <p>© {new Date().getFullYear()} LeadZipp. Built for people who sell to Main Street.</p>
-            <p className="readout text-white/60">Real data · Google &amp; Yelp</p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   )
 }

@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { MapPin } from "lucide-react";
-import Navbar from "@/components/layout/Navbar";
+import { SiteHeader, SiteFooter } from "@/components/marketing/MarketingChrome";
 
 // The root layout's title template appends "| LeadZipp".
 export const metadata: Metadata = {
@@ -39,9 +37,9 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 export default function PrivacyPage() {
   return (
     <div className="grain relative flex flex-col min-h-screen bg-paper text-ink">
-      <Navbar />
+      <SiteHeader />
 
-      <main id="main-content" className="flex-1 pt-28 pb-20">
+      <main id="main-content" className="flex-1 pt-16 pb-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-10">
@@ -246,43 +244,7 @@ export default function PrivacyPage() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-white/10 bg-forest-900 py-10">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-            <Link href="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-signal">
-                <MapPin className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-              </div>
-              <span className="font-display text-base font-extrabold text-white">
-                LeadZipp
-              </span>
-            </Link>
-            <nav className="flex flex-wrap items-center justify-center gap-5">
-              {[
-                { label: "Home", href: "/" },
-                { label: "Pricing", href: "/pricing" },
-                { label: "Login", href: "/login" },
-                { label: "Privacy", href: "/privacy" },
-                { label: "Terms", href: "/terms" },
-              ].map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="text-sm text-white/60 hover:text-white transition-colors"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="mt-6 border-t border-white/10 pt-6">
-            <p className="text-center text-xs leading-relaxed text-white/50">
-              &copy; {new Date().getFullYear()} LeadZipp. All rights reserved.
-            </p>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

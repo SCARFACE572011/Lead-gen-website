@@ -1968,6 +1968,44 @@ export function getLocationPage(slug: string): LocationPage | null {
   return allPagesMap().get(slug) ?? null
 }
 
+/* ------------------------------------------------------------------ */
+/* Launch priority: pages that get internal-link weight first          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Ranked by agency deal size, query intent, and observed SERP softness
+ * (live checks, August 2026). Order matters: it is the push order for
+ * internal links and outreach. Re-check the SERPs monthly before reordering.
+ */
+export const FEATURED_SLUGS: string[] = [
+  'hvac-contractors-in-dallas',
+  'plumbers-in-atlanta',
+  'hvac-contractors-in-phoenix',
+  'dentists-in-seattle',
+  'hvac-contractors-in-houston',
+  'plumbers-in-houston',
+  'dentists-in-tampa',
+  'landscapers-in-charlotte',
+  'plumbers-in-chicago',
+  'roofing-contractors-in-charlotte',
+  'roofing-contractors-in-columbus',
+  'plumbers-in-columbus',
+  'dentists-in-phoenix',
+  'hvac-contractors-in-tampa',
+  'plumbers-in-dallas',
+  'chiropractors-in-denver',
+  'landscapers-in-nashville',
+  'roofing-contractors-in-nashville',
+  'chiropractors-in-tampa',
+  'law-firms-in-columbus',
+]
+
+export function getFeaturedPages(): LocationPage[] {
+  return FEATURED_SLUGS.map((slug) => getLocationPage(slug)).filter(
+    (p): p is LocationPage => p !== null
+  )
+}
+
 /** Path list for the sitemap, index page first. */
 export const LEADS_INDEX_PATH = '/leads'
 

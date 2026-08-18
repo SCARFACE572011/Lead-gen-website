@@ -6,7 +6,7 @@ import { Reveal } from '@/components/landing/Reveal'
 import BreadcrumbSchema from '@/components/seo/BreadcrumbSchema'
 import FaqSchema from '@/components/seo/FaqSchema'
 import { SITE_URL } from '@/components/seo/site'
-import { CATEGORIES, getAllLocationPages, getLocationGroups } from '@/lib/seoPages'
+import { CATEGORIES, getAllLocationPages, getFeaturedPages, getLocationGroups } from '@/lib/seoPages'
 
 const TITLE = 'Local Business Lead Lists by City and Category'
 const DESCRIPTION =
@@ -53,6 +53,7 @@ const FAQS = [
 export default function LeadsIndex() {
   const { us, intl } = getLocationGroups()
   const total = getAllLocationPages().length
+  const featured = getFeaturedPages()
 
   return (
     <div className="grain relative min-h-screen bg-paper text-ink">
@@ -114,6 +115,37 @@ export default function LeadsIndex() {
               </span>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* FEATURED: launch-priority markets */}
+      <section className="mx-auto max-w-6xl px-5 pt-18 sm:pt-24">
+        <Reveal className="max-w-2xl">
+          <span className="readout text-signal">Start here</span>
+          <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.4rem]">
+            Twenty markets worth working first.
+          </h2>
+          <p className="mt-5 text-[17px] leading-relaxed text-ink-soft">
+            High-ticket trades in metros where the need is visible and the competition for attention
+            is thin. If you are choosing your first territory, choose from this list.
+          </p>
+        </Reveal>
+        <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {featured.map((p, i) => (
+            <Link
+              key={p.slug}
+              href={p.path}
+              className="group flex items-center gap-3 rounded-2xl border border-sand bg-white px-4 py-3.5 transition-colors hover:border-signal/50"
+            >
+              <span className="readout w-5 flex-shrink-0 text-right text-stone tabular-nums">
+                {i + 1}
+              </span>
+              <span className="flex-1 text-[14.5px] font-medium text-ink-soft transition-colors group-hover:text-signal-600">
+                {p.linkLabel}
+              </span>
+              <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 text-sand transition-all group-hover:translate-x-0.5 group-hover:text-signal" />
+            </Link>
+          ))}
         </div>
       </section>
 

@@ -427,7 +427,19 @@ export default function Home() {
                 Find and score local business leads by ZIP code, city, category, and radius.
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-10 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
+              <div>
+                <p className="readout text-lime">Top markets</p>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li><Link href="/leads/hvac-contractors-in-dallas" className="hover:text-white">HVAC in Dallas</Link></li>
+                  <li><Link href="/leads/plumbers-in-atlanta" className="hover:text-white">Plumbers in Atlanta</Link></li>
+                  <li><Link href="/leads/hvac-contractors-in-phoenix" className="hover:text-white">HVAC in Phoenix</Link></li>
+                  <li><Link href="/leads/dentists-in-seattle" className="hover:text-white">Dentists in Seattle</Link></li>
+                  <li><Link href="/leads/plumbers-in-houston" className="hover:text-white">Plumbers in Houston</Link></li>
+                  <li><Link href="/leads/dentists-in-tampa" className="hover:text-white">Dentists in Tampa</Link></li>
+                  <li><Link href="/leads" className="hover:text-white">All 20 featured markets</Link></li>
+                </ul>
+              </div>
               <div>
                 <p className="readout text-lime">Product</p>
                 <ul className="mt-4 space-y-2.5 text-sm">

@@ -20,6 +20,7 @@ export function SiteHeader() {
         <div className="hidden items-center gap-8 md:flex">
           <Link href="/#how" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">How it works</Link>
           <Link href="/#features" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Features</Link>
+          <Link href="/free-audit" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Free audit</Link>
           <Link href="/pricing" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Pricing</Link>
           <Link href="/blog" className="text-sm font-medium text-ink-soft transition-colors hover:text-ink">Blog</Link>
         </div>
@@ -51,6 +52,7 @@ export function SiteHeader() {
             <nav className="flex flex-col gap-1">
               <Link href="/" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Home</Link>
               <Link href="/#features" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Features</Link>
+              <Link href="/free-audit" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Free audit</Link>
               <Link href="/pricing" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Pricing</Link>
               <Link href="/blog" onClick={() => setMobileOpen(false)} className="rounded-lg px-3 py-2.5 text-sm font-medium text-ink-soft transition-colors hover:bg-paper-2 hover:text-signal">Blog</Link>
               <hr className="my-2 border-sand" />
@@ -89,6 +91,7 @@ export function SiteFooter() {
                 <li><Link href="/web-design-leads" className="hover:text-white">Web design leads</Link></li>
                 <li><Link href="/leads" className="hover:text-white">Lead lists by city</Link></li>
                 <li><Link href="/compare" className="hover:text-white">Compare tools</Link></li>
+                <li><Link href="/free-audit" className="hover:text-white">Free website audit</Link></li>
                 <li><Link href="/api-docs" className="hover:text-white">API</Link></li>
                 <li><Link href="/search" className="hover:text-white">Search</Link></li>
               </ul>

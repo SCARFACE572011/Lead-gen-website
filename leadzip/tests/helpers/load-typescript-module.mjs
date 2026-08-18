@@ -5,7 +5,12 @@ import ts from 'typescript'
 async function typescriptModuleUrl(path, aliases = {}) {
   let source = await fs.readFile(path, 'utf8')
   for (const [specifier, dependencyPath] of Object.entries(aliases)) {
-    const dependencyUrl = await typescriptModuleUrl(dependencyPath)
+    if (!source.includes(`'${specifier}'`) && !source.includes(`"${specifier}"`)) continue
+    // Pass the alias map down so a dependency's own '@/...' imports resolve
+    // too (e.g. businessLookup -> auditReport -> healthScore). The includes()
+    // guard above keeps unused branches from being transpiled and prevents a
+    // module that never mentions its own specifier from recursing forever.
+    const dependencyUrl = await typescriptModuleUrl(dependencyPath, aliases)
     source = source
       .split(`'${specifier}'`).join(`'${dependencyUrl}'`)
       .split(`"${specifier}"`).join(`"${dependencyUrl}"`)

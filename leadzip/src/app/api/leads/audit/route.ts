@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createClient as createServiceClient } from '@supabase/supabase-js'
 import { auditLimiter, checkRateLimit } from '@/lib/ratelimit'
 import { requireActiveUser } from '@/lib/requireActiveUser'
-import { computeHealthScore, probeWebsite, type HealthScoreInput } from '@/lib/healthScore'
+import { buildLeadHealth, sanitizeLead } from '@/lib/auditReport'
 import {
   featureQuotaExceededResponse,
   featureUsageUnavailableResponse,
@@ -16,24 +16,10 @@ import {
  * Snapshots the lead + its computed health score into audit_reports and returns
  * the public slug. When the lead has a website we probe it server-side (short
  * timeout, SSRF-guarded) so the stored score is verified, not estimated.
+ *
+ * The snapshot sanitizers and the probe-then-score builder live in
+ * src/lib/auditReport.ts, shared with the public /api/free-audit checker.
  */
-
-// Public snapshot of the lead stored in the report. Only these fields are kept:
-// the report page is public, so nothing beyond business-directory data belongs
-// in the row.
-interface LeadSnapshot {
-  businessName: string
-  category: string
-  address: string
-  city: string
-  state: string
-  zipCode: string
-  phone: string
-  website: string
-  rating: number | null
-  reviewCount: number | null
-  businessHours: string[] | null
-}
 
 /**
  * INPUT TRUST MODEL FOR THIS ROUTE
@@ -43,109 +29,8 @@ interface LeadSnapshot {
  * RESULTS, which the user has not saved and which may have come from a live
  * provider call rather than a cached pool, so requiring a matching `leads` or
  * `leads_cache` row would break the primary flow. See the notes on
- * `sanitizeWebsite` for what IS constrained instead.
+ * `sanitizeWebsite` in src/lib/auditReport.ts for what IS constrained instead.
  */
-
-/** C0 and C1 control characters. The snapshot is rendered on a public page and
- *  stored as JSON, so NULs, newlines and terminal escapes have no place in it. */
-const CONTROL_CHARS_RE = /[\u0000-\u001F\u007F-\u009F]/g
-
-function clean(v: unknown, max: number): string {
-  if (typeof v !== 'string') return ''
-  return v.replace(CONTROL_CHARS_RE, ' ').trim().slice(0, max)
-}
-
-/** A business website is always a registrable public domain, never an IP or a
- *  single-label host. Rejects a trailing all-numeric TLD, so "192.168.1.1"
- *  cannot pass as a hostname. */
-const PUBLIC_HOSTNAME_RE =
-  /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*\.[a-z]{2,63}$/
-
-/** Hostnames that only ever resolve inside a network. safeProbe rejects these
- *  too; refusing them here keeps them out of the stored snapshot as well. */
-const INTERNAL_SUFFIXES = ['.local', '.localhost', '.internal', '.intranet', '.home.arpa', '.test']
-
-const MAX_WEBSITE_LEN = 200
-
-/**
- * The only field that turns into an outbound request, so it gets the tightest
- * rules. `safeProbe` already blocks SSRF (DNS-resolved private-range rejection,
- * socket pinning, per-redirect revalidation); this narrows the remaining
- * "arbitrary outbound GET from our servers" primitive:
- *
- *   - http/https only, no embedded credentials, no explicit port
- *   - registrable public hostname, no IP literals, no internal-only suffixes
- *   - 200 characters max, in and out
- *   - query string and fragment are DROPPED, so a caller cannot use this route
- *     to fire parameterized GETs at a third party from our IP
- *
- * Returns '' for anything unusable rather than failing the request: directory
- * data (OSM in particular) carries free-text website tags, and an unusable URL
- * is a legitimate audit finding ("no working website"), not an error.
- */
-function sanitizeWebsite(raw: unknown): string {
-  const input = clean(raw, MAX_WEBSITE_LEN)
-  if (!input) return ''
-
-  let url: URL
-  try {
-    url = new URL(/^https?:\/\//i.test(input) ? input : `https://${input}`)
-  } catch {
-    return ''
-  }
-
-  if (url.protocol !== 'http:' && url.protocol !== 'https:') return ''
-  if (url.username || url.password) return ''
-  if (url.port) return ''
-
-  const host = url.hostname.toLowerCase()
-  if (host.length > 253 || !PUBLIC_HOSTNAME_RE.test(host)) return ''
-  if (INTERNAL_SUFFIXES.some((suffix) => host.endsWith(suffix))) return ''
-
-  const normalized = `${url.protocol}//${host}${url.pathname}`
-  return normalized.length > MAX_WEBSITE_LEN ? '' : normalized
-}
-
-/** Google ratings are 0-5. Anything else is not a rating. */
-function rating(v: unknown): number | null {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return null
-  if (v < 0 || v > 5) return null
-  return Math.round(v * 10) / 10
-}
-
-function reviewCount(v: unknown): number | null {
-  if (typeof v !== 'number' || !Number.isFinite(v)) return null
-  if (v < 0 || v > 10_000_000) return null
-  return Math.floor(v)
-}
-
-function sanitizeLead(raw: Record<string, unknown>): LeadSnapshot | null {
-  const businessName = clean(raw.businessName, 200)
-  if (!businessName) return null
-
-  // Slice BEFORE filtering so a huge array is never walked end to end.
-  const hours = Array.isArray(raw.businessHours)
-    ? raw.businessHours
-        .slice(0, 14)
-        .map((h) => clean(h, 120))
-        .filter((h) => h.length > 0)
-        .slice(0, 7)
-    : []
-
-  return {
-    businessName,
-    category: clean(raw.category, 100),
-    address: clean(raw.address, 200),
-    city: clean(raw.city, 100),
-    state: clean(raw.state, 50),
-    zipCode: clean(raw.zipCode, 12),
-    phone: clean(raw.phone, 30),
-    website: sanitizeWebsite(raw.website),
-    rating: rating(raw.rating),
-    reviewCount: reviewCount(raw.reviewCount),
-    businessHours: hours.length > 0 ? hours : null,
-  }
-}
 
 function makeSlug(businessName: string): string {
   const base = businessName
@@ -219,19 +104,8 @@ export async function POST(request: Request) {
   if (!reservation.ok) return featureUsageUnavailableResponse('audit_reports')
   if (!reservation.usage.allowed) return featureQuotaExceededResponse(reservation.usage)
 
-  // Verify the website server-side when one is listed; a failed probe still
-  // produces a valid (lower) score rather than failing the audit.
-  const signals = snapshot.website ? await probeWebsite(snapshot.website) : undefined
-
-  const input: HealthScoreInput = {
-    businessName: snapshot.businessName,
-    phone: snapshot.phone,
-    website: snapshot.website,
-    rating: snapshot.rating,
-    reviewCount: snapshot.reviewCount,
-    businessHours: snapshot.businessHours,
-  }
-  const health = computeHealthScore(input, signals)
+  // Probe (when a website is listed) + score, via the shared builder.
+  const health = await buildLeadHealth(snapshot)
 
   const slug = makeSlug(snapshot.businessName)
 

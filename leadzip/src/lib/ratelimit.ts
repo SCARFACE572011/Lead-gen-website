@@ -248,6 +248,37 @@ export const chatDailyLimiter = createLimiter({
   onOutage: 'deny',
 })
 
+// Free public health-score checker (/api/free-audit), keyed by client IP via
+// getClientIp — the same identity the anonymous search limiters use. The route
+// is public (no account) and each accepted request is one billable Places
+// lookup plus an outbound website probe, so it gets the strictest anonymous
+// treatment: a small per-visitor daily allowance (which doubles as the signup
+// nudge), a burst guard inside that allowance, and a GLOBAL daily cap keyed on
+// FREE_AUDIT_GLOBAL_KEY so a botnet rotating IPs cannot run up the Google
+// bill. All three spend money upstream, so an outage denies.
+export const freeAuditLimiter = createLimiter({
+  limiter: Ratelimit.slidingWindow(3, '1 d'),
+  prefix: 'rl:free-audit',
+  onOutage: 'deny',
+})
+
+export const freeAuditBurstLimiter = createLimiter({
+  limiter: Ratelimit.slidingWindow(2, '1 m'),
+  prefix: 'rl:free-audit:burst',
+  onOutage: 'deny',
+})
+
+/** Single shared identifier for the sitewide free-checker cap: every caller
+ *  checks the global limiter with this constant, so the 200/day budget is one
+ *  bucket for the whole planet. */
+export const FREE_AUDIT_GLOBAL_KEY = 'global'
+
+export const freeAuditGlobalLimiter = createLimiter({
+  limiter: Ratelimit.fixedWindow(200, '1 d'),
+  prefix: 'rl:free-audit:global',
+  onOutage: 'deny',
+})
+
 /** Why a limiter could not give a real answer. */
 export type RateLimitFailure = 'timeout' | 'error'
 

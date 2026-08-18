@@ -41,7 +41,7 @@ export default function TermsPage() {
     <div className="grain relative flex flex-col min-h-screen bg-paper text-ink">
       <Navbar />
 
-      <main className="flex-1 pt-28 pb-20">
+      <main id="main-content" className="flex-1 pt-28 pb-20">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <div className="mb-10">

@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { friendlyAuthError } from "../authErrors";
 import { track, readGclid } from "@/lib/analytics";
 
 /**
@@ -147,7 +148,9 @@ export default function SignupPage() {
     });
 
     if (authError) {
-      setError(authError.message);
+      setError(
+        friendlyAuthError(authError, "We could not create your account. Please try again in a moment.")
+      );
       setLoading(false);
       return;
     }
@@ -225,16 +228,16 @@ export default function SignupPage() {
       <div>
         <div className="mb-8">
           <span className="readout text-signal">Create account</span>
-          <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Create your account</h1>
+          <h1 className="mt-3 font-display text-3xl font-extrabold tracking-tight text-ink">Check your email</h1>
           <p className="mt-1.5 text-sm text-ink-soft">
-            Start finding local business leads in minutes.
+            One more step and your account is live.
           </p>
         </div>
         <div className="rounded-2xl bg-signal-50 border border-signal/20 p-6 text-center">
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-signal/10">
             <CheckCircle className="h-7 w-7 text-signal" />
           </span>
-          <h3 className="font-display font-bold text-ink mb-1">Check your email</h3>
+          <h3 className="font-display font-bold text-ink mb-1">Confirmation link sent</h3>
           <p className="text-sm text-ink-soft">
             We sent a confirmation link to <strong className="text-ink">{email}</strong>.{" "}
             Click it to activate your account.

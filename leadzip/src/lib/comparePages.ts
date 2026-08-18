@@ -62,7 +62,7 @@ const APOLLO: ComparisonPage = {
   summary: 'A large B2B contact database and sales engagement platform, compared with a local business prospecting tool.',
   metaTitle: 'LeadZipp vs Apollo.io: Which Prospecting Tool Fits Your Work',
   metaDescription:
-    'Apollo is a B2B contact database and sales engagement platform for outbound teams. LeadZipp finds and scores local businesses by ZIP code or city. An honest look at which one fits your sales motion.',
+    'Apollo is a B2B contact database for outbound teams. LeadZipp finds and scores local businesses by ZIP or city. An honest look at which fits your motion.',
   ogTitle: 'LeadZipp vs Apollo.io',
   ogSubtitle: 'Two different sales motions, not two versions of the same tool',
   h1: 'LeadZipp vs Apollo.io',
@@ -178,7 +178,7 @@ const HUNTER: ComparisonPage = {
   summary: 'An email finding and verification platform, compared with a tool that finds the businesses in the first place.',
   metaTitle: 'LeadZipp vs Hunter.io: Find Businesses or Find Emails',
   metaDescription:
-    'Hunter.io finds and verifies professional email addresses for domains you already have. LeadZipp finds the local businesses first, scores them, then finds the email. How the two fit together.',
+    'Hunter.io verifies emails for domains you already have. LeadZipp finds the local businesses first, scores them, then finds the email. How the two fit.',
   ogTitle: 'LeadZipp vs Hunter.io',
   ogSubtitle: 'One finds the email. The other finds the business.',
   h1: 'LeadZipp vs Hunter.io',
@@ -294,7 +294,7 @@ const ZOOMINFO: ComparisonPage = {
   summary: 'An enterprise go-to-market intelligence platform, compared with a self serve local prospecting tool.',
   metaTitle: 'LeadZipp vs ZoomInfo: Enterprise GTM Data or Local Leads',
   metaDescription:
-    'ZoomInfo is a go-to-market intelligence platform for enterprise sales, marketing and recruiting teams. LeadZipp is a self serve tool for finding and scoring local businesses. Which one matches your motion.',
+    'ZoomInfo is enterprise go-to-market intelligence. LeadZipp is a self serve tool for finding and scoring local businesses. Which one matches your motion.',
   ogTitle: 'LeadZipp vs ZoomInfo',
   ogSubtitle: 'Enterprise GTM intelligence next to local business prospecting',
   h1: 'LeadZipp vs ZoomInfo',
@@ -410,7 +410,7 @@ const B2BLEADFINDER: ComparisonPage = {
   summary: 'The closest overlap on this list. Both find local businesses with weak digital presence for agencies.',
   metaTitle: 'LeadZipp vs B2B Lead Finder: The Closest Comparison',
   metaDescription:
-    'B2B Lead Finder scans map data for local businesses with a weak digital presence, aimed at web design and SEO agencies. So does LeadZipp. An honest look at where the two actually differ.',
+    'B2B Lead Finder scans map data for local businesses with weak digital presence, for web design and SEO agencies. So does LeadZipp. Where they differ.',
   ogTitle: 'LeadZipp vs B2B Lead Finder',
   ogSubtitle: 'Same job, different bets on how to do it',
   h1: 'LeadZipp vs B2B Lead Finder',

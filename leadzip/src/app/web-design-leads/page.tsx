@@ -19,7 +19,7 @@ import { SITE_URL } from '@/components/seo/site'
 
 const TITLE = 'Web Design Leads: Find Local Businesses That Need a Website'
 const DESCRIPTION =
-  'Find web design leads by ZIP code, city, category, and radius. Prioritize local businesses with no website or visible digital gaps, then save and export a focused prospect list.'
+  'Find web design leads by ZIP code, city, category, and radius. Prioritize local businesses with no website or visible gaps, then export a prospect list.'
 const URL = `${SITE_URL}/web-design-leads`
 const OG = '/og?title=Find+web+design+leads&subtitle=Local+businesses+with+visible+reasons+to+need+a+better+website'
 
@@ -153,7 +153,7 @@ export default function WebDesignLeadsPage() {
       <FaqSchema items={FAQS} />
       <JsonLd data={pageSchema} />
 
-      <main>
+      <main id="main-content">
         <section className="topo relative overflow-hidden text-white">
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:py-24 lg:grid-cols-[1.02fr_0.98fr]">
             <div>

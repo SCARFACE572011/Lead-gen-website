@@ -13,6 +13,7 @@ import {
   Phone,
   Globe,
   FileImage,
+  Loader2,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Lead } from '@/types/lead'
@@ -76,6 +77,7 @@ export default function ExportsPage() {
   const [format, setFormat] = useState<FormatKey>('csv')
   const [exportHistory, setExportHistory] = useState<ExportRecord[]>([])
   const [mounted, setMounted] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [userPlan, setUserPlan] = useState<'free' | 'pro' | 'agency'>('free')
 
   useEffect(() => {
@@ -127,10 +129,11 @@ export default function ExportsPage() {
   const isPaid = userPlan === 'pro' || userPlan === 'agency'
 
   const handleExport = async () => {
-    if (selectedLeads.length === 0) return
+    if (selectedLeads.length === 0 || exporting) return
     const filename = newExportFilename()
     const leadIds = selectedLeads.map((l) => l.id)
 
+    setExporting(true)
     try {
       if (format === 'branded_pdf') {
         if (!isPaid) {
@@ -176,7 +179,9 @@ export default function ExportsPage() {
         toast.info(exportResult.upgradeNotice)
       }
     } catch {
-      toast.error('Export failed — please try again')
+      toast.error('Export failed. Please try again.')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -226,7 +231,7 @@ export default function ExportsPage() {
         toast.info(exportResult.upgradeNotice)
       }
     } catch {
-      toast.error('Export failed — please try again')
+      toast.error('Export failed. Please try again.')
     }
   }
 
@@ -331,7 +336,7 @@ export default function ExportsPage() {
                   <div className="px-4 py-3 border-b border-sand flex items-center gap-2">
                     <Eye className="w-4 h-4 text-signal" />
                     <h2 className="font-display text-sm font-bold text-ink">
-                      Preview — First {Math.min(5, selectedLeads.length)} rows
+                      Preview · First {Math.min(5, selectedLeads.length)} rows
                     </h2>
                   </div>
                   <div className="overflow-x-auto">
@@ -378,7 +383,7 @@ export default function ExportsPage() {
                   {[
                     { value: 'csv', label: 'Standard CSV', desc: 'Compatible with all tools', paidOnly: false },
                     { value: 'excel_csv', label: 'Excel-ready CSV', desc: 'UTF-8 BOM for Excel', paidOnly: false },
-                    { value: 'branded_pdf', label: 'Branded PDF', desc: 'Agency logo, colors, and name — configure in Settings → White Label', icon: <FileImage className="w-3.5 h-3.5 text-signal" />, paidOnly: true },
+                    { value: 'branded_pdf', label: 'Branded PDF', desc: 'Agency logo, colors, and name. Configure in Settings → White Label', icon: <FileImage className="w-3.5 h-3.5 text-signal" />, paidOnly: true },
                   ].map((f) => (
                     <label
                       key={f.value}
@@ -464,11 +469,20 @@ export default function ExportsPage() {
               {/* Export Button */}
               <button
                 onClick={handleExport}
-                disabled={selectedLeads.length === 0 || (format !== 'branded_pdf' && selectedFields.size === 0)}
+                disabled={exporting || selectedLeads.length === 0 || (format !== 'branded_pdf' && selectedFields.size === 0)}
                 className="w-full inline-flex items-center justify-center gap-2 bg-signal text-white text-sm font-semibold px-4 py-3 rounded-full hover:bg-signal-600 transition-all active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100"
               >
-                <Download className="w-4 h-4" />
-                Export {selectedLeads.length > 0 ? `${selectedLeads.length} Lead${selectedLeads.length !== 1 ? 's' : ''}` : 'Leads'}
+                {exporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Preparing file
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    Export {selectedLeads.length > 0 ? `${selectedLeads.length} Lead${selectedLeads.length !== 1 ? 's' : ''}` : 'Leads'}
+                  </>
+                )}
               </button>
 
               {selectedLeads.length === 0 ? (

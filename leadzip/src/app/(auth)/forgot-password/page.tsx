@@ -29,7 +29,11 @@ export default function ForgotPasswordPage() {
     });
 
     if (!res.ok) {
-      setError('Something went wrong. Please try again.');
+      setError(
+        res.status === 429
+          ? "Too many attempts. Wait a minute and try again."
+          : "Something went wrong on our end. Please try again."
+      );
       setLoading(false);
       return;
     }

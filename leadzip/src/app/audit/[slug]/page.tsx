@@ -144,7 +144,7 @@ export default async function AuditReportPage({
   return (
     <div className="min-h-screen bg-paper text-ink">
       {/* Top bar */}
-      <header className="border-b border-sand bg-paper">
+      <header className="print-keep border-b border-sand bg-paper">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-4">
           <Link href="/" className="flex items-center gap-1.5 font-display text-lg font-bold text-ink">
             LeadZipp
@@ -156,7 +156,7 @@ export default async function AuditReportPage({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pb-16">
+      <main id="main-content" className="mx-auto max-w-3xl px-4 pb-16">
         {/* Business header + gauge */}
         <section className="flex flex-col items-center gap-6 py-10 text-center sm:flex-row sm:justify-between sm:text-left">
           <div className="min-w-0">

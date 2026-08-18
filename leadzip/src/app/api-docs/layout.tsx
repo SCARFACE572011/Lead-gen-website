@@ -3,7 +3,7 @@ import { SITE_URL } from "@/components/seo/site";
 
 const TITLE = "API Documentation";
 const DESCRIPTION =
-  "Integrate LeadZipp into your stack. REST API reference for searching local businesses by ZIP code and pulling scored leads with phones, websites, and emails into your own tools.";
+  "REST API reference for LeadZipp: search local businesses by ZIP code and pull scored leads with phones, websites, and emails into your own tools.";
 const OG_IMAGE =
   "/og?title=LeadZipp+API&subtitle=Scored+local+business+leads,+by+ZIP+code,+over+REST";
 

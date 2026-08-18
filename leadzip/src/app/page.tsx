@@ -141,7 +141,7 @@ export default function Home() {
       </header>
 
       {/* ================= MAIN ================= */}
-      <main>
+      <main id="main-content">
       {/* ================= HERO ================= */}
       <section className="topo relative overflow-hidden text-white">
         <div className="mx-auto grid max-w-6xl items-center gap-14 px-5 py-16 sm:py-24 lg:grid-cols-2">

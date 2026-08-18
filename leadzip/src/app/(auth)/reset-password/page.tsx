@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, ArrowRight, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
+import { friendlyAuthError } from "../authErrors";
 
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState("");
@@ -36,7 +37,9 @@ export default function ResetPasswordPage() {
     const { error: authError } = await supabase.auth.updateUser({ password });
 
     if (authError) {
-      setError(authError.message);
+      setError(
+        friendlyAuthError(authError, "We could not update your password. Please try again in a moment.")
+      );
       setIsLoading(false);
       return;
     }

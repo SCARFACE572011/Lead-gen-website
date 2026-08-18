@@ -10,7 +10,7 @@ import { CATEGORIES, getAllLocationPages, getFeaturedPages, getLocationGroups } 
 
 const TITLE = 'Local Business Lead Lists by City and Category'
 const DESCRIPTION =
-  'Browse every LeadZipp location page. Scored lead lists for 10 local business categories across 12 US metros, plus city pages for the international markets worldwide search now covers.'
+  'Browse every LeadZipp location page: scored lead lists for 10 local business categories across 12 US metros, plus international city pages.'
 const OG = '/og?title=Lead+lists+by+city+and+category&subtitle=Every+LeadZipp+location+page+in+one+place'
 
 export const metadata: Metadata = {
@@ -67,7 +67,7 @@ export default function LeadsIndex() {
       />
       <FaqSchema items={FAQS} />
 
-      <main>
+      <main id="main-content">
       {/* HERO */}
       <section className="topo relative overflow-hidden text-white">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-22">

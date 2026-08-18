@@ -9,7 +9,7 @@ import { SITE_URL } from '@/components/seo/site'
 
 const TITLE = 'Build My First Sales Territory'
 const DESCRIPTION =
-  'Tell LeadZipp where and what you sell. We will help you shape a focused first territory, prioritize the most useful local-business prospects, and choose a practical outreach angle.'
+  'Tell LeadZipp where and what you sell. Shape a focused first territory, prioritize the local businesses most worth calling, and pick an outreach angle.'
 const URL = `${SITE_URL}/first-territory`
 const OG = '/og?title=Build+my+first+sales+territory&subtitle=A+focused+local+prospecting+plan,+reviewed+by+a+real+person'
 
@@ -63,7 +63,7 @@ export default function FirstTerritoryPage() {
       />
       <JsonLd data={pageSchema} />
 
-      <main>
+      <main id="main-content">
         <section className="topo relative overflow-hidden text-white">
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:py-22 lg:grid-cols-[1fr_0.9fr]">
             <div>

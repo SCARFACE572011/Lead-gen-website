@@ -8,7 +8,7 @@ import { SITE_URL } from '@/components/seo/site'
 
 const TITLE = 'Sample Local Sales Territory Report'
 const DESCRIPTION =
-  'Preview how a LeadZipp territory becomes a prioritized outreach plan. See illustrative local-business records, visible opportunity signals, qualification notes, and a practical first-week workflow.'
+  'Preview how a LeadZipp territory becomes a prioritized outreach plan: sample local-business records, visible opportunity signals, and a first-week workflow.'
 const URL = `${SITE_URL}/sample-territory`
 const OG = '/og?title=Sample+sales+territory&subtitle=From+a+local+search+to+a+focused+first-week+outreach+plan'
 
@@ -115,7 +115,7 @@ export default function SampleTerritoryPage() {
       />
       <JsonLd data={pageSchema} />
 
-      <main>
+      <main id="main-content">
         <section className="topo relative overflow-hidden text-white">
           <div className="mx-auto max-w-6xl px-5 py-16 sm:py-22">
             <div className="flex flex-col justify-between gap-8 md:flex-row md:items-end">

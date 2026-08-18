@@ -8,7 +8,7 @@ import { Reveal } from '@/components/landing/Reveal'
 
 const BLOG_TITLE = 'Blog: Local Lead Generation Playbooks'
 const BLOG_DESCRIPTION =
-  'Guides and playbooks for finding local business leads: prospecting by ZIP code, finding businesses without a website, lead scoring, and outreach that books clients.'
+  'Guides for finding local business leads: prospecting by ZIP code, businesses without a website, lead scoring, and outreach that books clients.'
 const BLOG_OG_IMAGE =
   '/og?title=Playbooks+for+finding+local+clients&subtitle=The+LeadZipp+blog'
 
@@ -39,7 +39,7 @@ export default function BlogIndex() {
     <div className="grain relative min-h-screen bg-paper text-ink">
       <SiteHeader />
 
-      <main>
+      <main id="main-content">
       {/* Header */}
       <section className="border-b border-sand bg-paper-2 map-grid">
         <div className="mx-auto max-w-6xl px-5 py-16 sm:py-20">

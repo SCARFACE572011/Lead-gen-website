@@ -62,7 +62,7 @@ export default async function BlogPost({ params }: { params: Promise<{ slug: str
         ]}
       />
 
-      <main>
+      <main id="main-content">
       <article className="mx-auto max-w-3xl px-5 py-12 sm:py-16">
         <Link href="/blog" className="inline-flex items-center gap-1.5 text-sm font-medium text-stone transition-colors hover:text-signal">
           <ArrowLeft className="h-4 w-4" /> All posts

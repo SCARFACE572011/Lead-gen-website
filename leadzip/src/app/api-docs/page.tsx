@@ -140,7 +140,7 @@ export default function ApiDocsPage() {
     <div className="grain relative flex min-h-screen flex-col bg-paper text-ink">
       <SiteHeader />
 
-      <main className="flex-1">
+      <main id="main-content" className="flex-1">
         <div className="mx-auto max-w-3xl px-6 py-12">
           <Link
             href="/"

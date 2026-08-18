@@ -234,10 +234,7 @@ export function ChatWidget() {
       {/* Collapsed launcher, bottom-right. It rides above the measured consent
           banner on first visit and returns to the corner after a choice. */}
       {!open && (
-        <div
-          className="fixed right-4 z-[55] flex items-center gap-2.5"
-          style={{ bottom: 'calc(1rem + var(--consent-banner-h, 0px))' }}
-        >
+        <div className="fixed bottom-[calc(0.75rem+var(--consent-banner-h,0px))] right-3 z-[55] flex items-center gap-2.5 sm:bottom-[calc(1rem+var(--consent-banner-h,0px))] sm:right-4">
           <AnimatePresence>
             {showLabel && (
               <motion.button
@@ -246,7 +243,7 @@ export function ChatWidget() {
                 animate={reduceMotion ? { opacity: 1 } : { opacity: 1, x: 0 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="rounded-full border border-sand bg-white px-3.5 py-2 text-[13px] font-semibold text-ink shadow-card transition-colors hover:border-signal hover:text-signal"
+                className="hidden rounded-full border border-sand bg-white px-3.5 py-2 text-[13px] font-semibold text-ink shadow-card transition-colors hover:border-signal hover:text-signal sm:block"
               >
                 Need help?
               </motion.button>
@@ -259,7 +256,7 @@ export function ChatWidget() {
             onClick={openChat}
             aria-label="Open LeadZipp support chat"
             aria-haspopup="dialog"
-            className="relative flex h-14 w-14 items-center justify-center rounded-full bg-signal text-white shadow-[0_8px_24px_-6px_rgba(255,77,35,0.5)] transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2"
+            className="relative flex h-12 w-12 items-center justify-center rounded-full bg-signal text-white sm:h-14 sm:w-14 shadow-[0_8px_24px_-6px_rgba(255,77,35,0.5)] transition-transform hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal focus-visible:ring-offset-2"
           >
             <MessageCircle className="h-6 w-6" aria-hidden="true" />
             {!reduceMotion && (

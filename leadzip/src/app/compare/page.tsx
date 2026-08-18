@@ -60,7 +60,7 @@ export default function CompareIndex() {
     <div className="grain relative min-h-screen bg-paper text-ink">
       <SiteHeader />
 
-      <main>
+      <main id="main-content">
       <BreadcrumbSchema
         items={[
           { name: 'Home', url: SITE_URL },

@@ -139,7 +139,7 @@ export default function AuthLayout({
       </aside>
 
       {/* ── Right form panel ── */}
-      <main className="flex flex-1 flex-col items-center justify-center bg-paper px-4 py-12 sm:px-8">
+      <main id="main-content" className="flex flex-1 flex-col items-center justify-center bg-paper px-4 py-12 sm:px-8">
         {/* Mobile logo */}
         <Link href="/" className="mb-8 flex items-center gap-2.5 lg:hidden">
           <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-signal">

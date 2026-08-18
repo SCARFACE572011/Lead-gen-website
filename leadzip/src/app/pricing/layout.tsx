@@ -5,7 +5,7 @@ import { SITE_URL } from "@/components/seo/site";
 
 const TITLE = "Pricing: Local Lead Generation Plans from $0";
 const DESCRIPTION =
-  "Start free with 25 live territory searches a month and 5 email credits. Pro ($25/mo) includes 100 live searches and 100 business-email credits; Agency ($50/mo) pools 300 searches and 500 credits across five seats. Cached reruns stay free. 7-day trial on paid plans.";
+  "Start free with 25 live searches a month, no card required. Pro is $25/mo with 100 searches and email credits; Agency is $50/mo with 300 pooled searches.";
 const OG_IMAGE =
   "/og?title=Simple+plans+that+scale+with+you&subtitle=Start+free.+Upgrade+when+the+deals+roll+in.";
 

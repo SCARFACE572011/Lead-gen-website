@@ -850,6 +850,7 @@ function ApiTab() {
   const [copied, setCopied] = useState(false)
   const [showKey, setShowKey] = useState(false)
   const [revoking, setRevoking] = useState<string | null>(null)
+  const [confirmingRevokeId, setConfirmingRevokeId] = useState<string | null>(null)
   const [canUseApi, setCanUseApi] = useState(false)
   const [apiError, setApiError] = useState('')
 
@@ -881,9 +882,21 @@ function ApiTab() {
 
   async function handleRevoke(id: string) {
     setRevoking(id)
-    await fetch(`/api/api-keys/${id}`, { method: 'DELETE' })
-    setKeys((prev) => prev.filter((k) => k.id !== id))
-    setRevoking(null)
+    setApiError('')
+    try {
+      const res = await fetch(`/api/api-keys/${id}`, { method: 'DELETE' })
+      if (res.ok) {
+        setKeys((prev) => prev.filter((k) => k.id !== id))
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setApiError(data.error ?? 'Could not revoke that key. Please try again.')
+      }
+    } catch {
+      setApiError('Could not revoke that key. Please try again.')
+    } finally {
+      setRevoking(null)
+      setConfirmingRevokeId(null)
+    }
   }
 
   function copyKey() {
@@ -972,13 +985,32 @@ function ApiTab() {
                       : `Created ${new Date(k.created_at).toLocaleDateString()}`}
                   </p>
                 </div>
-                <button
-                  onClick={() => handleRevoke(k.id)}
-                  disabled={revoking === k.id}
-                  className="p-1.5 rounded-lg text-stone hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40"
-                >
-                  {revoking === k.id ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                </button>
+                {confirmingRevokeId === k.id ? (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      onClick={() => handleRevoke(k.id)}
+                      disabled={revoking === k.id}
+                      className="rounded-full bg-red-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                    >
+                      {revoking === k.id ? 'Revoking…' : 'Revoke?'}
+                    </button>
+                    <button
+                      onClick={() => setConfirmingRevokeId(null)}
+                      disabled={revoking === k.id}
+                      className="rounded-full px-2 py-1 text-xs font-medium text-stone hover:text-ink transition-colors disabled:opacity-40"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingRevokeId(k.id)}
+                    aria-label={`Revoke ${k.name}`}
+                    className="p-1.5 rounded-lg text-stone hover:text-red-500 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -1019,6 +1051,9 @@ function TeamTab() {
   const [inviteError, setInviteError] = useState<string | null>(null)
   const [inviteSuccess, setInviteSuccess] = useState<string | null>(null)
   const [removingId, setRemovingId] = useState<string | null>(null)
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null)
+  const [memberError, setMemberError] = useState<string | null>(null)
+  const [cancelInviteError, setCancelInviteError] = useState<string | null>(null)
   const [userPlan, setUserPlan] = useState<string>('free')
   const [loadError, setLoadError] = useState(false)
 
@@ -1105,18 +1140,40 @@ function TeamTab() {
 
   const handleRemove = async (userId: string) => {
     setRemovingId(userId)
-    await fetch(`/api/workspace/members/${userId}`, { method: 'DELETE' })
-    setMembers(prev => prev.filter(m => m.user_id !== userId))
-    setRemovingId(null)
+    setMemberError(null)
+    try {
+      const res = await fetch(`/api/workspace/members/${userId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setMembers(prev => prev.filter(m => m.user_id !== userId))
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setMemberError(data.error ?? 'Could not remove that member. Please try again.')
+      }
+    } catch {
+      setMemberError('Could not remove that member. Please try again.')
+    } finally {
+      setRemovingId(null)
+      setConfirmingRemoveId(null)
+    }
   }
 
   const handleCancelInvite = async (inviteId: string) => {
-    await fetch('/api/workspace/invite', {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: inviteId }),
-    })
-    setPendingInvites(prev => prev.filter(i => i.id !== inviteId))
+    setCancelInviteError(null)
+    try {
+      const res = await fetch('/api/workspace/invite', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: inviteId }),
+      })
+      if (res.ok) {
+        setPendingInvites(prev => prev.filter(i => i.id !== inviteId))
+      } else {
+        const data = await res.json().catch(() => ({}))
+        setCancelInviteError(data.error ?? 'Could not cancel that invite. Please try again.')
+      }
+    } catch {
+      setCancelInviteError('Could not cancel that invite. Please try again.')
+    }
   }
 
   if (loading) return <div className="text-sm text-stone py-6 text-center">Loading…</div>
@@ -1236,6 +1293,7 @@ function TeamTab() {
           {members.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-ink">Members</p>
+              {memberError && <p className="text-xs text-red-600">{memberError}</p>}
               <div className="space-y-1">
                 {members.map(m => (
                   <div key={m.user_id} className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-paper-2">
@@ -1244,13 +1302,32 @@ function TeamTab() {
                       <p className="text-xs text-stone">{m.users_profile?.email} · {m.role}</p>
                     </div>
                     {m.role !== 'owner' && (
-                      <button
-                        onClick={() => handleRemove(m.user_id)}
-                        disabled={removingId === m.user_id}
-                        className="text-xs text-stone hover:text-red-600 transition-colors p-1 rounded"
-                      >
-                        <UserMinus className="w-4 h-4" />
-                      </button>
+                      confirmingRemoveId === m.user_id ? (
+                        <div className="flex shrink-0 items-center gap-1.5">
+                          <button
+                            onClick={() => handleRemove(m.user_id)}
+                            disabled={removingId === m.user_id}
+                            className="rounded-full bg-red-500 px-2.5 py-1 text-xs font-semibold text-white hover:bg-red-600 transition-colors disabled:opacity-50"
+                          >
+                            {removingId === m.user_id ? 'Removing…' : 'Remove?'}
+                          </button>
+                          <button
+                            onClick={() => setConfirmingRemoveId(null)}
+                            disabled={removingId === m.user_id}
+                            className="rounded-full px-2 py-1 text-xs font-medium text-stone hover:text-ink transition-colors disabled:opacity-40"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setConfirmingRemoveId(m.user_id)}
+                          aria-label={`Remove ${m.users_profile?.email ?? 'member'}`}
+                          className="text-xs text-stone hover:text-red-600 transition-colors p-1 rounded"
+                        >
+                          <UserMinus className="w-4 h-4" />
+                        </button>
+                      )
                     )}
                   </div>
                 ))}
@@ -1262,6 +1339,7 @@ function TeamTab() {
           {pendingInvites.length > 0 && (
             <div className="space-y-2">
               <p className="text-sm font-medium text-ink">Pending invitations</p>
+              {cancelInviteError && <p className="text-xs text-red-600">{cancelInviteError}</p>}
               <div className="space-y-1">
                 {pendingInvites.map(inv => (
                   <div key={inv.id} className="flex items-center justify-between py-2 px-3 rounded-xl bg-amber-50 border border-amber-100">
@@ -1271,6 +1349,7 @@ function TeamTab() {
                     </div>
                     <button
                       onClick={() => handleCancelInvite(inv.id)}
+                      aria-label={`Cancel invite to ${inv.email}`}
                       className="text-xs text-stone hover:text-red-600 transition-colors p-1 rounded"
                     >
                       <X className="w-4 h-4" />

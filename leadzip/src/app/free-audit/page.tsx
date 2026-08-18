@@ -9,7 +9,7 @@ import { SITE_URL } from '@/components/seo/site'
 
 const TITLE = 'Free Local Business Website Audit'
 const DESCRIPTION =
-  'Check any local business in seconds. A free digital health score covering its Google profile, website quality, and conversion signals, with every point explained. No signup needed.'
+  'Check any local business in seconds. A free Digital Health Score covering its Google profile, website quality, and conversion signals. No signup needed.'
 const URL = `${SITE_URL}/free-audit`
 const OG =
   '/og?title=Free+local+business+website+audit&subtitle=Digital+health+score+in+seconds,+no+signup+needed'
@@ -84,7 +84,7 @@ export default function FreeAuditPage() {
       />
       <FaqSchema items={FAQS} />
 
-      <main>
+      <main id="main-content">
         {/* HERO */}
         <section className="topo relative overflow-hidden text-white">
           <div className="mx-auto max-w-6xl px-5 py-16 sm:py-22">

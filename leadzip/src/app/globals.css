@@ -432,3 +432,24 @@
   input[type="number"], input[type="search"], input[type="tel"],
   select, textarea { font-size: 16px !important; }
 }
+
+/* ============================================================
+   Print: content only, ink on white
+   ============================================================ */
+@media print {
+  /* Floating and sticky chrome: headers, footer, cookie banner,
+     chat widget, promo popup, mobile overlays. */
+  header:not(.print-keep), footer, .fixed, .sticky { display: none !important; }
+  body { background: #FFFFFF !important; color: var(--color-ink) !important; }
+  main { background: #FFFFFF !important; }
+  /* Dark map sections print as ink on white. */
+  .topo { background: #FFFFFF !important; }
+  .topo :where(h1, h2, h3, h4, p, span, li, a, blockquote) { color: var(--color-ink) !important; }
+  /* Decorative textures waste toner and muddy copy. */
+  .grain::before, .map-grid, .bg-grid-pattern { background-image: none !important; }
+  /* Keep cards whole across page breaks. */
+  .card-lift, .shadow-card, .shadow-card-hover, .lead-card-hover {
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+}

@@ -8,7 +8,7 @@ import { SITE_URL } from '@/components/seo/site'
 
 const TITLE = 'Free Web Design Outreach Templates and Prospect Tracker'
 const DESCRIPTION =
-  'Download practical web design cold-email templates, phone openers, follow-up copy, and a simple CSV prospect tracker. Built for specific, permission-based local-business outreach.'
+  'Free web design cold-email templates, phone openers, follow-up copy, and a simple CSV prospect tracker for permission-based local-business outreach.'
 const URL = `${SITE_URL}/resources/web-design-outreach-kit`
 const OG = '/og?title=Free+web+design+outreach+kit&subtitle=Specific+scripts+and+a+simple+prospect+tracker'
 
@@ -79,7 +79,7 @@ export default function WebDesignOutreachKitPage() {
       />
       <JsonLd data={pageSchema} />
 
-      <main>
+      <main id="main-content">
         <section className="topo relative overflow-hidden text-white">
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 sm:py-22 lg:grid-cols-[1fr_0.82fr]">
             <div>

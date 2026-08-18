@@ -22,6 +22,7 @@ export default function SavedSearchesPage() {
   const [isPaidUser, setIsPaidUser] = useState(false)
   const [togglingId, setTogglingId] = useState<string | null>(null)
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [actionError, setActionError] = useState('')
 
   const load = useCallback(async () => {
@@ -81,10 +82,12 @@ export default function SavedSearchesPage() {
 
   async function handleDelete(id: string) {
     setDeletingId(id)
+    setActionError('')
     setSearches((prev) => prev.filter((s) => s.id !== id))
     try {
       const res = await fetch(`/api/saved-searches/${id}`, { method: 'DELETE' })
       if (!res.ok) {
+        setActionError('Could not delete that saved search. Please try again.')
         const listRes = await fetch('/api/saved-searches')
         if (listRes.ok) {
           const data = await listRes.json() as { searches: SavedSearch[] }
@@ -92,13 +95,15 @@ export default function SavedSearchesPage() {
         }
       }
     } catch {
-      const res = await fetch('/api/saved-searches')
-      if (res.ok) {
+      setActionError('Could not delete that saved search. Please try again.')
+      const res = await fetch('/api/saved-searches').catch(() => null)
+      if (res?.ok) {
         const data = await res.json() as { searches: SavedSearch[] }
         setSearches(data.searches)
       }
     } finally {
       setDeletingId(null)
+      setConfirmingDeleteId(null)
     }
   }
 
@@ -246,14 +251,32 @@ export default function SavedSearchesPage() {
                     {search.lastRunAt ? formatRelativeTime(search.lastRunAt) : 'Never'}
                   </td>
                   <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleDelete(search.id)}
-                      disabled={deletingId === search.id}
-                      aria-label="Delete saved search"
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-stone transition-colors hover:bg-red-50 hover:text-red-500 disabled:opacity-50"
-                    >
-                      <Trash2 className="h-3.5 w-3.5 shrink-0" />
-                    </button>
+                    {confirmingDeleteId === search.id ? (
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => handleDelete(search.id)}
+                          disabled={deletingId === search.id}
+                          className="rounded-full bg-red-500 px-2.5 py-1 text-xs font-semibold text-white transition-colors hover:bg-red-600 disabled:opacity-50"
+                        >
+                          {deletingId === search.id ? 'Deleting…' : 'Delete?'}
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          disabled={deletingId === search.id}
+                          className="rounded-full px-2 py-1 text-xs font-medium text-stone transition-colors hover:text-ink disabled:opacity-50"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setConfirmingDeleteId(search.id)}
+                        aria-label={`Delete saved search ${search.name}`}
+                        className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-stone transition-colors hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 className="h-3.5 w-3.5 shrink-0" />
+                      </button>
+                    )}
                   </td>
                 </tr>
               ))}

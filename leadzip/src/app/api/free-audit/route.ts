@@ -57,7 +57,10 @@ export async function POST(request: Request) {
     const burst = await checkRateLimit(freeAuditBurstLimiter, ip)
     if (!burst.success) {
       return NextResponse.json(
-        { error: 'Too many requests', retryAfter: burst.retryAfter },
+        {
+          error: 'Give it a minute; a couple of checks are already running from your connection.',
+          retryAfter: burst.retryAfter,
+        },
         { status: 429, headers: { 'Retry-After': String(burst.retryAfter) } }
       )
     }

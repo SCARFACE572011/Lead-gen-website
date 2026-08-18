@@ -7,6 +7,7 @@ import { Eye, EyeOff, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { createClient, isSupabaseConfigured } from "@/lib/supabase/client";
+import { friendlyAuthError } from "../authErrors";
 
 // Only allow same-origin relative paths (single leading '/'); anything else
 // (absolute URLs, protocol-relative '//', '/\' tricks) falls back to /dashboard.
@@ -86,7 +87,9 @@ export default function LoginPage() {
     const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
 
     if (authError) {
-      setError(authError.message);
+      setError(
+        friendlyAuthError(authError, "We could not sign you in. Please try again in a moment.")
+      );
       setLoading(false);
       return;
     }

@@ -39,8 +39,14 @@ export async function generateMetadata({
   const url = `${SITE_URL}/compare/${page.slug}`
   const ogImage = `/og?title=${encodeURIComponent(page.ogTitle)}&subtitle=${encodeURIComponent(page.ogSubtitle)}`
 
+  // The root layout's "%s | LeadZipp" template pushed every comparison title
+  // past 60 characters. metaTitle already leads with the brand, so render it
+  // absolute, trimmed to its pre-colon half if it alone still reaches 60.
+  const pageTitle =
+    page.metaTitle.length < 60 ? page.metaTitle : page.metaTitle.split(':')[0]
+
   return {
-    title: page.metaTitle,
+    title: { absolute: pageTitle },
     description: page.metaDescription,
     alternates: { canonical: url },
     openGraph: {
@@ -74,7 +80,7 @@ export default async function ComparePage({ params }: { params: Promise<{ slug: 
     <div className="grain relative min-h-screen bg-paper text-ink">
       <SiteHeader />
 
-      <main>
+      <main id="main-content">
       <BreadcrumbSchema
         items={[
           { name: 'Home', url: SITE_URL },

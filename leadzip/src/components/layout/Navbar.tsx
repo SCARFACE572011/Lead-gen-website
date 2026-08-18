@@ -7,10 +7,12 @@ import { MapPin, Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 const NAV_LINKS = [
-  { label: 'Home',     href: '/' },
-  { label: 'Features', href: '/#features' },
-  { label: 'Pricing',  href: '/pricing' },
-  { label: 'Blog',     href: '/blog' },
+  { label: 'Home',       href: '/' },
+  { label: 'Features',   href: '/#features' },
+  { label: 'Free audit', href: '/free-audit' },
+  { label: 'Compare',    href: '/compare' },
+  { label: 'Pricing',    href: '/pricing' },
+  { label: 'Blog',       href: '/blog' },
 ]
 
 export default function Navbar() {
@@ -52,7 +54,7 @@ export default function Navbar() {
             {/* Logo */}
             <Link
               href="/"
-              className="flex items-center gap-2 group"
+              className="flex min-h-11 items-center gap-2 group"
               aria-label="LeadZipp home"
             >
               <span className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-signal shadow-sm transition-transform duration-200 group-hover:scale-105">
@@ -71,7 +73,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={e => handleNavClick(e, link.href)}
-                  className="text-sm font-medium text-ink-soft hover:text-ink transition-colors duration-150"
+                  className="py-3 text-sm font-medium text-ink-soft hover:text-ink transition-colors duration-150"
                 >
                   {link.label}
                 </Link>
@@ -82,13 +84,13 @@ export default function Navbar() {
             <div className="hidden md:flex items-center gap-3">
               <Link
                 href="/login"
-                className="px-4 py-2 text-sm font-semibold text-ink hover:text-signal transition-colors duration-150"
+                className="inline-flex min-h-11 items-center px-4 text-sm font-semibold text-ink hover:text-signal transition-colors duration-150"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
-                className="px-4 py-2 text-sm font-semibold text-paper bg-ink hover:scale-[1.03] active:scale-95 rounded-full transition-transform duration-150 shadow-sm"
+                className="inline-flex min-h-11 items-center px-5 text-sm font-semibold text-paper bg-ink hover:scale-[1.03] active:scale-95 rounded-full transition-transform duration-150 shadow-sm"
               >
                 Start Free
               </Link>
@@ -96,7 +98,7 @@ export default function Navbar() {
 
             {/* Mobile hamburger */}
             <button
-              className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg text-ink-soft hover:bg-paper-2 transition-colors"
+              className="md:hidden w-11 h-11 flex items-center justify-center rounded-lg text-ink-soft hover:bg-paper-2 transition-colors"
               onClick={() => setMobileOpen(v => !v)}
               aria-label={mobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={mobileOpen}
@@ -122,7 +124,7 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={e => handleNavClick(e, link.href)}
-                  className="w-full text-left px-3 py-2.5 rounded-lg text-sm font-medium text-ink-soft hover:bg-paper-2 hover:text-signal transition-colors duration-150"
+                  className="w-full text-left px-3 py-3 rounded-lg text-sm font-medium text-ink-soft hover:bg-paper-2 hover:text-signal transition-colors duration-150"
                 >
                   {link.label}
                 </Link>
@@ -131,14 +133,14 @@ export default function Navbar() {
               <Link
                 href="/login"
                 onClick={() => setMobileOpen(false)}
-                className="px-3 py-2.5 rounded-lg text-sm font-medium text-ink-soft hover:bg-paper-2 transition-colors duration-150"
+                className="px-3 py-3 rounded-lg text-sm font-medium text-ink-soft hover:bg-paper-2 transition-colors duration-150"
               >
                 Login
               </Link>
               <Link
                 href="/signup"
                 onClick={() => setMobileOpen(false)}
-                className="mt-1 px-3 py-2.5 rounded-full text-sm font-semibold text-paper bg-ink text-center transition-transform duration-150 hover:scale-[1.02] active:scale-95"
+                className="mt-1 px-3 py-3 rounded-full text-sm font-semibold text-paper bg-ink text-center transition-transform duration-150 hover:scale-[1.02] active:scale-95"
               >
                 Start Free
               </Link>

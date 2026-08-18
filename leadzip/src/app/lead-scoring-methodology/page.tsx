@@ -121,7 +121,7 @@ export default function LeadScoringMethodologyPage() {
       <FaqSchema items={FAQS} />
       <JsonLd data={methodologySchema} />
 
-      <main>
+      <main id="main-content">
         <section className="topo relative overflow-hidden text-white">
           <div className="mx-auto max-w-4xl px-5 py-16 text-center sm:py-22">
             <span className="readout inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-lime ring-1 ring-white/15">

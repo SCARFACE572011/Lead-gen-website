@@ -163,7 +163,9 @@
   --card-foreground: #17130E;
   --popover: #FFFFFF;
   --popover-foreground: #17130E;
-  --primary: #FF4D23;
+  /* Two Oranges Rule: light surfaces use the accessible signal (white text
+     5.67:1). #FF4D23 stays the dark-surface orange (.dark below keeps it). */
+  --primary: #C22F0A;
   --primary-foreground: #FFFFFF;
   --secondary: #F4F1E9;
   --secondary-foreground: #17130E;
@@ -174,7 +176,7 @@
   --destructive: #D6402B;
   --border: #E7E1D4;
   --input: #E7E1D4;
-  --ring: #FF4D23;
+  --ring: #C22F0A;
   --chart-1: #FF4D23;
   --chart-2: #0C2B24;
   --chart-3: #2E6BE6;
@@ -183,12 +185,12 @@
   --radius: 0.75rem;
   --sidebar: #FFFFFF;
   --sidebar-foreground: #17130E;
-  --sidebar-primary: #FF4D23;
+  --sidebar-primary: #C22F0A;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #F4F1E9;
   --sidebar-accent-foreground: #17130E;
   --sidebar-border: #E7E1D4;
-  --sidebar-ring: #FF4D23;
+  --sidebar-ring: #C22F0A;
 }
 
 /* ---- Dark: deep map-green world ---- */
@@ -308,6 +310,21 @@
   outline-offset: 2px;
 }
 
+/* Site-wide visible keyboard focus (WCAG 2.4.7). The committed .focus-signal
+   treatment, applied by default so no surface ships without it. :where() keeps
+   specificity at zero so any component can still override deliberately. */
+:where(a, button, summary, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible {
+  outline: 3px solid var(--color-signal);
+  outline-offset: 2px;
+}
+/* Dark surfaces: the darker signal dies on forest — use the bright beacon.
+   (Two Oranges Rule, DESIGN.md.) */
+.dark :where(a, button, summary, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible,
+.topo :where(a, button, summary, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible,
+[class*="bg-forest"] :where(a, button, summary, input, select, textarea, [role="button"], [tabindex="0"]):focus-visible {
+  outline-color: var(--color-signal-bright);
+}
+
 /* ---- Motion ---- */
 @keyframes pin-pulse {
   0% { transform: scale(0.6); opacity: 0.9; }
@@ -330,6 +347,11 @@
   display: flex;
   width: max-content;
   animation: marquee 32s linear infinite;
+}
+/* WCAG 2.2.2: moving content must be pausable — hover/focus halts the loop */
+.marquee-track:hover,
+.marquee-track:focus-within {
+  animation-play-state: paused;
 }
 
 @keyframes slide-up {
@@ -419,12 +441,12 @@
   background: var(--color-forest);
   color: #F3EFE6;
   padding: 1.1rem 1.25rem;
-  border-radius: 14px;
+  border-radius: 12px;
   overflow-x: auto;
 }
 .article-body pre code { background: transparent; border: 0; padding: 0; color: inherit; }
 .article-body hr { border: 0; border-top: 1px solid var(--color-sand); margin: 2.75rem 0; }
-.article-body img { border-radius: 14px; }
+.article-body img { border-radius: 12px; }
 
 /* Prevent iOS auto-zoom on input focus (font-size must be >= 16px) */
 @media (max-width: 1023px) {

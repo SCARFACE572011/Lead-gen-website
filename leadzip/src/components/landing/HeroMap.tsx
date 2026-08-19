@@ -56,14 +56,17 @@ const PINS = PIN_DEFS.map((p) => {
 export function HeroMap() {
   const reduce = useReducedMotion()
   const [active, setActive] = useState(0)
+  // WCAG 2.2.2: the auto-cycle pauses while the panel is hovered or any
+  // element inside it holds focus, and resumes on leave/blur.
+  const [paused, setPaused] = useState(false)
 
   // Featured-lead cycle — drives the card, the lime pin, the leader line and
   // the "tap to call" chip together so they always point at the same business.
   useEffect(() => {
-    if (reduce) return
+    if (reduce || paused) return
     const id = setInterval(() => setActive((v) => (v + 1) % BUSINESSES.length), ACTIVE_PERIOD * 1000)
     return () => clearInterval(id)
-  }, [reduce])
+  }, [reduce, paused])
 
   // Leads-found count-up. Climbs 0 -> 218 across the first discovery lap, then
   // keeps ticking up in small live increments each lap so it feels alive.
@@ -102,7 +105,17 @@ export function HeroMap() {
   const activePin = PINS.find((p) => p.biz === active) ?? PINS[1]
 
   return (
-    <div className="lzr-root relative mx-auto w-full max-w-[520px]" style={{ ['--lzr-lap' as string]: `${LAP}s` } as CSSProperties}>
+    <div
+      className="lzr-root relative mx-auto w-full max-w-[520px]"
+      style={{ ['--lzr-lap' as string]: `${LAP}s` } as CSSProperties}
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={(e) => {
+        // focus-within semantics: only resume when focus leaves the panel entirely
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setPaused(false)
+      }}
+    >
       <style>{RADAR_CSS}</style>
 
       {/* ============ MAP PANEL ============ */}
@@ -201,6 +214,11 @@ export function HeroMap() {
           <span className="readout text-lime">scanning · {biz.zip}</span>
         </div>
 
+        {/* honest demo label — same readout voice, deliberately quieter */}
+        <div className="absolute right-4 top-4 rounded-lg bg-black/30 px-2.5 py-1.5 backdrop-blur-sm ring-1 ring-white/10">
+          <span className="readout text-white/70">Sample scan</span>
+        </div>
+
         {/* cycling lead card */}
         <div className="absolute inset-x-4 bottom-4">
           <AnimatePresence mode="wait">
@@ -221,7 +239,7 @@ export function HeroMap() {
                 <div className="mt-0.5 flex items-center gap-2 text-[12px] text-stone">
                   <span className="inline-flex items-center gap-0.5"><Star className="h-3 w-3 fill-signal text-signal" />4.{biz.reviews % 9}</span>
                   <span>·</span>
-                  <span className="readout !text-[10px] !normal-case tracking-normal">{biz.cat}</span>
+                  <span className="readout !text-[11px] !normal-case tracking-normal">{biz.cat}</span>
                   {biz.noSite && (
                     <span className="ml-auto rounded-md bg-signal-50 px-1.5 py-0.5 text-[10px] font-semibold text-signal-600">
                       No website

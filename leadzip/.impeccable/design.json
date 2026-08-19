@@ -1,0 +1,126 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-18T23:30:00Z",
+  "title": "Design System: LeadZipp",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "Warm Paper", "canonical": "#FBFAF6", "tonalRamp": ["#26241E", "#4A463C", "#6E695B", "#938D7B", "#B7B19E", "#D8D3C4", "#EDEAE0", "#FBFAF6"] },
+      "ink": { "role": "neutral", "displayName": "Warm Ink", "canonical": "#17130E", "tonalRamp": ["#17130E", "#2E2820", "#463D31", "#5F5443", "#7A6E5B", "#988C78", "#B8AE9C", "#DAD2C4"] },
+      "sand": { "role": "neutral", "displayName": "Sand Hairline", "canonical": "#E7E1D4", "tonalRamp": ["#3A362C", "#57523F", "#767055", "#96906E", "#B4AE8E", "#CFC9B1", "#E7E1D4", "#F5F2EA"] },
+      "stone": { "role": "neutral", "displayName": "Muted Stone", "canonical": "#6F6757", "tonalRamp": ["#211E17", "#3A362B", "#544E3F", "#6F6757", "#8B8371", "#A8A18E", "#C5BFAE", "#E2DED2"] },
+      "signal": { "role": "primary", "displayName": "Beacon Signal", "canonical": "#C22F0A", "tonalRamp": ["#4A1103", "#6E1A05", "#912E12", "#C22F0A", "#E5522B", "#F97C55", "#FFA98A", "#FFEDE6"] },
+      "signal-bright": { "role": "primary", "displayName": "Beacon Bright (dark surfaces only)", "canonical": "#FF4D23", "tonalRamp": ["#571505", "#83220A", "#B03212", "#DD3F17", "#FF4D23", "#FF7A55", "#FFA588", "#FFD3C2"] },
+      "forest": { "role": "secondary", "displayName": "Map Forest", "canonical": "#0C2B24", "tonalRamp": ["#071D18", "#0C2B24", "#123A30", "#1B4E40", "#2A6A57", "#3F8A72", "#63AB90", "#9BCDB4"] },
+      "lime": { "role": "tertiary", "displayName": "Electric Lime (forest only)", "canonical": "#CBF23F", "tonalRamp": ["#33400A", "#4D6110", "#6B8618", "#8CAC22", "#ACD02E", "#CBF23F", "#DCF876", "#EDFCB4"] },
+      "sky": { "role": "tertiary", "displayName": "Support Sky", "canonical": "#2E6BE6", "tonalRamp": ["#0B1F4A", "#12306E", "#1A4494", "#2358BC", "#2E6BE6", "#5B8DEF", "#8FB2F5", "#C6D8FA"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero and section headlines; Bricolage Grotesque 700-800, -0.02em." },
+      "body": { "displayName": "Body", "purpose": "Paragraphs and UI text; Hanken Grotesk, warm ink." },
+      "readout": { "displayName": "Readout", "purpose": "Mono uppercase instrument voice for scores, counts, ZIPs, eyebrows." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 1px 0 0 rgba(23,19,14,0.04), 0 10px 30px -18px rgba(23,19,14,0.28)", "purpose": "Resting card elevation, ink-tinted." },
+      { "name": "card-hover", "value": "0 1px 0 0 rgba(23,19,14,0.05), 0 22px 50px -24px rgba(23,19,14,0.36)", "purpose": "Hover lift pair with translateY(-3px to -4px)." },
+      { "name": "signal-glow", "value": "0 0 0 1px rgba(255,77,35,0.15), 0 18px 60px -18px rgba(255,77,35,0.55)", "purpose": "One hero/beacon element per page." }
+    ],
+    "motion": [
+      { "name": "ease-spring", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default curve for lift/press transitions (200-220ms)." },
+      { "name": "pin-pulse", "value": "2.4s cubic-bezier(0.22,1,0.36,1) infinite", "purpose": "Beacon pin radiating rings." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Marketing CTA Pill",
+      "kind": "button",
+      "refersTo": "cta-pill",
+      "description": "Primary marketing call-to-action; signal fill, pill shape, deepens on hover.",
+      "html": "<a class=\"ds-cta-pill\" href=\"#\">Start free →</a>",
+      "css": ".ds-cta-pill { display: inline-flex; align-items: center; justify-content: center; gap: 8px; background: var(--color-signal, #C22F0A); color: #fff; border-radius: 9999px; padding: 12px 24px; font-family: 'Hanken Grotesk', sans-serif; font-weight: 600; font-size: 0.9375rem; text-decoration: none; min-height: 44px; transition: background-color 200ms cubic-bezier(0.22,1,0.36,1); } .ds-cta-pill:hover { background: var(--color-signal-600, #912E12); } .ds-cta-pill:focus-visible { outline: 3px solid #C22F0A; outline-offset: 2px; }"
+    },
+    {
+      "name": "App Button",
+      "kind": "button",
+      "refersTo": "button-app",
+      "description": "Compact in-app action button; presses down on click.",
+      "html": "<button class=\"ds-btn-app\">Run search</button>",
+      "css": ".ds-btn-app { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 32px; padding: 0 10px; background: #C22F0A; color: #fff; border: 1px solid transparent; border-radius: 0.6rem; font-family: 'Hanken Grotesk', sans-serif; font-weight: 500; font-size: 0.875rem; cursor: pointer; transition: all 150ms; } .ds-btn-app:hover { background: #912E12; } .ds-btn-app:active { transform: translateY(1px); } .ds-btn-app:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(194,47,10,0.5); }"
+    },
+    {
+      "name": "Lead Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "White card on paper ground; lifts on hover with warm ink shadow.",
+      "html": "<div class=\"ds-card\"><p class=\"ds-card-readout\">SCORE 87 · DALLAS TX</p><h3 class=\"ds-card-title\">Lone Star Landscaping</h3><p class=\"ds-card-body\">No website · 12 reviews · 3.4★ — strong pitch candidate.</p></div>",
+      "css": ".ds-card { background: #fff; border: 1px solid #E7E1D4; border-radius: 1.125rem; padding: 24px; max-width: 340px; box-shadow: 0 1px 0 0 rgba(23,19,14,0.04), 0 10px 30px -18px rgba(23,19,14,0.28); transition: transform 220ms cubic-bezier(0.22,1,0.36,1), box-shadow 220ms cubic-bezier(0.22,1,0.36,1); } .ds-card:hover { transform: translateY(-4px); box-shadow: 0 1px 0 0 rgba(23,19,14,0.05), 0 26px 60px -26px rgba(23,19,14,0.40); } .ds-card-readout { font-family: SFMono-Regular, Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: #C22F0A; margin: 0 0 8px; } .ds-card-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: -0.02em; color: #17130E; margin: 0 0 6px; } .ds-card-body { font-family: 'Hanken Grotesk', sans-serif; font-size: 0.9375rem; line-height: 1.65; color: #423B32; margin: 0; }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "White field with sand hairline; signal ring on focus.",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"e.g. plumbers in Austin, TX\" />",
+      "css": ".ds-input { width: 280px; background: #fff; border: 1px solid #E7E1D4; border-radius: 0.6rem; padding: 10px 14px; font-family: 'Hanken Grotesk', sans-serif; font-size: 0.9375rem; color: #17130E; transition: border-color 150ms, box-shadow 150ms; } .ds-input::placeholder { color: #6F6757; } .ds-input:focus { outline: none; border-color: #FF4D23; box-shadow: 0 0 0 3px rgba(255,77,35,0.25); }"
+    },
+    {
+      "name": "Readout Chip",
+      "kind": "chip",
+      "refersTo": "readout",
+      "description": "Mono uppercase data fragment - the map's instrument voice.",
+      "html": "<span class=\"ds-readout\">25 SEARCHES / MO · FREE</span>",
+      "css": ".ds-readout { display: inline-block; font-family: SFMono-Regular, Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: #6F6757; background: #F4F1E9; border: 1px solid #E7E1D4; border-radius: 9999px; padding: 4px 12px; }"
+    },
+    {
+      "name": "Beacon Pin",
+      "kind": "custom",
+      "refersTo": "signal",
+      "description": "The brand's animated mark - a signal dot with radiating pulse rings.",
+      "html": "<span class=\"ds-pin\"><span class=\"ds-pin-ring\"></span><span class=\"ds-pin-dot\"></span></span>",
+      "css": ".ds-pin { position: relative; display: inline-flex; width: 40px; height: 40px; align-items: center; justify-content: center; } .ds-pin-dot { width: 12px; height: 12px; background: #FF4D23; border-radius: 9999px; z-index: 1; } .ds-pin-ring { position: absolute; width: 12px; height: 12px; border-radius: 9999px; background: rgba(255,77,35,0.4); animation: ds-pin-pulse 2.4s cubic-bezier(0.22,1,0.36,1) infinite; } @keyframes ds-pin-pulse { 0% { transform: scale(0.6); opacity: 0.9; } 70% { transform: scale(2.4); opacity: 0; } 100% { transform: scale(2.4); opacity: 0; } } @media (prefers-reduced-motion: reduce) { .ds-pin-ring { animation: none; opacity: 0; } }"
+    },
+    {
+      "name": "Forest Section Band",
+      "kind": "custom",
+      "refersTo": "forest",
+      "description": "Dark map-green marketing band with topo contours; bright orange and lime live here.",
+      "html": "<div class=\"ds-topo\"><p class=\"ds-topo-eyebrow\">THE MAP</p><h3 class=\"ds-topo-title\">Your next client is already on it</h3></div>",
+      "css": ".ds-topo { background-color: #0C2B24; background-image: radial-gradient(120% 90% at 85% -10%, rgba(203,242,63,0.10), transparent 55%), radial-gradient(120% 120% at 10% 110%, rgba(255,77,35,0.14), transparent 55%), repeating-radial-gradient(circle at 78% 18%, transparent 0 22px, rgba(243,239,230,0.05) 22px 23px); border-radius: 1.125rem; padding: 32px; max-width: 420px; } .ds-topo-eyebrow { font-family: SFMono-Regular, Consolas, monospace; font-size: 0.72rem; letter-spacing: 0.04em; text-transform: uppercase; color: #CBF23F; margin: 0 0 10px; } .ds-topo-title { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 800; font-size: 1.5rem; letter-spacing: -0.02em; line-height: 1.15; color: #F3EFE6; margin: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Field Map",
+    "overview": "LeadZipp looks like a working map spread on a good desk: warm paper with a fine grain, topographic contours in deep forest green, and one bright beacon pin that marks where to go next. The system is warm and confident - a well-made physical tool, not a tech demo. Light surfaces are cream paper with ink text; dark sections flip into the map world of deep greens with contour lines, where the beacon orange and a rare electric lime read like markings on a night chart. Interactions are tactile and alive: cards lift on hover, buttons press down a pixel on click, map pins pulse.",
+    "keyCharacteristics": [
+      "Warm paper ground (#FBFAF6) with ink text - never sterile white/gray",
+      "Cartographic motifs: topo contours, dot-grid, pulsing pins, mono readouts",
+      "One voice of accent: signal red-orange, earned and rare",
+      "Dark sections are deep map-green, not black",
+      "Tactile motion: lift, press, pulse - 220ms with a soft spring curve"
+    ],
+    "rules": [
+      { "name": "The Two Oranges Rule", "body": "Signal (#C22F0A) on light surfaces; Signal Bright (#FF4D23) on dark forest surfaces only. Never swap them, never unify them - the split exists for WCAG AA contrast.", "section": "colors" },
+      { "name": "The One Beacon Rule", "body": "The accent appears where action or signal lives - one clear beacon per viewport, not orange everywhere.", "section": "colors" },
+      { "name": "The Readout Rule", "body": "Data fragments (counts, scores, ZIPs, coordinates) render in the mono readout style, not in body type - the map's instrument voice.", "section": "typography" },
+      { "name": "The Warm Shadow Rule", "body": "Every shadow derives from Ink, not black or gray - depth stays inside the paper world.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do put grain/dot-grid/topo texture behind sections - it is the brand's ground.",
+      "Do use the mono readout voice for any datum (scores, counts, ZIPs).",
+      "Do keep motion physical and brief: 200-220ms, spring curve, lift/press/pulse.",
+      "Do honor prefers-reduced-motion (already globally enforced)."
+    ],
+    "donts": [
+      "Don't mix the two oranges across surface types (The Two Oranges Rule).",
+      "Don't introduce pure white/gray/black grounds - every neutral is warm.",
+      "Don't use gray or black shadows - shadows derive from Ink.",
+      "Don't fabricate proof (logos, counts, testimonials) - zero customers today; evidence lives in PRODUCT.md.",
+      "Don't load Google Fonts at build time - fonts are self-hosted woff2."
+    ]
+  }
+}

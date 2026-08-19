@@ -40,6 +40,8 @@ export function HeroSearchWidget() {
               onChange={(e) => { setZip(e.target.value.replace(/\D/g, '')); setZipError('') }}
               placeholder="90210"
               aria-label="ZIP code"
+              aria-invalid={zipError ? true : undefined}
+              aria-describedby={zipError ? 'hero-zip-error' : undefined}
               className="w-full rounded-xl border-0 bg-paper-2 pl-[74px] pr-4 py-3.5 font-mono text-[17px] tracking-wide text-ink placeholder:text-stone/50 focus:outline-none focus:ring-2 focus:ring-signal min-h-[52px]"
             />
           </div>
@@ -65,9 +67,15 @@ export function HeroSearchWidget() {
           </button>
         </div>
       </div>
-      {zipError && <p className="mt-2 pl-2 text-sm font-medium text-signal-600">{zipError}</p>}
+      {/* Error renders as a light chip: signal-600 on signal-50 measures 7.11:1,
+          where bare text-signal-600 on the dark forest hero was 1.88:1. */}
+      {zipError && (
+        <p id="hero-zip-error" role="alert" className="mt-2 inline-flex items-center rounded-lg bg-signal-50 px-3 py-1 text-sm font-medium text-signal-600">
+          {zipError}
+        </p>
+      )}
       <p className="mt-3 text-center text-sm text-white/70 sm:text-left sm:pl-2">
-        Free to start · No credit card · Real businesses, not a demo
+        Free scan · No account needed · No credit card
       </p>
     </form>
   )

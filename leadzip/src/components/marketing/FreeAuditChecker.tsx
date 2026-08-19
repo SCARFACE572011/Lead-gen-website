@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Loader2, Search } from 'lucide-react'
 import { PillarBreakdown, ScoreGauge } from '@/components/audit/HealthReportView'
@@ -62,6 +62,13 @@ export function FreeAuditChecker() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [result, setResult] = useState<FreeAuditResult | null>(null)
+  const resultRef = useRef<HTMLDivElement>(null)
+
+  // The result renders far below the form; moving focus onto it makes screen
+  // readers announce the score instead of leaving them on the submit button.
+  useEffect(() => {
+    if (result) resultRef.current?.focus()
+  }, [result])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -140,7 +147,7 @@ export function FreeAuditChecker() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-signal px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-signal-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+              className="inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-signal px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-signal-600 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
             >
               {loading ? (
                 <>
@@ -161,7 +168,7 @@ export function FreeAuditChecker() {
 
       {/* Loading */}
       {loading && (
-        <div className="mt-6 rounded-2xl border border-sand bg-card p-8 text-center">
+        <div role="status" className="mt-6 rounded-2xl border border-sand bg-card p-8 text-center">
           <Loader2 className="mx-auto h-6 w-6 animate-spin text-signal" />
           <p className="mt-3 text-sm text-ink-soft">
             Finding the business and running a live website check. This takes a few seconds.
@@ -178,7 +185,13 @@ export function FreeAuditChecker() {
 
       {/* Result */}
       {result && !loading && (
-        <div className="mt-8">
+        <div
+          ref={resultRef}
+          tabIndex={-1}
+          role="region"
+          aria-label={`Digital health score for ${result.lead.businessName}`}
+          className="mt-8 outline-none"
+        >
           <section className="flex flex-col items-center gap-6 text-center sm:flex-row sm:justify-between sm:text-left">
             <div className="min-w-0">
               <p className="text-xs font-semibold uppercase tracking-wide text-signal-600">
@@ -237,9 +250,12 @@ export function FreeAuditChecker() {
               LeadZipp Free includes 25 searches a month, no card. Creating an account also
               unlocks shareable report links; white-label PDF exports are part of the paid plans.
             </p>
+            {/* Two Oranges Rule: on forest, signal (#C22F0A) sat at 2.67:1 —
+                signal-bright is the dark-surface treatment (4.57:1 vs forest,
+                ink label 5.58:1; hover #FF6A45: 5.34:1 vs forest, 6.51:1 vs ink). */}
             <Link
               href="/signup"
-              className="mt-5 inline-block rounded-full bg-signal px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-signal-600"
+              className="mt-5 inline-block rounded-full bg-signal-bright px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-[#FF6A45]"
             >
               Create a free account
             </Link>

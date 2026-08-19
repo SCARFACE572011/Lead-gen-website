@@ -68,7 +68,7 @@ const schema = {
       price: "50",
       priceCurrency: "USD",
       description:
-        "Everything in Pro plus 300 pooled live searches, 500 pooled email credits, 10,000 saved leads per member, five seats, and API access.",
+        "Everything in Pro plus 300 pooled live searches, 500 pooled email credits, 10,000 saved leads, five seats, and API access.",
       priceSpecification: {
         "@type": "UnitPriceSpecification",
         price: "50",

@@ -46,6 +46,14 @@ interface FormErrors {
   confirmPassword?: string;
 }
 
+/** Visual order of the form fields, used to focus the first invalid one. */
+const FIELD_ORDER: (keyof FormErrors)[] = [
+  "fullName",
+  "email",
+  "password",
+  "confirmPassword",
+];
+
 function PasswordStrength({ password }: { password: string }) {
   if (!password) return null;
   const checks = [
@@ -70,7 +78,8 @@ function PasswordStrength({ password }: { password: string }) {
           />
         ))}
       </div>
-      <p className={`mt-1 text-xs font-medium ${strength >= 3 ? "text-emerald-600" : "text-stone"}`}>
+      {/* emerald-700 (#047857): 5.25:1 on paper — emerald-600 failed AA at 3.61:1 */}
+      <p className={`mt-1 text-xs font-medium ${strength >= 3 ? "text-emerald-700" : "text-stone"}`}>
         {labels[strength - 1] ?? "Too short"}
       </p>
     </div>
@@ -121,6 +130,10 @@ export default function SignupPage() {
     else if (password !== confirmPassword)
       newErrors.confirmPassword = "Passwords do not match.";
     setErrors(newErrors);
+    // Screen-reader and keyboard users land directly on the first problem
+    // instead of hunting for it after the silent submit failure.
+    const firstInvalid = FIELD_ORDER.find((field) => newErrors[field]);
+    if (firstInvalid) document.getElementById(firstInvalid)?.focus();
     return Object.keys(newErrors).length === 0;
   }
 
@@ -237,7 +250,7 @@ export default function SignupPage() {
           <span className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-signal/10">
             <CheckCircle className="h-7 w-7 text-signal" />
           </span>
-          <h3 className="font-display font-bold text-ink mb-1">Confirmation link sent</h3>
+          <h2 className="font-display font-bold text-ink mb-1">Confirmation link sent</h2>
           <p className="text-sm text-ink-soft">
             We sent a confirmation link to <strong className="text-ink">{email}</strong>.{" "}
             Click it to activate your account.
@@ -291,9 +304,13 @@ export default function SignupPage() {
             value={fullName}
             onChange={(e) => { setFullName(e.target.value); clearError("fullName"); }}
             placeholder="Jane Smith"
+            aria-invalid={errors.fullName ? true : undefined}
+            aria-describedby={errors.fullName ? "fullName-error" : undefined}
             className={inputClass(!!errors.fullName)}
           />
-          {errors.fullName && <p className="mt-1 text-xs text-red-600">{errors.fullName}</p>}
+          {errors.fullName && (
+            <p id="fullName-error" className="mt-1 text-xs text-red-600">{errors.fullName}</p>
+          )}
         </div>
 
         {/* Email */}
@@ -308,9 +325,13 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => { setEmail(e.target.value); clearError("email"); }}
             placeholder="you@company.com"
+            aria-invalid={errors.email ? true : undefined}
+            aria-describedby={errors.email ? "email-error" : undefined}
             className={inputClass(!!errors.email)}
           />
-          {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+          {errors.email && (
+            <p id="email-error" className="mt-1 text-xs text-red-600">{errors.email}</p>
+          )}
         </div>
 
         {/* Password */}
@@ -326,18 +347,22 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => { setPassword(e.target.value); clearError("password"); }}
               placeholder="Min. 8 characters"
+              aria-invalid={errors.password ? true : undefined}
+              aria-describedby={errors.password ? "password-error" : undefined}
               className={inputClass(!!errors.password)}
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"
+              className="absolute -right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-stone hover:text-ink transition-colors"
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
-          {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+          {errors.password && (
+            <p id="password-error" className="mt-1 text-xs text-red-600">{errors.password}</p>
+          )}
           <PasswordStrength password={password} />
         </div>
 
@@ -354,22 +379,26 @@ export default function SignupPage() {
               value={confirmPassword}
               onChange={(e) => { setConfirmPassword(e.target.value); clearError("confirmPassword"); }}
               placeholder="Re-enter your password"
+              aria-invalid={errors.confirmPassword ? true : undefined}
+              aria-describedby={errors.confirmPassword ? "confirmPassword-error" : undefined}
               className={inputClass(!!errors.confirmPassword)}
             />
             <button
               type="button"
               onClick={() => setShowConfirm(!showConfirm)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone hover:text-ink transition-colors"
+              className="absolute -right-0.5 top-1/2 flex h-11 w-11 -translate-y-1/2 items-center justify-center text-stone hover:text-ink transition-colors"
               aria-label={showConfirm ? "Hide password" : "Show password"}
             >
               {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
           </div>
           {errors.confirmPassword && (
-            <p className="mt-1 text-xs text-red-600">{errors.confirmPassword}</p>
+            <p id="confirmPassword-error" className="mt-1 text-xs text-red-600">
+              {errors.confirmPassword}
+            </p>
           )}
           {confirmPassword && password === confirmPassword && !errors.confirmPassword && (
-            <p className="mt-1 flex items-center gap-1 text-xs text-emerald-600">
+            <p className="mt-1 flex items-center gap-1 text-xs text-emerald-700">
               <CheckCircle className="h-3 w-3" /> Passwords match
             </p>
           )}
@@ -408,7 +437,10 @@ export default function SignupPage() {
         </Button>
 
         {error && (
-          <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+          <div
+            role="alert"
+            className="rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700"
+          >
             {error}
           </div>
         )}

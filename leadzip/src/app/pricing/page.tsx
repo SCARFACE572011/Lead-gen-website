@@ -36,6 +36,8 @@ interface Plan {
   cta: string;
   ctaHref: string;
   popular: boolean;
+  /** Same four rows on every card so plans can be diffed straight across. */
+  readouts: { label: string; value: string }[];
   features: PlanFeature[];
   accentColor: string;
 }
@@ -58,10 +60,15 @@ const PLANS: Plan[] = [
     ctaHref: "/signup",
     popular: false,
     accentColor: "#79705F",
+    readouts: [
+      { label: "Live searches", value: "25 / mo" },
+      { label: "Email credits", value: "5 lifetime" },
+      { label: "Saved leads", value: "25" },
+      { label: "Seats", value: "1" },
+    ],
     features: [
       { label: "25 new live territory searches per month", included: true },
-      { label: "25 saved leads", included: true },
-      { label: "3 saved searches", included: true },
+      { label: "25 saved leads and 3 saved searches", included: true },
       { label: "5 welcome email credits", included: true },
       { label: "Lead scoring and Digital Health Scores", included: true },
       { label: "3 shareable audit reports per month", included: true },
@@ -76,12 +83,19 @@ const PLANS: Plan[] = [
     name: "Pro",
     monthlyPrice: 25,
     annualPrice: 20,
-    description: "For the solo closer working a territory every day.",
+    description: "For freelancers and one-person shops landing local clients.",
     cta: "Start 7-day free trial",
     ctaHref: "/signup?plan=pro",
     popular: true,
     accentColor: "#FF4D23",
+    readouts: [
+      { label: "Live searches", value: "100 / mo" },
+      { label: "Email credits", value: "100 / mo" },
+      { label: "Saved leads", value: "1,000" },
+      { label: "Seats", value: "1" },
+    ],
     features: [
+      { label: "Everything in Free, plus:", included: true },
       {
         label: "100 new live territory searches per month; cached reruns stay free",
         included: true,
@@ -96,7 +110,8 @@ const PLANS: Plan[] = [
         included: true,
       },
       {
-        label: "Shareable audit reports built on Digital Health Scores",
+        // FEATURE_MONTHLY_LIMITS.audit_reports caps Pro at 25/mo — say so.
+        label: "25 shareable audit reports per month",
         included: true,
       },
       {
@@ -127,10 +142,16 @@ const PLANS: Plan[] = [
     ctaHref: "/signup?plan=agency",
     popular: false,
     accentColor: "#0C2B24",
+    readouts: [
+      { label: "Live searches", value: "300 / mo pooled" },
+      { label: "Email credits", value: "500 / mo pooled" },
+      { label: "Saved leads", value: "10,000" },
+      { label: "Seats", value: "5" },
+    ],
     features: [
       { label: "Everything in Pro", included: true },
       { label: "300 pooled live searches and 500 pooled email credits per month", included: true },
-      { label: "10,000 saved leads per member", included: true },
+      { label: "10,000 saved leads", included: true },
       { label: "100 shared saved searches and 50 active alerts", included: true },
       {
         label: "Team workspace with 5 total seats and shared usage",
@@ -173,11 +194,17 @@ function PlanCard({
   billing,
   onUpgrade,
   upgradingPlan,
+  checkoutError,
+  highlighted,
 }: {
   plan: Plan;
   billing: BillingCycle;
   onUpgrade: (plan: "pro" | "agency", billing: BillingCycle) => void;
   upgradingPlan: string | null;
+  /** Checkout failure for THIS plan, rendered inline beside its CTA. */
+  checkoutError: string | null;
+  /** ?plan= named this card — ring it and let the mount effect scroll to it. */
+  highlighted: boolean;
 }) {
   const price =
     billing === "annual" ? plan.annualPrice : plan.monthlyPrice;
@@ -199,7 +226,7 @@ function PlanCard({
   if (isFree) {
     ctaButton = (
       <Link href={plan.ctaHref} className="mb-6 block">
-        <Button className="h-11 w-full rounded-full border border-sand bg-white text-sm font-semibold text-ink transition-all hover:bg-paper-2">
+        <Button className="h-11 w-full rounded-full border border-ink/25 bg-white text-sm font-semibold text-ink transition-all hover:bg-paper-2">
           {plan.cta}
           <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
         </Button>
@@ -215,7 +242,12 @@ function PlanCard({
           className={cn(
             "h-11 w-full rounded-full text-sm font-semibold transition-all disabled:opacity-70",
             onDark
-              ? "bg-signal text-white hover:bg-signal-600"
+              ? // Two Oranges Rule: the darker signal fill sinks into forest
+                // (2.67:1; hover signal-600 drops to 1.88:1). The bright
+                // beacon holds 4.57:1 against forest with forest-900 text on
+                // it at 5.29:1, and hover goes LIGHTER (#FF6A45, 5.34:1 vs
+                // forest), the direction a dark surface expects.
+                "bg-signal-bright text-forest-900 hover:bg-[#FF6A45]"
               : "bg-ink text-paper hover:bg-ink-soft"
           )}
         >
@@ -231,6 +263,14 @@ function PlanCard({
             </>
           )}
         </Button>
+        {checkoutError && (
+          <p
+            role="alert"
+            className="mt-2 rounded-xl bg-signal-50 px-3 py-2 text-center text-xs font-medium text-signal-600"
+          >
+            {checkoutError}
+          </p>
+        )}
         <p
           className={cn(
             "mt-2 text-center text-xs",
@@ -246,11 +286,16 @@ function PlanCard({
 
   return (
     <div
+      id={`plan-${planKey}`}
       className={cn(
         "relative flex flex-col rounded-3xl border p-7 transition-all",
         onDark
           ? "border-signal-bright bg-forest text-white signal-glow"
-          : "border-sand bg-white shadow-card card-lift"
+          : "border-sand bg-white shadow-card card-lift",
+        // A CTA elsewhere named this plan (?plan=): make the card unmistakable.
+        // Ring reads 3.31:1 on the white card, 3.17:1 on paper.
+        highlighted &&
+          "ring-2 ring-signal-bright ring-offset-2 ring-offset-paper"
       )}
     >
       {plan.popular && (
@@ -263,9 +308,9 @@ function PlanCard({
 
       {/* Header */}
       <div className="mb-6">
-        <p className={cn("readout mb-2", onDark ? "text-lime" : "text-signal")}>
+        <h3 className={cn("readout mb-2", onDark ? "text-lime" : "text-signal")}>
           {plan.name}
-        </p>
+        </h3>
         <div className="mb-2 flex items-end gap-1">
           <span
             className={cn(
@@ -314,6 +359,39 @@ function PlanCard({
         </p>
       </div>
 
+      {/* Cross-tier readout: the same four rows on every card, in the mono
+          instrument voice, so the eye can diff plans straight across.
+          Values mirror PLAN_POLICY (planPolicy.ts). Hairlines follow the
+          card's surface: sand on light, translucent paper on forest
+          (DESIGN.md border rule). */}
+      <dl
+        className={cn(
+          "mb-6 divide-y border-y",
+          onDark ? "divide-white/12 border-white/12" : "divide-sand border-sand"
+        )}
+      >
+        {plan.readouts.map((row) => (
+          <div
+            key={row.label}
+            className="flex items-baseline justify-between gap-3 py-2"
+          >
+            <dt
+              className={cn("readout", onDark ? "text-white/70" : "text-stone")}
+            >
+              {row.label}
+            </dt>
+            <dd
+              className={cn(
+                "readout text-right",
+                onDark ? "text-white" : "text-ink"
+              )}
+            >
+              {row.value}
+            </dd>
+          </div>
+        ))}
+      </dl>
+
       {/* CTA */}
       {ctaButton}
       {isFree && (
@@ -344,10 +422,13 @@ function PlanCard({
             ) : (
               <X
                 className={cn(
-                  // this glyph is the only thing that says "not included",
-                  // so it needs the 3:1 non-text minimum; /30 gave 2.64:1
+                  // this glyph is the only VISUAL "not included" marker
+                  // (screen readers get the sr-only prefix below), so it
+                  // needs the 3:1 non-text minimum. sand measured 1.30:1 on
+                  // the white card — invisible; stone is 5.59:1. white/60 on
+                  // forest is 6.32:1.
                   "mt-0.5 h-4 w-4 shrink-0",
-                  onDark ? "text-white/60" : "text-sand"
+                  onDark ? "text-white/60" : "text-stone"
                 )}
               />
             )}
@@ -359,17 +440,19 @@ function PlanCard({
                     ? "text-white/90"
                     : "text-ink-soft"
                   : onDark
-                    ? // the label of a feature you do NOT get is still content,
-                      // and /40 on the dark plan card measures 3.62:1
-                      "text-white/60"
+                    ? // the label of a feature you do NOT get is still
+                      // content: /70 measures 8.06:1 on forest, still clearly
+                      // quieter than included rows' /90 (12.51:1)
+                      "text-white/70"
                     : "text-stone"
               )}
             >
+              {!f.included && <span className="sr-only">Not included: </span>}
               {f.label}
               {f.note && (
                 <span
                   className={cn(
-                    "ml-1.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold",
+                    "ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] font-semibold",
                     onDark
                       ? "bg-white/10 text-white/70"
                       : "bg-paper-2 text-stone"
@@ -388,23 +471,17 @@ function PlanCard({
 
 /* ─── Payment banner (uses useSearchParams — must be inside Suspense) ─── */
 function PaymentBanner() {
+  // Next captured the search params at navigation time, so this banner keeps
+  // rendering even after the URL bar is cleaned. The cleanup itself lives in
+  // PricingPage's mount effect, AFTER ?plan= and ?billing= have been read —
+  // this component used to delete ?plan= unread.
   const searchParams = useSearchParams();
   const paymentStatus = searchParams.get("payment");
-
-  useEffect(() => {
-    if (paymentStatus) {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("payment");
-      url.searchParams.delete("plan");
-      window.history.replaceState({}, "", url.toString());
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   if (paymentStatus === "success") {
     return (
       <div className="mb-8 rounded-2xl border border-forest/20 bg-lime/20 p-4 text-center font-medium text-forest">
-        Payment successful! Your plan has been upgraded. Welcome to LeadZipp Pro.
+        Payment successful! Welcome to LeadZipp — your plan is active.
       </div>
     );
   }
@@ -422,10 +499,47 @@ function PaymentBanner() {
 export default function PricingPage() {
   const [billing, setBilling] = useState<BillingCycle>("monthly");
   const [upgradingPlan, setUpgradingPlan] = useState<string | null>(null);
+  const [highlightedPlan, setHighlightedPlan] = useState<"pro" | "agency" | null>(
+    null
+  );
+  const [checkoutError, setCheckoutError] = useState<{
+    plan: "pro" | "agency";
+    message: string;
+  } | null>(null);
 
+  useEffect(() => {
+    // Read ?plan= and ?billing= BEFORE cleaning the URL. Pricing links can
+    // name a plan (marketing pages, the signup round trip): honor the choice
+    // by lighting up that card and matching the billing toggle. Reading
+    // window.location keeps the page body out of a Suspense boundary; a
+    // checkout return (?payment=...) is not a preselection, so it only shows
+    // the banner.
+    const params = new URLSearchParams(window.location.search);
+    const plan = params.get("plan");
+    if (!params.has("payment") && (plan === "pro" || plan === "agency")) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setHighlightedPlan(plan);
+      if (params.get("billing") === "annual") setBilling("annual");
+      document.getElementById(`plan-${plan}`)?.scrollIntoView({
+        block: "center",
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto"
+          : "smooth",
+      });
+    }
+    // URL cleanup, moved from PaymentBanner (which deleted ?plan= unread).
+    if (["payment", "plan", "billing"].some((key) => params.has(key))) {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("payment");
+      url.searchParams.delete("plan");
+      url.searchParams.delete("billing");
+      window.history.replaceState({}, "", url.toString());
+    }
+  }, []);
 
   async function handleUpgrade(plan: "pro" | "agency", billingCycle: BillingCycle) {
     setUpgradingPlan(plan)
+    setCheckoutError(null)
     try {
       // Visitors who claimed the 15%-off welcome offer carry a flag in
       // localStorage; pass it so checkout auto-applies the coupon.
@@ -440,18 +554,32 @@ export default function PricingPage() {
         body: JSON.stringify({ plan, billing: billingCycle, promo }),
       })
       if (res.status === 401) {
-        // Checkout requires a logged-in account
-        window.location.href = "/login?redirectTo=/pricing"
+        // No account yet. /login?redirectTo=/pricing would drop the choice
+        // they just made; the signup page already reads ?plan= and ?billing=,
+        // preselects the trial, and hands straight off to Stripe checkout
+        // once the account exists — so send the choice along.
+        const qs = new URLSearchParams({ plan })
+        if (billingCycle === "annual") qs.set("billing", "annual")
+        window.location.href = `/signup?${qs.toString()}`
         return
       }
       const data = await res.json()
       if (data.url) {
         window.location.href = data.url
       } else if (data.error) {
-        alert(data.error)
+        setCheckoutError({
+          plan,
+          message:
+            typeof data.error === "string"
+              ? data.error
+              : "Something went wrong. Please try again.",
+        })
       }
     } catch {
-      alert("Something went wrong. Please try again.")
+      setCheckoutError({
+        plan,
+        message: "Something went wrong. Please try again.",
+      })
     } finally {
       setUpgradingPlan(null)
     }
@@ -480,6 +608,7 @@ export default function PricingPage() {
           <div className="inline-flex items-center rounded-full border border-sand bg-white p-1">
             <button
               onClick={() => setBilling("monthly")}
+              aria-pressed={billing === "monthly"}
               className={cn(
                 "rounded-full px-5 py-2 text-sm font-semibold transition-all",
                 billing === "monthly"
@@ -491,6 +620,7 @@ export default function PricingPage() {
             </button>
             <button
               onClick={() => setBilling("annual")}
+              aria-pressed={billing === "annual"}
               className={cn(
                 "flex items-center gap-2 rounded-full px-5 py-2 text-sm font-semibold transition-all",
                 billing === "annual"
@@ -510,6 +640,7 @@ export default function PricingPage() {
       {/* ── Plan cards ── */}
       <section className="py-16">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
+          <h2 className="sr-only">Plans</h2>
           {/* Payment status banners */}
           <Suspense fallback={null}>
             <PaymentBanner />
@@ -523,6 +654,13 @@ export default function PricingPage() {
                 billing={billing}
                 onUpgrade={handleUpgrade}
                 upgradingPlan={upgradingPlan}
+                checkoutError={
+                  checkoutError &&
+                  checkoutError.plan === plan.name.toLowerCase()
+                    ? checkoutError.message
+                    : null
+                }
+                highlighted={highlightedPlan === plan.name.toLowerCase()}
               />
             ))}
           </div>
@@ -612,12 +750,12 @@ export default function PricingPage() {
                 key={i}
                 className="rounded-2xl border border-sand bg-white p-5 shadow-card"
               >
-                <p className="mb-2 flex items-baseline gap-2.5 text-sm font-semibold text-ink">
+                <h3 className="mb-2 flex items-baseline gap-2.5 text-sm font-semibold text-ink">
                   <span className="font-mono text-xs font-bold text-signal">
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   {faq.q}
-                </p>
+                </h3>
                 <p className="pl-7 text-sm leading-relaxed text-ink-soft">
                   {faq.a}
                 </p>
@@ -638,7 +776,9 @@ export default function PricingPage() {
             Sign up free. No credit card, no commitment.
           </p>
           <Link href="/signup">
-            <Button className="h-12 rounded-full bg-signal px-8 text-base font-semibold text-white transition-all hover:bg-signal-600">
+            {/* Same dark-surface CTA treatment as the Pro card (Two Oranges
+                Rule): signal was 2.67:1 against the topo forest. */}
+            <Button className="h-12 rounded-full bg-signal-bright px-8 text-base font-semibold text-forest-900 transition-all hover:bg-[#FF6A45]">
               Get Started Free
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>

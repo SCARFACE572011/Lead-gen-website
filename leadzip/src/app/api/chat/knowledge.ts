@@ -29,7 +29,7 @@ What counts as a search: a "live search" is a new search that reaches the data p
 Plans and pricing (monthly, or about 20% less with annual billing):
 - Free: $0 forever. 25 new live searches per month and up to 25 per day, 25 saved leads, 3 saved searches, 5 lifetime email credits, lead scoring, lead details and contact info, and CSV export of the first 25 rows. No credit card required. Anonymous visitors can also run 5 free searches per day before creating an account.
 - Pro: $25/mo ($20/mo billed annually). 100 new live territory searches per calendar month and up to 50 per day, 100 business-email credits per calendar month, bulk search up to 10 ZIPs, 1,000 saved leads, 25 saved searches, 10 active alerts, full exports, CRM push, and priority email support. Cached reruns and filter refinements do not consume live-search allowance.
-- Agency: $50/mo ($40/mo billed annually). Everything in Pro plus 300 live searches per calendar month and up to 150 per day, and 500 email credits per calendar month, both pooled across a five-seat workspace. Also 10,000 saved leads per member, 100 saved searches, 50 active alerts, bulk search up to 25 ZIPs, API access at 500 requests/day, and priority onboarding.
+- Agency: $50/mo ($40/mo billed annually). Everything in Pro plus 300 live searches per calendar month and up to 150 per day, and 500 email credits per calendar month, both pooled across a five-seat workspace. Also 10,000 saved leads, 100 saved searches, 50 active alerts, bulk search up to 25 ZIPs, API access at 500 requests/day, and priority onboarding.
 - Included email credits do not roll over. Free's 5 credits are a one-time starter balance rather than a monthly grant. Annual billing does not change the monthly credit allowance.
 
 Trials and offers:
@@ -82,7 +82,7 @@ const FAQ_ENTRIES: FaqEntry[] = [
     id: 'pricing',
     keywords: ['pricing', 'price', 'prices', 'cost', 'how much', 'plans', 'plan', 'subscription', 'expensive', 'cheap'],
     answer:
-      'LeadZipp has three plans: Free ($0, 25 new live searches a month and 5 lifetime email credits), Pro ($25/mo with 100 live searches, 100 email credits a month, bulk ZIP search, and full exports), and Agency ($50/mo with 300 live searches and 500 email credits pooled across 5 seats, 10,000 saved leads per member, and API access). Cached reruns and filter refinements are free. Annual billing saves about 20%, and Pro and Agency both start with a 7-day free trial. You can compare everything at leadzipp.com/pricing.',
+      'LeadZipp has three plans: Free ($0, 25 new live searches a month and 5 lifetime email credits), Pro ($25/mo with 100 live searches, 100 email credits a month, bulk ZIP search, and full exports), and Agency ($50/mo with 300 live searches and 500 email credits pooled across 5 seats, 10,000 saved leads, and API access). Cached reruns and filter refinements are free. Annual billing saves about 20%, and Pro and Agency both start with a 7-day free trial. You can compare everything at leadzipp.com/pricing.',
   },
   {
     id: 'free-plan',
@@ -130,7 +130,7 @@ const FAQ_ENTRIES: FaqEntry[] = [
     id: 'saved-leads',
     keywords: ['saved leads', 'save leads', 'save a lead', 'saving', 'notes', 'status tracking', 'lead limit'],
     answer:
-      'Saved leads keep your prospects in one place: Free includes 25, Pro includes 1,000, and Agency includes 10,000 per member. Saved searches follow the same shape, at 3 on Free, 25 on Pro and 100 on Agency. On paid plans you can also add notes and track status on each lead, plus see your full search history.',
+      'Saved leads keep your prospects in one place: Free includes 25, Pro includes 1,000, and Agency includes 10,000. Saved searches follow the same shape, at 3 on Free, 25 on Pro and 100 on Agency. On paid plans you can also add notes and track status on each lead, plus see your full search history.',
   },
   {
     id: 'data-sources',

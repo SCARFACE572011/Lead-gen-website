@@ -36,7 +36,7 @@ const FEATURES = [
   { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top. Every lead also carries a Digital Health Score you can turn into a shareable audit report and send straight to the owner.' },
   { icon: Mail, title: 'Decision-maker email finder', body: 'One tap surfaces the best contact email for any business with a domain, with a confidence badge so you know what you’re working with.' },
   { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Pipedrive & GoHighLevel. Your pipeline, your format. No copy-paste.' },
-  { icon: MapIcon, title: 'Own the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Claim a zip and get emailed when new businesses open in your area, so you reach them first, before competitors even know they exist.' },
+  { icon: MapIcon, title: 'Own the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Follow a ZIP and get emailed when new businesses open in your area, so you can reach out while they’re brand new.' },
   { icon: SlidersHorizontal, title: 'Filter down to your buyer', body: 'Radius, rating, review count, has-website, category. Dial in exactly the businesses that fit before you spend a minute reaching out.' },
 ]
 
@@ -58,8 +58,8 @@ const STATS = [
 // listed here is live today, not planned.
 const PLANS = [
   { name: 'Starter', price: '$0', per: 'forever', blurb: 'Kick the tires.', feats: ['25 searches / month', 'Real business data', 'Lead scoring + health scores', 'Every search filter'], cta: 'Start free', href: '/signup', highlight: false },
-  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For the solo closer.', feats: ['100 new live searches each month', '100 business email credits', 'Bulk search up to 10 ZIPs', 'CSV, white-label PDF & CRM push', 'Shareable audits + outreach tools', '1,000 saved leads'], cta: 'Start 7-day free trial', href: '/signup?plan=pro', highlight: true },
-  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', '300 pooled live searches', '500 pooled email credits', '10,000 saved leads per member', '5-seat team workspace', 'Bulk search 25 ZIPs + API access'], cta: 'Start 7-day free trial', href: '/signup?plan=agency', highlight: false },
+  { name: 'Pro', price: '$25', per: '/mo', blurb: 'For freelancers and one-person shops.', feats: ['100 new live searches each month', '100 business email credits', 'Bulk search up to 10 ZIPs', 'CSV, white-label PDF & CRM push', 'Shareable audits + outreach tools', '1,000 saved leads'], cta: 'Start 7-day free trial', href: '/signup?plan=pro', highlight: true },
+  { name: 'Agency', price: '$50', per: '/mo', blurb: 'For teams working territories.', feats: ['Everything in Pro', '300 pooled live searches', '500 pooled email credits', '10,000 saved leads', '5-seat team workspace', 'Bulk search 25 ZIPs + API access'], cta: 'Start 7-day free trial', href: '/signup?plan=agency', highlight: false },
 ]
 
 const FAQS = [
@@ -100,9 +100,9 @@ export default function Home() {
               </span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/75">
-              Find and score every local business in any ZIP code or city worldwide, with real
-              phones, websites, and decision-maker emails. Live Google &amp; Yelp data, not a
-              scraped demo. The businesses that need you most, first.
+              Find and score every local business in any US ZIP code, with real
+              phones, websites, and decision-maker emails. Live Google &amp; Yelp data at
+              search time. The businesses that need you most, first.
             </p>
             <div className="mt-8">
               <HeroSearchWidget />
@@ -139,8 +139,14 @@ export default function Home() {
           <span className="readout hidden flex-shrink-0 text-stone sm:block">Prospecting for →</span>
           <div className="relative flex-1 overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_8%,black_92%,transparent)]">
             <div className="marquee-track gap-3">
-              {[...TRADES, ...TRADES].map((t, i) => (
-                <span key={i} className="flex-shrink-0 rounded-full border border-sand bg-paper px-4 py-1.5 font-mono text-sm text-ink-soft">
+              {TRADES.map((t) => (
+                <span key={t} className="flex-shrink-0 rounded-full border border-sand bg-paper px-4 py-1.5 font-mono text-sm text-ink-soft">
+                  {t}
+                </span>
+              ))}
+              {/* Seamless-loop duplicate — visual only, hidden from screen readers */}
+              {TRADES.map((t) => (
+                <span key={`dup-${t}`} aria-hidden="true" className="flex-shrink-0 rounded-full border border-sand bg-paper px-4 py-1.5 font-mono text-sm text-ink-soft">
                   {t}
                 </span>
               ))}
@@ -190,7 +196,7 @@ export default function Home() {
                     <f.icon className="h-5 w-5" />
                   </span>
                   <h3 className="mt-5 font-display text-lg font-bold">{f.title}</h3>
-                  <p className="mt-2 text-[14.5px] leading-relaxed text-ink-soft">{f.body}</p>
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{f.body}</p>
                 </div>
               </Reveal>
             ))}
@@ -204,10 +210,10 @@ export default function Home() {
           <Reveal>
             <span className="readout text-signal">The output</span>
             <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
-              These are real businesses in one ZIP, ranked and ready.
+              This is what a scored block looks like.
             </h2>
             <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-soft">
-              Every card is a live listing with a real address, phone, and score. The ones with
+              Run a search and every card comes back with a live address, phone, and score. The ones with
               <span className="font-semibold text-ink"> no website</span> or
               <span className="font-semibold text-ink"> thin reviews</span> rise to the top,
               because those owners are the easiest yes you’ll have all week.
@@ -227,7 +233,7 @@ export default function Home() {
                   <div className="p-3.5">
                     <p className="truncate font-display text-[15px] font-bold">{b.name}</p>
                     <div className="mt-1 flex items-center justify-between">
-                      <span className="readout !text-[10px] !normal-case tracking-normal text-stone">{b.cat}</span>
+                      <span className="readout !text-[11px] !normal-case tracking-normal text-stone">{b.cat}</span>
                       <span className="inline-flex items-center gap-1 rounded-md bg-forest px-1.5 py-0.5">
                         <Star className="h-2.5 w-2.5 fill-lime text-lime" />
                         <span className="font-mono text-xs font-bold text-white">{b.score}</span>
@@ -261,9 +267,9 @@ export default function Home() {
             Start free. Upgrade when the deals roll in.
           </h2>
           <p className="mt-4 text-base text-stone">
-            Pro and Agency both start with a 7-day free trial. We take your card at signup,
-            you get everything unlocked, and you can cancel any time before day 7 without
-            being charged.
+            Pro and Agency trials take a card; the free plan never does. You get everything
+            unlocked for 7 days, and you can cancel any time before day 7 without being
+            charged.
           </p>
         </Reveal>
         <div className="mt-14 grid items-stretch gap-6 md:grid-cols-3">
@@ -272,7 +278,7 @@ export default function Home() {
               <div className={`relative flex h-full flex-col rounded-3xl border p-7 ${p.highlight ? 'border-signal-bright bg-forest text-white signal-glow' : 'border-sand bg-white'}`}>
                 {p.highlight && (
                   <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-signal px-3 py-1 text-xs font-bold text-white">
-                    Most popular
+                    Best value
                   </span>
                 )}
                 <h3 className={`font-display text-lg font-bold ${p.highlight ? 'text-lime' : ''}`}>{p.name}</h3>
@@ -289,7 +295,7 @@ export default function Home() {
                     </li>
                   ))}
                 </ul>
-                <Link href={p.href} className={`mt-7 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold transition-all active:scale-95 ${p.highlight ? 'bg-signal text-white hover:bg-signal-600' : 'bg-ink text-paper hover:bg-ink-soft'}`}>
+                <Link href={p.href} className={`mt-7 inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 font-semibold transition-all active:scale-95 ${p.highlight ? 'bg-signal-bright text-ink hover:bg-[#FF6240]' : 'bg-ink text-paper hover:bg-ink-soft'}`}>
                   {p.cta} <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>

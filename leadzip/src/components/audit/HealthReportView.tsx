@@ -16,7 +16,7 @@ export function ScoreGauge({ total }: { total: number }) {
   return (
     <div className="relative h-44 w-44">
       <svg viewBox="0 0 160 160" className="h-full w-full -rotate-90">
-        <circle cx="80" cy="80" r={r} fill="none" stroke="#E7E1D4" strokeWidth="12" />
+        <circle cx="80" cy="80" r={r} fill="none" stroke="var(--color-sand)" strokeWidth="12" />
         <circle
           cx="80"
           cy="80"
@@ -69,9 +69,12 @@ export function PillarBreakdown({ pillars }: { pillars: HealthPillar[] }) {
                         ? 'shrink-0 font-bold text-green-600'
                         : 'shrink-0 font-bold text-red-500'
                     }
-                    aria-label={check.passed ? 'Passed' : 'Failed'}
                   >
-                    {check.passed ? '✓' : '✗'}
+                    {/* aria-label on a static span is unreliable and would also
+                        override the visible points value; sr-only text reads
+                        everywhere and leaves the points announced. */}
+                    <span aria-hidden="true">{check.passed ? '✓' : '✗'}</span>
+                    <span className="sr-only">{check.passed ? 'Passed,' : 'Failed,'}</span>
                     <span className="ml-1 font-mono font-medium text-stone">
                       {check.points}
                     </span>

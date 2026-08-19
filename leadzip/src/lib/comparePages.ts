@@ -522,7 +522,249 @@ const B2BLEADFINDER: ComparisonPage = {
   ctaHeading: 'Run the same search in both and compare',
 }
 
-export const COMPARISONS: ComparisonPage[] = [APOLLO, HUNTER, ZOOMINFO, B2BLEADFINDER]
+const D7LEADFINDER: ComparisonPage = {
+  slug: 'leadzipp-vs-d7-lead-finder',
+  competitor: 'D7 Lead Finder',
+  competitorShort: 'D7',
+  summary: 'A bulk local lead search tool built around volume per search, compared with a live search that arrives already scored.',
+  metaTitle: 'LeadZipp vs D7 Lead Finder: Bulk Leads or a Scored List',
+  metaDescription:
+    'D7 Lead Finder returns bulk local business leads per search. LeadZipp reads live data and scores who needs help most. An honest look at which fits your work.',
+  ogTitle: 'LeadZipp vs D7 Lead Finder',
+  ogSubtitle: 'Volume per search next to a scored shortlist',
+  h1: 'LeadZipp vs D7 Lead Finder',
+  lede:
+    'These two are genuinely close. Both take a keyword and a location and return local business leads for agencies and freelancers to work. The difference is the bet each one makes. D7 leads with volume and data fields per search. LeadZipp leads with live data read at search time and a score that says who to pitch first.',
+  verdict:
+    'The D7 bet is more leads per search. The LeadZipp bet is knowing which of them to pitch first.',
+  competitorPanel: {
+    heading: 'What D7 Lead Finder advertises',
+    body:
+      'Their site leads with finding business leads in any category across any country in the world, from a keyword and a location, with results back within minutes and exports in multiple formats. The emphasis throughout is breadth: how many leads a search returns and how many data fields come attached to each one.',
+    bullets: [
+      'Up to 1,200 business leads per search, per their homepage.',
+      'Contact fields including email address, website, postal address, phone and social media links.',
+      'Signal fields including review scores from Google, Yelp and Facebook, ad platform and pixel detection, and website technology detection.',
+      'Bulk search and API access.',
+      'Three month to month plans, named Starter, Agency and Professional, sized by searches per day, with prices published on their plan page.',
+    ],
+  },
+  leadzippPanel: {
+    heading: 'What LeadZipp does differently',
+    body:
+      'LeadZipp starts from the same input, an area and a category, and makes a different bet about what you need back. Instead of maximizing rows, it reads Google Places and Yelp live at the moment you search and ranks the results by how badly each business needs help, so the list arrives already ordered by who to call first.',
+    bullets: [
+      'Live Google Places and Yelp listings, read fresh at search time.',
+      'Opportunity scoring on need signals: no website, thin review count, weak rating, with filters for each.',
+      'Search by US ZIP code, or by city and country worldwide with a radius.',
+      'Email finder with a confidence badge, metered in credits that every plan includes.',
+      'Shareable digital presence audit reports, CSV and branded PDF export, and push into HubSpot, Pipedrive or GoHighLevel.',
+      'A permanent free plan at 25 live searches a month, alongside a 7-day trial on Pro and Agency.',
+    ],
+  },
+  rows: [
+    {
+      dimension: 'Core idea',
+      leadzipp: 'Find the local businesses in an area and score them by who needs help most.',
+      competitor: 'Return as many business leads as possible for a keyword and a location.',
+    },
+    {
+      dimension: 'What a search returns',
+      leadzipp: 'A scored, filterable list read live from Google Places and Yelp at search time.',
+      competitor: 'Up to 1,200 leads per search with a wide set of contact and signal fields, per their site.',
+    },
+    {
+      dimension: 'How results are prioritized',
+      leadzipp: 'An opportunity score built on no website, thin reviews and weak rating, so the list arrives ranked.',
+      competitor: 'Their site describes sortable columns and per lead fields such as review scores and technology detection.',
+    },
+    {
+      dimension: 'Allowance model',
+      leadzipp: 'Monthly. Free includes 25 live searches, Pro 100 and Agency 300 pooled, with cached reruns free.',
+      competitor: 'Daily. Their plans are sized by searches per day, from 10 on Starter to 100 on Professional.',
+    },
+    {
+      dimension: 'Prospect facing output',
+      leadzipp: 'A shareable audit report link you can send a business owner as a door opener.',
+      competitor: 'Exports in multiple formats, including CSV, Excel and PDF.',
+    },
+    {
+      dimension: 'Free access',
+      leadzipp: 'A permanent free plan with 25 live searches a month, plus a 7-day trial on paid plans.',
+      competitor: 'Free searches advertised on their homepage, then month to month plans with published prices.',
+    },
+  ],
+  chooseCompetitor: {
+    heading: 'Choose D7 Lead Finder if',
+    items: [
+      'Raw volume per search is the metric you care about, and 1,200 rows is a feature rather than a chore.',
+      'You want per lead fields like ad pixel detection, social links and website technology flags.',
+      'Your workflow already handles qualification, so you want maximum input rather than a ranked shortlist.',
+      'A daily search allowance fits how you prospect better than a monthly one.',
+    ],
+  },
+  chooseLeadzipp: {
+    heading: 'Choose LeadZipp if',
+    items: [
+      'You would rather start from a ranked shortlist than qualify a thousand rows by hand.',
+      'You want listings read live from Google Places and Yelp at the moment you search.',
+      'You send audit reports as door openers and want them generated from the same search.',
+      'You want leads pushed into HubSpot, Pipedrive or GoHighLevel rather than exported and re-imported.',
+      'You prospect in bursts and want a free tier that stays free between campaigns.',
+    ],
+  },
+  overlap:
+    'The overlap here is real: same buyer, same starting input, same promise of local business leads with contact details. What separates them is what lands on your screen afterwards, a high volume export on one side and a scored shortlist on the other. The honest test is the one we suggest for every close comparison: run a category and an area you know well in both, and see which output you would actually work through by Friday.',
+  faqs: [
+    {
+      question: 'Is LeadZipp a D7 Lead Finder alternative?',
+      answer:
+        'For the core job, yes. Both turn a location and a category into local business leads with contact details, for the same kind of buyer. The real question is which output you want. D7 advertises volume and data fields per search. LeadZipp returns a shorter live list that arrives scored on need signals, with audit reports and CRM push built into the same flow. Which of those is the alternative depends on which one matches how you actually work a list.',
+    },
+    {
+      question: 'Which returns more leads per search?',
+      answer:
+        'On their own numbers, D7. Their homepage advertises up to 1,200 business leads per search, and LeadZipp does not compete on that metric. A LeadZipp search returns the businesses trading in the radius you set, scored and filterable, because the bet is that a ranked hundred beats an unranked thousand when a human has to work the list. If your pipeline genuinely consumes bulk rows, that is a fair reason to pick D7.',
+    },
+    {
+      question: 'What does D7 Lead Finder cost?',
+      answer:
+        'They publish three month to month plans, named Starter, Agency and Professional, sized by searches per day, with prices shown on their plan page. Prices change, so check their page for current figures rather than trusting a number written into a comparison. LeadZipp publishes its pricing openly too: Free at 25 live searches a month, Pro at $25 a month for 100, and Agency at $50 a month for 300 pooled, each paid plan starting with a 7-day trial.',
+    },
+    {
+      question: 'Do both work outside the United States?',
+      answer:
+        'Both advertise worldwide coverage. D7 says it finds leads in any category across any country in the world, and LeadZipp supports city and country search worldwide with a radius, alongside US ZIP codes. For the specific market you sell into, the only reliable check is to run the same search in each and look at what comes back.',
+    },
+  ],
+  ctaHeading: 'See what a scored list looks like',
+}
+
+const OUTSCRAPER: ComparisonPage = {
+  slug: 'leadzipp-vs-outscraper',
+  competitor: 'Outscraper',
+  competitorShort: 'Outscraper',
+  summary: 'A pay as you go data extraction platform, compared with a tool that turns the same map data into a scored pitch list.',
+  metaTitle: 'LeadZipp vs Outscraper: Raw Records or a Scored List',
+  metaDescription:
+    'Outscraper extracts business records from Google Maps, pay as you go. LeadZipp turns one live search into a scored pitch list. Which fits how you prospect.',
+  ogTitle: 'LeadZipp vs Outscraper',
+  ogSubtitle: 'Raw data extraction next to a finished prospecting workflow',
+  h1: 'LeadZipp vs Outscraper',
+  lede:
+    'Plenty of agencies prospect by pulling Google Maps data, and Outscraper is one of the established ways to do it. It hands you raw business records by the thousand, priced per record. LeadZipp starts from the same kind of public map data and does the next steps for you: scoring, contact finding and pitch ready output. The comparison is really between buying data and buying the finished list.',
+  verdict:
+    'If you build data pipelines, buy records from Outscraper. If you pitch clients, LeadZipp hands you the list already scored.',
+  competitorPanel: {
+    heading: 'What Outscraper is built for',
+    body:
+      'Outscraper describes itself as a business data and enrichment platform, offering real time intelligence from Google Maps and more than 50 other sources, enriched with contacts, reviews and company insights. It is a data extraction service first: you choose a source, define a query, and receive records in bulk, through a dashboard or an API.',
+    bullets: [
+      'A Google Maps scraper and a Google Maps reviews scraper, alongside scrapers for sources like Trustpilot, TripAdvisor, Yellow Pages and Amazon.',
+      'An emails and contacts scraper and an email address validator.',
+      'APIs for most services, built for developers and automated pipelines.',
+      'Pay as you go pricing, priced per record, with a free tier covering an initial allowance that resets every 30 days.',
+      'A results guarantee, with refunds if tools fail to retrieve data, per their pricing page.',
+    ],
+  },
+  leadzippPanel: {
+    heading: 'What LeadZipp is built for',
+    body:
+      'LeadZipp is aimed at the person who was about to extract map records and then qualify the spreadsheet by hand. You search an area and a category, and it returns live Google Places and Yelp listings already scored on need signals, with the email finder, audit reports and CRM export built into the same flow.',
+    bullets: [
+      'Live listings from Google Places and Yelp, read at search time.',
+      'Opportunity scoring on no website, thin reviews and weak rating, with filters for each.',
+      'Email finder with a confidence badge, metered in credits that every plan includes.',
+      'Shareable digital presence audit reports, CSV and branded PDF export, and push into HubSpot, Pipedrive or GoHighLevel.',
+      'Flat self serve plans with a permanent free tier, rather than per record metering.',
+    ],
+  },
+  rows: [
+    {
+      dimension: 'What you buy',
+      leadzipp: 'A prospecting workflow: search, score, contact, export.',
+      competitor: 'Data extraction: raw records from the source you choose.',
+    },
+    {
+      dimension: 'Where the data comes from',
+      leadzipp: 'Google Places and Yelp, read live at search time.',
+      competitor: 'Google Maps plus more than 50 other sources, per their site.',
+    },
+    {
+      dimension: 'Qualification',
+      leadzipp: 'Built in. Results arrive scored on no website, thin reviews and weak rating.',
+      competitor: 'Their platform centers on extraction and enrichment, adding contacts, reviews and company insights to records.',
+    },
+    {
+      dimension: 'Interface',
+      leadzipp: 'A web app built around one search flow, with no code anywhere.',
+      competitor: 'A dashboard for one off jobs and APIs for automated pipelines.',
+    },
+    {
+      dimension: 'Pricing model',
+      leadzipp: 'Flat monthly plans. Free includes 25 live searches, Pro 100, Agency 300 pooled, with cached reruns free.',
+      competitor: 'Pay as you go, priced per record, with a free tier that resets every 30 days.',
+    },
+    {
+      dimension: 'Best fit user',
+      leadzipp: 'An agency or freelancer who wants a pitch list today.',
+      competitor: 'A developer, analyst or team that wants raw data to feed its own process.',
+    },
+  ],
+  chooseCompetitor: {
+    heading: 'Choose Outscraper if',
+    items: [
+      'You need raw datasets at a scale no prospecting interface is built for, and per record pricing suits that.',
+      'Your targets go beyond local business listings, into sources like review platforms and marketplaces.',
+      'You have a pipeline, a developer or a data team, and an API is the integration you actually want.',
+      'You want to pay only when you pull data, with no monthly subscription.',
+    ],
+  },
+  chooseLeadzipp: {
+    heading: 'Choose LeadZipp if',
+    items: [
+      'The spreadsheet was never the goal. You want to know which businesses to pitch first.',
+      'You would rather have scoring, email finding and audit reports in one flow than assemble them from exports.',
+      'You want a flat, predictable monthly price instead of metering by the record.',
+      'You send prospects a shareable audit report and want it generated from the same search.',
+      'You want leads in HubSpot, Pipedrive or GoHighLevel without writing glue code.',
+    ],
+  },
+  overlap:
+    'Both ultimately read the same kind of public map data, which is why Outscraper users are often exactly who LeadZipp is built for. The difference is where each product stops. Outscraper stops at the records, deliberately, because flexibility at scale is its value. LeadZipp keeps going through scoring, contact finding and output, because for an agency the list is only the start of a pitch. Some teams genuinely need both: bulk extraction for analysis, and a scored shortlist for the outreach in front of them this week.',
+  faqs: [
+    {
+      question: 'Is LeadZipp a scraper like Outscraper?',
+      answer:
+        'No. LeadZipp reads live Google Places and Yelp data at search time and returns a scored, working list inside a product built for prospecting. Outscraper is an extraction platform: it hands you the records and leaves the workflow to you. If your end goal is a dataset, that is exactly what they sell. If your end goal is a pitch, the dataset is the step LeadZipp is trying to save you.',
+    },
+    {
+      question: 'Which one is cheaper?',
+      answer:
+        'They price differently enough that it depends entirely on volume. Outscraper is pay as you go, priced per record, with a free tier that resets every 30 days, so light extraction can cost very little and heavy extraction scales with usage. LeadZipp is flat: Free at 25 live searches a month, Pro at $25 a month for 100, Agency at $50 a month for 300 pooled, with cached reruns free. Check their pricing page for current per record rates rather than trusting a figure written here.',
+    },
+    {
+      question: 'Can I build what LeadZipp does on top of Outscraper?',
+      answer:
+        'Much of it, with work. You could extract map records, cross reference websites and review counts, write your own scoring, then run the domains through email tooling. Agencies did exactly that before tools like this existed, and some still prefer the control. The LeadZipp pitch is simply that those steps are the product, already wired together, for a flat monthly price.',
+    },
+    {
+      question: 'Does LeadZipp have an API too?',
+      answer:
+        'Yes. The Agency plan includes a public API at 500 requests a day, alongside 300 pooled live searches for the workspace. It returns the same scored results the app shows, so it suits teams automating parts of their prospecting. For bulk raw data across many sources, an extraction platform like Outscraper is still the better shaped tool.',
+    },
+  ],
+  ctaHeading: 'Skip the spreadsheet stage',
+}
+
+export const COMPARISONS: ComparisonPage[] = [
+  APOLLO,
+  HUNTER,
+  ZOOMINFO,
+  B2BLEADFINDER,
+  D7LEADFINDER,
+  OUTSCRAPER,
+]
 
 const BY_SLUG = new Map(COMPARISONS.map((c) => [c.slug, c]))
 

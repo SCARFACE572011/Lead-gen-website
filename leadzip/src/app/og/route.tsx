@@ -202,7 +202,7 @@ export async function GET(request: NextRequest) {
           }}
         >
           <div style={{ display: 'flex', gap: '36px' }}>
-            {['43 industries', '41k+ ZIP codes', 'Live Google & Yelp'].map((stat) => (
+            {['42 industries', '41k+ ZIP codes', 'Live Google & Yelp'].map((stat) => (
               <span
                 key={stat}
                 style={{

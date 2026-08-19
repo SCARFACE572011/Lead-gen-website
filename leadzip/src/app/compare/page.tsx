@@ -10,7 +10,7 @@ import { COMPARISONS, COMPARISON_DISCLAIMER } from '@/lib/comparePages'
 
 const TITLE = 'Compare LeadZipp with Other Prospecting Tools'
 const DESCRIPTION =
-  'Honest comparisons between LeadZipp and Apollo, Hunter.io, ZoomInfo and B2B Lead Finder. Written around use case fit rather than invented feature checkmarks.'
+  'Honest comparisons between LeadZipp and Apollo, Hunter.io, ZoomInfo, D7 Lead Finder, Outscraper and more. Written around use case fit, not invented checkmarks.'
 const OG = '/og?title=Compare+LeadZipp&subtitle=Honest+comparisons,+no+invented+checkmarks'
 
 export const metadata: Metadata = {

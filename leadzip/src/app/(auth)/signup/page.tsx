@@ -197,6 +197,8 @@ export default function SignupPage() {
           } catch {
             // private mode, treat as unclaimed
           }
+          // The main paid route into Stripe: measure it like the pricing page does.
+          track("checkout_started", { plan: trialPlan, billing: trialBilling, promo });
           const res = await fetch("/api/stripe/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },

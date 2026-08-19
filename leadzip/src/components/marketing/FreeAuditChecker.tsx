@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { Loader2, Search } from 'lucide-react'
+import { track } from '@/lib/analytics'
 import { PillarBreakdown, ScoreGauge } from '@/components/audit/HealthReportView'
 import type { HealthCheck, HealthScoreResult } from '@/lib/healthScore'
 
@@ -76,6 +77,7 @@ export function FreeAuditChecker() {
     setLoading(true)
     setError(null)
     setResult(null)
+    track('free_audit_started', { has_city: Boolean(location.trim()) })
     try {
       const res = await fetch('/api/free-audit', {
         method: 'POST',
@@ -86,6 +88,7 @@ export function FreeAuditChecker() {
         | (Partial<FreeAuditResult> & { error?: string })
         | null
       if (!res.ok || !data?.health || !data?.lead) {
+        track('free_audit_completed', { found: false })
         setError(
           typeof data?.error === 'string' && data.error
             ? data.error
@@ -93,6 +96,7 @@ export function FreeAuditChecker() {
         )
         return
       }
+      track('free_audit_completed', { found: true })
       setResult({ lead: data.lead as FreeAuditLead, health: data.health })
     } catch {
       setError('Something went wrong. Please try again in a moment.')
@@ -255,6 +259,7 @@ export function FreeAuditChecker() {
                 ink label 5.58:1; hover #FF6A45: 5.34:1 vs forest, 6.51:1 vs ink). */}
             <Link
               href="/signup"
+              onClick={() => track('free_audit_cta_clicked', { placement: 'result' })}
               className="mt-5 inline-block rounded-full bg-signal-bright px-6 py-3 text-sm font-semibold text-ink transition-colors hover:bg-[#FF6A45]"
             >
               Create a free account

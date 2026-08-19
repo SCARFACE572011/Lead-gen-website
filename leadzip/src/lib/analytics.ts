@@ -32,6 +32,9 @@ export type AnalyticsEvent =
   | 'search_run'
   | 'checkout_started'
   | 'first_territory_request_submitted'
+  | 'free_audit_started'
+  | 'free_audit_completed'
+  | 'free_audit_cta_clicked'
 
 export type PlanName = 'pro' | 'agency'
 
@@ -95,6 +98,18 @@ export interface AnalyticsEventProps {
   /** Public founder-help form. Never carries the territory, name, or email. */
   first_territory_request_submitted: {
     has_notes: boolean
+  }
+  /** Anonymous checker at /free-audit. Never carries the business name. */
+  free_audit_started: {
+    has_city: boolean
+  }
+  /** Fired when a report renders (found) or the lookup returns nothing. */
+  free_audit_completed: {
+    found: boolean
+  }
+  /** The signup CTA inside a rendered free-audit report. */
+  free_audit_cta_clicked: {
+    placement: 'result' | 'empty_state'
   }
 }
 

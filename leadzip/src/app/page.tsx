@@ -5,7 +5,7 @@ import {
   Download, Map as MapIcon, SlidersHorizontal, Star, Check, Sparkles,
 } from 'lucide-react'
 import { HeroSearchWidget } from '@/components/landing/HeroSearchWidget'
-import { HeroMap } from '@/components/landing/HeroMap'
+import { MapPanel } from '@/components/landing/MapPanel'
 import { Reveal } from '@/components/landing/Reveal'
 import FaqSchema from '@/components/seo/FaqSchema'
 import SoftwareApplicationSchema from '@/components/seo/SoftwareApplicationSchema'
@@ -127,8 +127,8 @@ export default function Home() {
               </Link>
             </p>
           </div>
-          <div className="lg:pl-6">
-            <HeroMap />
+          <div className="pb-6 lg:pl-6">
+            <MapPanel />
           </div>
         </div>
       </section>

@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import {
-  MapPin, ArrowRight, Search, Star, Check, Sparkles, Mail, FileText,
+  MapPin, ArrowRight, Search, Target, Send, Database, Gauge, Mail,
+  Download, Map as MapIcon, SlidersHorizontal, Star, Check, Sparkles,
 } from 'lucide-react'
 import { HeroSearchWidget } from '@/components/landing/HeroSearchWidget'
 import { HeroMap } from '@/components/landing/HeroMap'
@@ -10,40 +11,40 @@ import FaqSchema from '@/components/seo/FaqSchema'
 import SoftwareApplicationSchema from '@/components/seo/SoftwareApplicationSchema'
 import { SiteHeader, SiteFooter } from '@/components/marketing/MarketingChrome'
 
-/* Impeccable direction contract — emitted into the built HTML via the hidden
-   node below so the finish review can audit the render against it. */
-const DIRECTION_CONTRACT = `<!--
-IMPECCABLE CONTRACT (seed c01765b9 · surface: landing page · mode: persuade)
-THESIS: The homepage is one working morning in a territory, told as a
-surveyor's log. The visitor watches the day where the product earns its $25
-instead of reading a feature grid. Refuses: hero + icon-card-grid + generic
-pricing-row scaffold.
-OWN-WORLD: The Field Map - warm paper and ink, deep forest topo bands, signal
-orange on light / beacon bright on dark, rare lime, Bricolage display, Hanken
-body, mono readout instrument voice, dot-grid armature, dashed route line with
-beacon pins.
-STORY: An agency owner follows the route: drop a pin 07:02, scored block
-07:04, decision-maker email 07:09, pitch with audit attached 07:15, the block
-mapped 07:31, day-7 verdict, what the route costs, field notes, your turn.
-FIRST VIEWPORT: unchanged radar hero - H1 and search widget left, live-scan
-panel right; the log route begins immediately below the trades marquee.
-FORM: Expedition Log, candidate 3 of 7, seed key c01765b9.
-FINISH: unreviewed and undocumented is unfinished; this build ends with the
-finish review, the verdict, DESIGN.md, and every shipping raster carrying its
-provenance.
--->`
-
 const TRADES = [
   'Plumbers', 'Dentists', 'Roofers', 'Salons', 'HVAC', 'Law Firms', 'Restaurants',
   'Contractors', 'Auto Shops', 'Realtors', 'Gyms', 'Electricians', 'Landscapers', 'Chiropractors',
 ]
 
-/* Sample-scan rows: synthetic businesses, labeled as a sample wherever shown. */
-const SCAN_ROWS = [
-  { img: '/img/tradesman.jpg', name: 'Ironwood Electric', cat: 'Electrician', score: 97, tag: 'No website' },
-  { img: '/img/storefront.jpg', name: 'Marlowe Home Goods', cat: 'Retail', score: 92, tag: 'No website' },
-  { img: '/img/cafe.jpg', name: 'Poppy & Rye Café', cat: 'Restaurant', score: 89, tag: 'Thin reviews' },
-  { img: '/img/dentist.jpg', name: 'Bright Ave Dental', cat: 'Dentist', score: 84, tag: 'Weak rating' },
+const STEPS = [
+  {
+    n: '01', icon: MapPin, title: 'Drop a pin',
+    body: 'Type a ZIP code and pick a trade: plumbers, dentists, roofers, anything. Set your radius and go.',
+  },
+  {
+    n: '02', icon: Target, title: 'We map the block',
+    body: 'Every real business in that area, pulled live from Google & Yelp, then scored by how badly they need what you sell.',
+  },
+  {
+    n: '03', icon: Send, title: 'Reach out first',
+    body: 'Find the decision-maker’s email, tap to call, and export straight to your CRM. You’re talking to them before competitors even know they exist.',
+  },
+]
+
+const FEATURES = [
+  { icon: Database, title: 'Real businesses, not scraped junk', body: 'Live data from Google Places & Yelp, with verified names, addresses, phones, and websites. Every lead is a business you can actually call today.' },
+  { icon: Gauge, title: 'Lead scoring that finds the gaps', body: 'We rank every result by opportunity. No website? Low reviews? Those float to the top. Every lead also carries a Digital Health Score you can turn into a shareable audit report and send straight to the owner.' },
+  { icon: Mail, title: 'Decision-maker email finder', body: 'One tap surfaces the best contact email for any business with a domain, with a confidence badge so you know what you’re working with.' },
+  { icon: Download, title: 'Export anywhere in one click', body: 'CSV, branded PDF, or straight into HubSpot, Pipedrive & GoHighLevel. Your pipeline, your format. No copy-paste.' },
+  { icon: MapIcon, title: 'Own the whole territory', body: 'Flip to map view and watch your leads light up across the neighborhood. Follow a ZIP and get emailed when new businesses open in your area, so you can reach out while they’re brand new.' },
+  { icon: SlidersHorizontal, title: 'Filter down to your buyer', body: 'Radius, rating, review count, has-website, category. Dial in exactly the businesses that fit before you spend a minute reaching out.' },
+]
+
+const SHOWCASE = [
+  { img: '/img/storefront.jpg', name: 'Marlowe Home Goods', cat: 'Retail · 90028', score: 92, tag: 'No website' },
+  { img: '/img/tradesman.jpg', name: 'Ironwood Electric', cat: 'Electrician · 90026', score: 97, tag: 'No website' },
+  { img: '/img/dentist.jpg', name: 'Bright Ave Dental', cat: 'Dentist · 90210', score: 84, tag: 'Weak reviews' },
+  { img: '/img/cafe.jpg', name: 'Poppy & Rye Café', cat: 'Restaurant · 90012', score: 89, tag: 'No website' },
 ]
 
 const STATS = [
@@ -69,29 +70,9 @@ const FAQS = [
   { q: 'Do I need a credit card to start?', a: 'No. Free includes 25 new live territory searches and 5 welcome email credits. Upgrade to Pro for more live data, bulk ZIP search, full exports, and email alerts when new businesses open in your patch. Pro and Agency start with a 7-day free trial, which does need a card and charges nothing if you cancel before day 7.' },
 ]
 
-/* One log entry: timestamp pin on the route + narrative + product artifact.
-   Artifacts are deliberately non-uniform - each beat shows the actual surface
-   the product presents at that moment, not an icon card. */
-function LogEntry({
-  stamp, first, children,
-}: { stamp: string; first?: boolean; children: React.ReactNode }) {
-  return (
-    <li className="relative pl-10 sm:pl-14">
-      {/* Beacon pin on the route */}
-      <span className="absolute left-0 top-1 flex h-7 w-7 items-center justify-center sm:left-2" aria-hidden>
-        {first && <span className="pin-pulse absolute h-3 w-3 rounded-full bg-signal/40" />}
-        <span className="h-3 w-3 rounded-full border-2 border-paper bg-signal shadow-[0_0_0_1px_var(--color-sand)]" />
-      </span>
-      <p className="readout text-signal">{stamp}</p>
-      <div className="mt-2">{children}</div>
-    </li>
-  )
-}
-
 export default function Home() {
   return (
     <div className="grain relative min-h-screen bg-paper text-ink">
-      <div hidden dangerouslySetInnerHTML={{ __html: DIRECTION_CONTRACT }} />
       {/* SEO: JSON-LD scoped to the landing page. FAQ items come from the
           same FAQS constant the visible section renders, so the markup
           always matches on-page content. */}
@@ -119,9 +100,9 @@ export default function Home() {
               </span>
             </h1>
             <p className="mt-6 max-w-md text-lg leading-relaxed text-white/75">
-              LeadZipp finds and scores every local business in any US ZIP code,
-              with real phones, websites, and decision-maker emails. Live Google
-              &amp; Yelp data at search time. The businesses that need you most, first.
+              Find and score every local business in any US ZIP code, with real
+              phones, websites, and decision-maker emails. Live Google &amp; Yelp data at
+              search time. The businesses that need you most, first.
             </p>
             <div className="mt-8">
               <HeroSearchWidget />
@@ -174,159 +155,114 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ================= THE EXPEDITION LOG =================
-          One working morning in a territory, told on a surveyor's route.
-          Replaces the how-it-works grid, features grid, showcase, and stats
-          band with a single time-stamped narrative of the product in use. */}
-      <section id="how" className="map-grid relative border-b border-sand py-20 sm:py-28">
+      {/* ================= HOW IT WORKS ================= */}
+      <section id="how" className="mx-auto max-w-6xl px-5 py-20 sm:py-28">
+        <Reveal>
+          <span className="readout text-signal">The workflow</span>
+          <h2 className="mt-3 max-w-2xl font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+            From a ZIP code to a booked call in three moves.
+          </h2>
+        </Reveal>
+        <div className="mt-14 grid gap-6 md:grid-cols-3">
+          {STEPS.map((s, i) => (
+            <Reveal key={s.n} delay={i * 0.1}>
+              <div className="relative h-full rounded-3xl border border-sand bg-white p-7 card-lift">
+                <span className="font-mono text-sm font-bold text-signal">{s.n}</span>
+                <span className="mt-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-signal-50">
+                  <s.icon className="h-6 w-6 text-signal" />
+                </span>
+                <h3 className="mt-5 font-display text-xl font-bold">{s.title}</h3>
+                <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{s.body}</p>
+              </div>
+            </Reveal>
+          ))}
+        </div>
+      </section>
+
+      {/* ================= FEATURES ================= */}
+      <section id="features" className="relative border-y border-sand bg-paper-2 py-20 sm:py-28 map-grid">
         <div className="mx-auto max-w-6xl px-5">
-          <Reveal>
-            <span className="readout text-signal">One morning in a territory</span>
-            <h2 className="mt-3 max-w-2xl font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
-              From a ZIP code to a booked call, one working morning.
+          <Reveal className="max-w-2xl">
+            <span className="readout text-signal">What you get</span>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+              Everything you need to turn a neighborhood into a pipeline.
             </h2>
-            <p className="mt-4 max-w-xl text-lg leading-relaxed text-ink-soft">
-              This is the whole job, timed. Sample data below, marked where it
-              appears — your searches run live.
-            </p>
           </Reveal>
-
-          <ol className="route-line relative mt-16 max-w-3xl space-y-16 bg-left-top pl-0 [background-position-x:13px] sm:[background-position-x:21px]">
-            {/* ---- 07:02 — the search ---- */}
-            <LogEntry stamp="07:02 · Drop a pin" first>
-              <Reveal>
-                <h3 className="font-display text-xl font-bold sm:text-2xl">Type a ZIP. Pick a trade.</h3>
-                <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-ink-soft">
-                  Plumbers, dentists, roofers — anything local. Set the radius
-                  and go. No list-buying, no map-scrolling by hand.
-                </p>
-                <div className="mt-5 flex max-w-md items-center gap-2 rounded-full border border-sand bg-white p-2 pl-4 shadow-card" aria-hidden>
-                  <MapPin className="h-4 w-4 flex-shrink-0 text-signal" />
-                  <span className="flex-1 truncate font-mono text-sm text-ink">HVAC contractors · 75023 · 10 mi</span>
-                  <span className="flex-shrink-0 rounded-full bg-signal px-4 py-2 text-sm font-semibold text-white">Scan</span>
+          <div className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            {FEATURES.map((f, i) => (
+              <Reveal key={f.title} delay={(i % 3) * 0.08}>
+                <div className="group h-full rounded-2xl border border-sand bg-white p-6 transition-colors hover:border-signal/40">
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-forest text-lime transition-colors group-hover:bg-signal group-hover:text-white">
+                    <f.icon className="h-5 w-5" />
+                  </span>
+                  <h3 className="mt-5 font-display text-lg font-bold">{f.title}</h3>
+                  <p className="mt-2 text-[15px] leading-relaxed text-ink-soft">{f.body}</p>
                 </div>
               </Reveal>
-            </LogEntry>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* ---- 07:04 — the scored block ---- */}
-            <LogEntry stamp="07:04 · The block comes back scored">
-              <Reveal>
-                <h3 className="font-display text-xl font-bold sm:text-2xl">Every business, ranked by how much they need you.</h3>
-                <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-ink-soft">
-                  Live from Google &amp; Yelp, then scored: no website, thin
-                  reviews, weak rating float to the top — those owners are the
-                  easiest yes you&rsquo;ll have all week.
-                </p>
-                <div className="mt-5 max-w-md overflow-hidden rounded-2xl border border-sand bg-white shadow-card">
-                  <p className="readout border-b border-sand bg-paper-2 px-4 py-2 text-stone">Sample scan · 75023</p>
-                  <ul className="divide-y divide-sand">
-                    {SCAN_ROWS.map((b) => (
-                      <li key={b.name} className="flex items-center gap-3 px-4 py-2.5">
-                        <Image src={b.img} alt="" width={36} height={36} className="h-9 w-9 flex-shrink-0 rounded-lg object-cover" />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate font-display text-[15px] font-bold leading-tight">{b.name}</p>
-                          <p className="readout !normal-case tracking-normal text-stone">{b.cat} · <span className="text-signal">{b.tag}</span></p>
-                        </div>
-                        <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-md bg-forest px-1.5 py-0.5">
-                          <Star className="h-2.5 w-2.5 fill-lime text-lime" aria-hidden />
-                          <span className="font-mono text-xs font-bold text-white">{b.score}</span>
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </Reveal>
-            </LogEntry>
-
-            {/* ---- 07:09 — the email ---- */}
-            <LogEntry stamp="07:09 · Pull the decision-maker's email">
-              <Reveal>
-                <h3 className="font-display text-xl font-bold sm:text-2xl">One tap, one verified contact.</h3>
-                <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-ink-soft">
-                  For any business with a domain, the email finder returns the
-                  best address with a confidence badge, so you know what
-                  you&rsquo;re working with before you write a word.
-                </p>
-                <div className="mt-5 flex max-w-md flex-wrap items-center gap-3 rounded-2xl border border-sand bg-white px-4 py-3.5 shadow-card">
-                  <Mail className="h-4 w-4 flex-shrink-0 text-signal" aria-hidden />
-                  <span className="min-w-0 flex-1 truncate font-mono text-sm text-ink">t•••@ironwoodelectric.com</span>
-                  <span className="rounded-full bg-forest px-2.5 py-1 font-mono text-[11px] font-bold uppercase tracking-wide text-lime">Verified</span>
-                  <span className="readout w-full !normal-case tracking-normal text-stone">Sample result · 1 email credit</span>
-                </div>
-              </Reveal>
-            </LogEntry>
-
-            {/* ---- 07:15 — the pitch ---- */}
-            <LogEntry stamp="07:15 · First pitch out the door">
-              <Reveal>
-                <h3 className="font-display text-xl font-bold sm:text-2xl">Send proof, not promises.</h3>
-                <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-ink-soft">
-                  Every lead carries a Digital Health Score you can turn into a
-                  shareable audit report — the owner sees exactly what&rsquo;s
-                  broken and who can fix it. Then export anywhere: CSV, branded
-                  PDF, or straight into your CRM.
-                </p>
-                <div className="mt-5 max-w-md rounded-2xl border border-sand bg-white p-4 shadow-card">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-signal-50">
-                      <FileText className="h-5 w-5 text-signal" aria-hidden />
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-display text-[15px] font-bold leading-tight">Ironwood Electric — Digital Health Report</p>
-                      <p className="readout !normal-case tracking-normal text-stone">Score 38/100 · No website · 11 reviews</p>
-                    </div>
-                    <span className="font-mono text-2xl font-bold text-signal" aria-hidden>38</span>
+      {/* ================= SHOWCASE ================= */}
+      <section className="mx-auto max-w-6xl px-5 py-20 sm:py-28">
+        <div className="grid items-center gap-12 lg:grid-cols-2">
+          <Reveal>
+            <span className="readout text-signal">The output</span>
+            <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
+              This is what a scored block looks like.
+            </h2>
+            <p className="mt-5 max-w-md text-lg leading-relaxed text-ink-soft">
+              Run a search and every card comes back with a live address, phone, and score. The ones with
+              <span className="font-semibold text-ink"> no website</span> or
+              <span className="font-semibold text-ink"> thin reviews</span> rise to the top,
+              because those owners are the easiest yes you’ll have all week.
+            </p>
+            <Link href="/signup" className="mt-8 inline-flex items-center gap-2 rounded-full bg-signal px-6 py-3 font-semibold text-white transition-all hover:bg-signal-600 active:scale-95">
+              See leads in your area <ArrowRight className="h-4 w-4" />
+            </Link>
+          </Reveal>
+          <div className="grid grid-cols-2 gap-4">
+            {SHOWCASE.map((b, i) => (
+              <Reveal key={b.name} delay={i * 0.08} className={i % 2 === 1 ? 'mt-8' : ''}>
+                <div className="overflow-hidden rounded-2xl border border-sand bg-white card-lift">
+                  <div className="relative aspect-[4/3]">
+                    <Image src={b.img} alt={b.name} fill sizes="(max-width:768px) 45vw, 240px" className="object-cover" />
+                    <span className="absolute right-2 top-2 rounded-lg bg-signal px-2 py-0.5 text-xs font-bold text-white">{b.tag}</span>
                   </div>
-                  <div className="mt-3 flex flex-wrap gap-1.5 border-t border-sand pt-3">
-                    {['CSV', 'Branded PDF', 'HubSpot', 'Pipedrive', 'GoHighLevel'].map((x) => (
-                      <span key={x} className="rounded-full border border-sand bg-paper px-2.5 py-1 font-mono text-[11px] text-ink-soft">{x}</span>
-                    ))}
+                  <div className="p-3.5">
+                    <p className="truncate font-display text-[15px] font-bold">{b.name}</p>
+                    <div className="mt-1 flex items-center justify-between">
+                      <span className="readout !text-[11px] !normal-case tracking-normal text-stone">{b.cat}</span>
+                      <span className="inline-flex items-center gap-1 rounded-md bg-forest px-1.5 py-0.5">
+                        <Star className="h-2.5 w-2.5 fill-lime text-lime" />
+                        <span className="font-mono text-xs font-bold text-white">{b.score}</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Reveal>
-            </LogEntry>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            {/* ---- 07:31 — the territory ---- */}
-            <LogEntry stamp="07:31 · The rest of the block, on the map">
-              <Reveal>
-                <h3 className="font-display text-xl font-bold sm:text-2xl">Work the territory, not one lead.</h3>
-                <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-ink-soft">
-                  Flip to map view and see the whole neighborhood scored. Filter
-                  by radius, rating, reviews, has-website. Follow a ZIP and get
-                  emailed when new businesses open, so you reach out while
-                  they&rsquo;re brand new.
-                </p>
-                <dl className="mt-5 grid max-w-md grid-cols-2 gap-px overflow-hidden rounded-2xl border border-sand bg-sand shadow-card sm:grid-cols-4">
-                  {STATS.map((s) => (
-                    <div key={s.l} className="flex flex-col bg-white px-3 py-3.5 text-center">
-                      <dt className="readout order-2 mt-1 text-stone">{s.l}</dt>
-                      <dd className="order-1 font-display text-2xl font-extrabold text-ink [font-variant-numeric:tabular-nums]">{s.v}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </Reveal>
-            </LogEntry>
-
-            {/* ---- Day 7 — the verdict ---- */}
-            <LogEntry stamp="Day 7 · The verdict">
-              <Reveal>
-                <h3 className="font-display text-xl font-bold sm:text-2xl">By day 7 you know if the territory pays.</h3>
-                <p className="mt-2 max-w-lg text-[15px] leading-relaxed text-ink-soft">
-                  That&rsquo;s why the trial is 7 days. Apollo sells you a
-                  database; LeadZipp tells you who to pitch first, from live
-                  data, for $25 a month.{' '}
-                  <Link href="/compare" className="font-semibold text-signal underline-offset-2 hover:underline">See the comparison</Link>.
-                </p>
-              </Reveal>
-            </LogEntry>
-          </ol>
+      {/* ================= STATS BAND ================= */}
+      <section className="topo relative overflow-hidden py-16 text-white">
+        <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 px-5 md:grid-cols-4">
+          {STATS.map((s) => (
+            <div key={s.l} className="text-center">
+              <p className="font-display text-4xl font-extrabold text-lime sm:text-5xl">{s.v}</p>
+              <p className="readout mt-2 text-white/60">{s.l}</p>
+            </div>
+          ))}
         </div>
       </section>
 
       {/* ================= PRICING PREVIEW ================= */}
       <section className="mx-auto max-w-6xl px-5 py-20 sm:py-28">
         <Reveal className="mx-auto max-w-2xl text-center">
-          <span className="readout text-signal">What the route costs</span>
+          <span className="readout text-signal">Simple pricing</span>
           <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
             Start free. Upgrade when the deals roll in.
           </h2>
@@ -371,28 +307,25 @@ export default function Home() {
         </p>
       </section>
 
-      {/* ================= FIELD NOTES (FAQ) ================= */}
+      {/* ================= FAQ ================= */}
       <section id="faq" className="border-t border-sand bg-paper-2 py-20 sm:py-28">
         <div className="mx-auto max-w-3xl px-5">
           <Reveal>
-            <span className="readout text-signal">Field notes</span>
+            <span className="readout text-signal">Questions</span>
             <h2 className="mt-3 font-display text-3xl font-extrabold leading-tight sm:text-[2.6rem]">
               The stuff people ask before their first search.
             </h2>
           </Reveal>
           <div className="mt-12 divide-y divide-sand rounded-3xl border border-sand bg-white">
-            {FAQS.map((f, i) => (
+            {FAQS.map((f) => (
               <details key={f.q} className="group px-6 py-5 [&_svg]:open:rotate-45">
                 <summary className="flex cursor-pointer list-none items-center justify-between gap-4">
-                  <span className="flex min-w-0 items-baseline gap-3">
-                    <span className="readout flex-shrink-0 text-stone" aria-hidden>N{String(i + 1).padStart(2, '0')}</span>
-                    <span className="font-display text-lg font-semibold">{f.q}</span>
-                  </span>
+                  <span className="font-display text-lg font-semibold">{f.q}</span>
                   <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-signal-50 text-signal transition-transform">
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1v12M1 7h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                   </span>
                 </summary>
-                <p className="mt-3 pl-9 text-[15px] leading-relaxed text-ink-soft">{f.a}</p>
+                <p className="mt-3 text-[15px] leading-relaxed text-ink-soft">{f.a}</p>
               </details>
             ))}
           </div>
@@ -403,8 +336,7 @@ export default function Home() {
       <section className="relative overflow-hidden bg-signal py-20 text-white sm:py-28">
         <div className="grain absolute inset-0 opacity-40" />
         <div className="relative mx-auto max-w-3xl px-5 text-center">
-          <p className="readout text-white/90">Tomorrow · 07:02 · your territory</p>
-          <h2 className="mt-4 font-display text-4xl font-extrabold leading-[1.02] sm:text-5xl">
+          <h2 className="font-display text-4xl font-extrabold leading-[1.02] sm:text-5xl">
             Your next 50 clients are<br className="hidden sm:block" /> already on the map.
           </h2>
           {/* The accessible orange (#C22F0A) is only 5.67:1 against solid white,
@@ -412,7 +344,7 @@ export default function Home() {
               4.46:1. Body copy here sits at /90 (4.83:1) and takes its secondary
               rank from type size rather than from opacity. */}
           <p className="mx-auto mt-5 max-w-lg text-lg text-white/90">
-            Run your first search free — no card, no account. Type a US ZIP and
+            Run your first search free. No card, no demo data. Just type a ZIP or a city and
             watch your territory light up.
           </p>
           <div className="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">

@@ -150,10 +150,12 @@ export function setAnalyticsConsent(choice: AnalyticsConsent): void {
     const w = window as WindowWithAnalytics
     w.gtag?.('consent', 'update', {
       analytics_storage: choice === 'all' ? 'granted' : 'denied',
-      // LeadZipp does not use Google advertising storage.
-      ad_storage: 'denied',
-      ad_user_data: 'denied',
-      ad_personalization: 'denied',
+      // Advertising storage follows the same explicit choice: Accept All
+      // grants it (required for Google Ads conversion measurement and
+      // remarketing); Necessary-only keeps every signal denied.
+      ad_storage: choice === 'all' ? 'granted' : 'denied',
+      ad_user_data: choice === 'all' ? 'granted' : 'denied',
+      ad_personalization: choice === 'all' ? 'granted' : 'denied',
     })
     if (choice === 'all') configureDirectGa4(w)
   } catch {

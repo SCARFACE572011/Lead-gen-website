@@ -28,7 +28,9 @@ try{choice=w.localStorage.getItem('leadzip_cookie_consent');}catch(e){}
 var granted=choice==='all';
 w.gtag('consent','default',{
 analytics_storage:granted?'granted':'denied',
-ad_storage:'denied',ad_user_data:'denied',ad_personalization:'denied'
+ad_storage:granted?'granted':'denied',
+ad_user_data:granted?'granted':'denied',
+ad_personalization:granted?'granted':'denied'
 });
 ${GA4_ID && !GTM_ID ? `if(granted){w.__leadzipGa4Configured=true;w.gtag('js',new Date());w.gtag('config',${JSON.stringify(GA4_ID)});}` : ""}
 })(window);`;

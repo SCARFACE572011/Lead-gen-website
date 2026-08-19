@@ -325,6 +325,40 @@
   outline-color: var(--color-signal-bright);
 }
 
+/* ---- Expedition log route line (landing page) ----
+   Base: a static dashed surveyor's route. Where scroll-driven animation
+   exists, the route "draws itself" in signal as the log scrolls; the plain
+   dashed sand line is the no-support and reduced-motion fallback. */
+.route-line {
+  background-image: linear-gradient(to bottom, var(--color-sand) 55%, transparent 45%);
+  background-size: 2px 14px;
+  background-repeat: repeat-y;
+  background-position: center top;
+}
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .route-line::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image: linear-gradient(to bottom, var(--color-signal) 55%, transparent 45%);
+      background-size: 2px 14px;
+      background-repeat: repeat-y;
+      /* Track the originating element's x-offset so the drawn line sits
+         exactly over the sand base line, whatever the breakpoint sets. */
+      background-position: inherit;
+      animation: route-draw linear both;
+      animation-timeline: view();
+      animation-range: entry 10% exit 70%;
+    }
+  }
+}
+@keyframes route-draw {
+  from { clip-path: inset(0 0 100% 0); }
+  to { clip-path: inset(0 0 0% 0); }
+}
+
 /* ---- Motion ---- */
 @keyframes pin-pulse {
   0% { transform: scale(0.6); opacity: 0.9; }
